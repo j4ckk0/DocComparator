@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.jtools</groupId>
+  <artifactId>doccomparator</artifactId>
+  <version>${revision}</version>
+  <packaging>jar</packaging>
+
+  <name>DocComparator</name>
+  <description>Compares two Word documents (.docx), their text first, side by side; a desktop program with its own Java runtime that never reaches the network.</description>
+
+  <properties>
+    <revision>0.1</revision>
+    <!-- The same version in the four parts Windows wants of an .exe (launch4j refuses anything else). -->
+    <windowsVersion>0.1.0.0</windowsVersion>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.12.2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>doccomparator</finalName>
+    <plugins>
+      <plugin>
+        <!-- Nothing ships but the program's own classes and the JRE: NoNetworkTest reads the program's classes
+             only, so a library would bring code it never checks (README, "No network"). -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <id>no-shipped-library</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>*:*:*:*:compile</exclude>
+                    <exclude>*:*:*:*:runtime</exclude>
+                    <exclude>*:*:*:*:system</exclude>
+                  </excludes>
+                  <message>DocComparator ships no library: one would carry code NoNetworkTest does not read (README, "No network").</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.1</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>org.jtools.doccomparator.Launcher</mainClass>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <!--
+      mvn package -Pdist
+      Builds the self-contained distributions, each with a bundled JRE (external/jre-windows.zip and
+      external/jre-linux.tar.gz, deployed by scripts/setup.sh, not tracked) and launchers, into releases/
+      (not tracked, kept by mvn clean; the previous versions' releases are removed by scripts/package.*):
+        releases/doccomparator-<version>-windows.zip    DocComparator.exe, doccomparator.bat
+        releases/doccomparator-<version>-linux.tar.gz   doccomparator.sh
+    -->
+    <profile>
+      <id>dist</id>
+      <properties>
+        <jre.archives>${project.basedir}/external</jre.archives>
+        <jre.windows>jre-windows.zip</jre.windows>
+        <jre.linux>jre-linux.tar.gz</jre.linux>
+        <jre.unpacked>${project.build.directory}/jre</jre.unpacked>
+        <release.dir>${project.basedir}/releases</release.dir>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>3.1.0</version>
+            <executions>
+              <execution>
+                <id>unpack-jre</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <target>
+                    <fail message="no ${jre.archives}/${jre.windows}: run scripts/setup.sh (see README: Externals)">
+                      <condition>
+                        <not><available file="${jre.archives}/${jre.windows}"/></not>
+                      </condition>
+                    </fail>
+                    <fail message="no ${jre.archives}/${jre.linux}: run scripts/setup.sh (see README: Externals)">
+                      <condition>
+                        <not><available file="${jre.archives}/${jre.linux}"/></not>
+                      </condition>
+                    </fail>
+                    <!-- cutdirsmapper strips the archives' top-level "jdk-xx-jre/" directory -->
+                    <unzip dest="${jre.unpacked}/windows">
+                      <fileset dir="${jre.archives}" includes="${jre.windows}"/>
+                      <cutdirsmapper dirs="1"/>
+                    </unzip>
+                    <untar dest="${jre.unpacked}/linux" compression="gzip">
+                      <fileset dir="${jre.archives}" includes="${jre.linux}"/>
+                      <cutdirsmapper dirs="1"/>
+                    </untar>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <!-- DocComparator.exe: a Windows launcher without a console (GUI subsystem) that runs the bundled
+                 jre\ with doccomparator.jar; built from any OS. doccomparator.bat keeps the console. -->
+            <groupId>com.akathist.maven.plugins.launch4j</groupId>
+            <artifactId>launch4j-maven-plugin</artifactId>
+            <version>2.7.0</version>
+            <executions>
+              <execution>
+                <id>windows-launcher</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>launch4j</goal>
+                </goals>
+                <configuration>
+                  <headerType>gui</headerType>
+                  <outfile>${project.build.directory}/DocComparator.exe</outfile>
+                  <dontWrapJar>true</dontWrapJar>
+                  <jar>doccomparator.jar</jar>
+                  <chdir>.</chdir>
+                  <errTitle>DocComparator</errTitle>
+                  <jre>
+                    <path>jre</path>
+                    <requiresJdk>false</requiresJdk>
+                    <requires64Bit>true</requires64Bit>
+                    <minVersion>21</minVersion>
+                  </jre>
+                  <versionInfo>
+                    <fileVersion>${windowsVersion}</fileVersion>
+                    <txtFileVersion>${project.version}</txtFileVersion>
+                    <fileDescription>DocComparator</fileDescription>
+                    <copyright>j4ckk0</copyright>
+                    <productVersion>${windowsVersion}</productVersion>
+                    <txtProductVersion>${project.version}</txtProductVersion>
+                    <productName>DocComparator</productName>
+                    <internalName>doccomparator</internalName>
+                    <originalFilename>DocComparator.exe</originalFilename>
+                  </versionInfo>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <version>3.7.1</version>
+            <executions>
+              <execution>
+                <id>dist</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <finalName>${project.artifactId}-${project.version}</finalName>
+                  <appendAssemblyId>true</appendAssemblyId>
+                  <outputDirectory>${release.dir}</outputDirectory>
+                  <descriptors>
+                    <descriptor>src/assembly/windows.xml</descriptor>
+                    <descriptor>src/assembly/linux.xml</descriptor>
+                  </descriptors>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

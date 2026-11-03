@@ -5,3 +5,11 @@ target/
 .settings/
 .classpath
 .project
+
+# The distributions (scripts/package.*), kept from one build to the next
+/releases/
+# The externals: JDK, Maven, the JRE archives the distributions bundle (scripts/setup.sh, README: Externals)
+/external
+# your mirror and its credentials (setup reads it on top of externals.conf)
+/externals.local.conf
+tmp/
