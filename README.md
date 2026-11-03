@@ -19,15 +19,22 @@ machine. `NoNetworkResolver` takes the place of Java's name service (through
 `META-INF/services/java.net.spi.InetAddressResolverProvider`) and answers every lookup as an unknown host, which the JDK
 expects: the font cache is then named after `localhost`. It covers every lookup Java would make, whoever makes it.
 
+**A document cannot make it reach the network either.** XML can name a DTD or an entity elsewhere, which a parser
+fetches unless told not to: `XmlCursor`, the program's only XML parser, supports no DTD, no external entity, no
+protocol to fetch them with, and refuses a part that has a DOCTYPE, which Word never writes. The links a document
+holds — the template it is attached to, often on a network share, a linked picture, a hyperlink — are read as text
+and never followed.
+
 Two checks run with every build, so a change that breaks the rule does not build:
 
 - **`NoNetworkTest`** reads every compiled class of the program and fails on any name of what the JDK reaches the network
   with: the packages `java.net`, `javax.net`, `jdk.net`, `sun.net`, `com.sun.net`, `java.rmi`, `javax.rmi`,
   `javax.naming` and `javax.management.remote`; `java.awt.Desktop`, whose `browse()` and `mail()` start other programs
-  that do; `ProcessBuilder` and `Runtime.exec`, since another program would do what this one may not. It reads the
+  that do; `ProcessBuilder` and `Runtime.exec`, since another program would do what this one may not; the JDK's XML
+  parsers' factories, as above, but in `XmlCursor`. It reads the
   class files, not the sources, so that a fully qualified name, a method reference or a class named for reflection is
-  seen as well as an import. A second test checks that it does find each of these. `NoNetworkResolver` alone may name
-  the resolver types it implements.
+  seen as well as an import. A second test checks that it does find each of these. The exemptions are two, each limited
+  to what it names: `NoNetworkResolver` names the resolver types it implements, `XmlCursor` makes its parser.
 - **The enforcer rule of `pom.xml`** fails the build when a library would ship with the program: the test reads only the
   program's own classes. Adding one is a decision to take knowingly, checking what that library does, before lifting
   the rule for it.
@@ -42,10 +49,31 @@ What stays outside these checks:
   It stays out of the way while the distribution is whole.
 - **The system.** Windows may check a program downloaded from the internet (SmartScreen) the first time it is opened;
   a distribution copied by other means is not marked so. A file dialog that lists the network drives the system has
-  mapped reads them: something to keep in mind when DocComparator opens files.
+  mapped reads them: something to keep in mind when DocComparator opens files. And a document chosen on a network drive
+  is read over the network, by the system: the program reads only the files it is given.
 
 The **build**, not the program, uses the network: `scripts/setup.sh` downloads the externals, and the first Maven build
 downloads its plugins into `~/.m2`. After that, `mvn -o` builds offline.
+
+## What is read
+
+`DocxReader` reads a `.docx` (and `.docm`, `.dotx`, `.dotm`, built alike) into a `WordDocument`, with the JDK alone:
+
+- **The stories:** the body, each header and footer the sections refer to ("Header (first page), section 2"), each
+  footnote and endnote. Each is a list of blocks — paragraphs, tables whose cells hold blocks of their own, text boxes
+  right after the paragraph they are anchored in.
+- **The text as Word shows it:** tracked changes accepted (inserted text in, deleted text out; the document is marked as
+  having had some), a field's result rather than its code, the text of links, content controls and equations, tabs,
+  line and page breaks. What Word writes twice for older versions of itself, text boxes for one, is read once.
+- **The structure:** a paragraph's heading level and list item (its numbering's format and text), through its own
+  properties or its style's, and the style it is based on; the ends of sections.
+- **The formatting:** the styles and the document's defaults; each paragraph's, run's, table's and cell's own properties,
+  every one of them under Word's name (`b`, `sz`, `rFonts.ascii`, `pBdr.top.sz`), so that all can be compared. Runs that
+  look the same are joined: Word splits them for reasons of its own.
+- **The template:** the one the settings attach, as linked, and the one the properties name.
+
+Not read yet: comments, pictures (but the text boxes they hold), the numbers a list shows (its format is read), what an
+abstract list borrows from a numbering style.
 
 ## Build and run
 
@@ -99,7 +127,9 @@ Both are built from either system. Previous versions' archives are removed from 
 | Path | What it holds |
 |---|---|
 | `src/main/java/org/jtools/doccomparator/` | `Launcher` (the entry point), `MainWindow` (the window), `NoNetworkResolver` (see "No network") |
+| `…/document/` | what a Word document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
+| `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `StylesReader`, `Numbering`, `FormattingReader` |
 | `src/main/resources/META-INF/services/` | what installs `NoNetworkResolver` |
-| `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network") |
+| `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes |
 | `src/dist/`, `src/assembly/` | the launchers of the distributions, and what goes in them |
 | `scripts/` | the scripts above |

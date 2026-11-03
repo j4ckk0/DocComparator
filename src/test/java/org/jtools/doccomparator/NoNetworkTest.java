@@ -34,26 +34,54 @@ class NoNetworkTest {
             "javax/naming/",                          // JNDI: LDAP, DNS
             "javax/management/remote/");              // JMX over the network
 
-    /** Classes elsewhere that reach the network, or hand over to a program that may. */
+    /**
+     * Classes elsewhere that reach the network, hand over to a program that may, or make an XML parser — which fetches
+     * the DTDs and entities a document names unless told not to: XmlCursor makes the program's only one.
+     */
     private static final List<Pattern> FORBIDDEN_CLASSES = Stream.of(
-                    "java/awt/Desktop",           // browse() and mail() start the browser and the mail client
-                    "java/lang/ProcessBuilder")   // another program would do what this one may not
+                    "java/awt/Desktop",                        // browse() and mail() start the browser and the mail client
+                    "java/lang/ProcessBuilder",                // another program would do what this one may not
+                    "javax/xml/parsers/DocumentBuilderFactory",
+                    "javax/xml/parsers/SAXParserFactory",
+                    "org/xml/sax/helpers/XMLReaderFactory",
+                    "javax/xml/transform/TransformerFactory",
+                    "javax/xml/validation/SchemaFactory",
+                    "javax/xml/xpath/XPathFactory",
+                    "javax/xml/catalog/CatalogManager")
             .map(name -> Pattern.compile(Pattern.quote(name) + "(?!\\w)"))
             .toList();
 
     /** Methods of classes that are otherwise allowed. */
     private static final List<String> FORBIDDEN_METHODS = List.of(
-            "java/lang/Runtime.exec");            // as ProcessBuilder
+            "java/lang/Runtime.exec",                          // as ProcessBuilder
+            "javax/xml/stream/XMLInputFactory.newInstance",    // an XML parser, as above
+            "javax/xml/stream/XMLInputFactory.newFactory",
+            "javax/xml/stream/XMLInputFactory.newDefaultFactory");
 
-    /** The one exception: NoNetworkResolver, which refuses every lookup, names the types it implements. */
+    /** A class that may name what the rule forbids elsewhere, as its purpose is to keep the network out. */
+    private record Exemption(String className, List<String> names, List<String> methods) {
+
+        boolean covers(String classFile) {
+            return classFile.equals(className + ".class") || classFile.startsWith(className + "$");
+        }
+    }
+
+    private static final Exemption NO_EXEMPTION = new Exemption("", List.of(), List.of());
+
     private static final String RESOLVER = "org/jtools/doccomparator/NoNetworkResolver";
-    private static final List<String> RESOLVER_TYPES = List.of(   // the longest first: each is removed from the names
-            "java/net/spi/InetAddressResolverProvider$Configuration",
-            "java/net/spi/InetAddressResolverProvider",
-            "java/net/spi/InetAddressResolver$LookupPolicy",
-            "java/net/spi/InetAddressResolver",
-            "java/net/UnknownHostException",
-            "java/net/InetAddress");
+
+    private static final List<Exemption> EXEMPTIONS = List.of(
+            // refuses every name lookup: names the types it implements (the longest first: each is removed in turn)
+            new Exemption(RESOLVER, List.of(
+                    "java/net/spi/InetAddressResolverProvider$Configuration",
+                    "java/net/spi/InetAddressResolverProvider",
+                    "java/net/spi/InetAddressResolver$LookupPolicy",
+                    "java/net/spi/InetAddressResolver",
+                    "java/net/UnknownHostException",
+                    "java/net/InetAddress"), List.of()),
+            // makes the program's only XML parser, set to fetch nothing
+            new Exemption("org/jtools/doccomparator/docx/XmlCursor", List.of(), List.of(
+                    "javax/xml/stream/XMLInputFactory.newDefaultFactory")));
 
     @Test
     void noClassOfTheProgramReachesTheNetwork() throws IOException {
@@ -65,7 +93,8 @@ class NoNetworkTest {
 
         List<String> uses = new ArrayList<>();
         for (Path classFile : classFiles) {
-            uses.addAll(networkUses(CLASSES.relativize(classFile).toString(), ClassFileNames.read(classFile)));
+            String name = CLASSES.relativize(classFile).toString().replace('\\', '/');
+            uses.addAll(networkUses(name, ClassFileNames.read(classFile)));
         }
         assertEquals(List.of(), uses, "what reaches the network (README, \"No network\")");
     }
@@ -73,45 +102,49 @@ class NoNetworkTest {
     /** The check finds each kind of use: a test that cannot fail would prove nothing. */
     @Test
     void theCheckFindsEachWayToTheNetwork() throws IOException {
-        Path offender = Path.of("target", "test-classes", "org", "jtools", "doccomparator", "NoNetworkTest$Offender.class");
-        String uses = String.join("\n", networkUses("Offender", ClassFileNames.read(offender)));
+        String uses = String.join("\n", networkUses("Offender", ClassFileNames.read(OFFENDER)));
 
         assertTrue(uses.contains("java/net/Socket"), uses);
         assertTrue(uses.contains("java/awt/Desktop"), uses);
         assertTrue(uses.contains("calls java/lang/Runtime.exec"), uses);
         assertTrue(uses.contains("javax.net.ssl.SSLSocket"), uses);   // named in a string, for reflection
+        assertTrue(uses.contains("javax/xml/parsers/DocumentBuilderFactory"), uses);
+        assertTrue(uses.contains("calls javax/xml/stream/XMLInputFactory.newInstance"), uses);
     }
 
-    /** The resolver may name the types it implements, and nothing else of the network. */
+    /** An exemption covers what it names, and nothing else of the network. */
     @Test
-    void theResolversExceptionCoversItsOwnTypesOnly() throws IOException {
-        Path offender = Path.of("target", "test-classes", "org", "jtools", "doccomparator", "NoNetworkTest$Offender.class");
-        String uses = String.join("\n", networkUses(RESOLVER + ".class", ClassFileNames.read(offender)));
+    void anExemptionCoversWhatItNamesOnly() throws IOException {
+        String asResolver = String.join("\n", networkUses(RESOLVER + ".class", ClassFileNames.read(OFFENDER)));
+        assertTrue(asResolver.contains("java/net/Socket"), asResolver);
 
-        assertTrue(uses.contains("java/net/Socket"), uses);
+        String asXmlCursor = String.join("\n",
+                networkUses("org/jtools/doccomparator/docx/XmlCursor.class", ClassFileNames.read(OFFENDER)));
+        assertTrue(asXmlCursor.contains("calls javax/xml/stream/XMLInputFactory.newInstance"), asXmlCursor);
     }
+
+    private static final Path OFFENDER =
+            Path.of("target", "test-classes", "org", "jtools", "doccomparator", "NoNetworkTest$Offender.class");
 
     /** One line per name of the class that reaches the network, saying which; none when it does not. */
-    private static List<String> networkUses(String className, ClassFileNames names) {
-        boolean resolver = className.equals(RESOLVER + ".class") || className.startsWith(RESOLVER + "$");
+    private static List<String> networkUses(String classFile, ClassFileNames names) {
+        Exemption exemption = EXEMPTIONS.stream().filter(e -> e.covers(classFile)).findFirst().orElse(NO_EXEMPTION);
         List<String> uses = new ArrayList<>();
         for (String constant : names.constants()) {
             String asPath = constant.replace('.', '/');   // a class named for reflection is written with dots
-            if (resolver) {
-                for (String type : RESOLVER_TYPES) {
-                    asPath = asPath.replace(type, "");
-                }
+            for (String exempted : exemption.names()) {
+                asPath = asPath.replace(exempted, "");
             }
             String checked = asPath;
             boolean forbidden = FORBIDDEN_PACKAGES.stream().anyMatch(checked::contains)
                     || FORBIDDEN_CLASSES.stream().anyMatch(name -> name.matcher(checked).find());
             if (forbidden) {
-                uses.add(className + ": " + constant);
+                uses.add(classFile + ": " + constant);
             }
         }
         for (String method : names.calledMethods()) {
-            if (FORBIDDEN_METHODS.contains(method)) {
-                uses.add(className + ": calls " + method);
+            if (FORBIDDEN_METHODS.contains(method) && !exemption.methods().contains(method)) {
+                uses.add(classFile + ": calls " + method);
             }
         }
         return uses;
@@ -185,6 +218,11 @@ class NoNetworkTest {
 
         void reflect() throws ClassNotFoundException {
             Class.forName("javax.net.ssl.SSLSocket");
+        }
+
+        void parse() throws Exception {
+            javax.xml.parsers.DocumentBuilderFactory.newInstance();
+            javax.xml.stream.XMLInputFactory.newInstance();
         }
     }
 }

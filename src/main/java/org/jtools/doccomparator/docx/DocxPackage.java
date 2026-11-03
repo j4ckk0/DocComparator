@@ -1,0 +1,171 @@
+package org.jtools.doccomparator.docx;
+
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
+
+/**
+ * A .docx as what it is: a zip of XML parts, linked by relationships (Open Packaging Conventions). Gives a part's
+ * relationships and opens a part; the file itself is never changed.
+ */
+final class DocxPackage implements AutoCloseable {
+
+    /** The most one part may hold once unzipped: far beyond any document, short of what a crafted zip could inflate to. */
+    static final long LARGEST_PART = 512L << 20;
+
+    private final String fileName;
+    private final ZipFile zip;
+    private final Map<String, ZipEntry> entries = new HashMap<>();   // by name in lower case: part names ignore case
+
+    private DocxPackage(String fileName, ZipFile zip) {
+        this.fileName = fileName;
+        this.zip = zip;
+        zip.stream().forEach(entry -> entries.put(entry.getName().toLowerCase(Locale.ROOT), entry));
+    }
+
+    static DocxPackage open(Path file) throws IOException {
+        String fileName = String.valueOf(file.getFileName());
+        try {
+            return new DocxPackage(fileName, new ZipFile(file.toFile()));
+        } catch (ZipException e) {
+            throw new DocxException(fileName + " is not a Word document (.docx): it is not a zip archive");
+        }
+    }
+
+    /** The main document part ("word/document.xml" as Word writes it), from the package's relationships. */
+    String mainDocument() throws DocxException {
+        Optional<String> main = target(relationships(""), "officeDocument");
+        if (main.isPresent() && has(main.get())) {
+            return main.get();
+        }
+        if (has("word/document.xml")) {
+            return "word/document.xml";
+        }
+        throw new DocxException(fileName + " is not a Word document (.docx): it holds no main document");
+    }
+
+    /** The relationships of a part ("" for the package's own), none when it has no relationship part. */
+    List<Relationship> relationships(String part) throws DocxException {
+        String relationshipsPart = relationshipsPart(part);
+        List<Relationship> relationships = new ArrayList<>();
+        if (!has(relationshipsPart)) {
+            return relationships;
+        }
+        try (XmlCursor xml = open(relationshipsPart)) {
+            xml.root("Relationships");
+            while (xml.nextChild()) {
+                if (xml.localName().equals("Relationship")) {
+                    String id = xml.plainAttribute("Id");
+                    String type = xml.plainAttribute("Type");
+                    String target = xml.plainAttribute("Target");
+                    boolean external = "External".equals(xml.plainAttribute("TargetMode"));
+                    if (id != null && type != null && target != null) {
+                        relationships.add(new Relationship(id, type, external ? target : resolve(part, target), external));
+                    }
+                }
+                xml.skip();
+            }
+        }
+        return relationships;
+    }
+
+    /** The part the first relationship of one of these kinds targets, when it is a part of the file. */
+    static Optional<String> target(List<Relationship> relationships, String... kinds) {
+        return relationships.stream()
+                .filter(r -> r.isPart() && Arrays.stream(kinds).anyMatch(r::isA))
+                .map(Relationship::target).findFirst();
+    }
+
+    boolean has(String part) {
+        return entries.containsKey(part.toLowerCase(Locale.ROOT));
+    }
+
+    /** A cursor on the part, before its root. */
+    XmlCursor open(String part) throws DocxException {
+        ZipEntry entry = entries.get(part.toLowerCase(Locale.ROOT));
+        if (entry == null) {
+            throw new DocxException(fileName, "it has no part " + part);
+        }
+        try {
+            return XmlCursor.open(new LimitedInputStream(zip.getInputStream(entry), part), part);
+        } catch (IOException e) {
+            throw new DocxException(fileName, part + " cannot be read: " + e.getMessage());
+        }
+    }
+
+    /** "word/document.xml" → "word/_rels/document.xml.rels"; "" (the package) → "_rels/.rels". */
+    private static String relationshipsPart(String part) {
+        int slash = part.lastIndexOf('/');
+        return part.substring(0, slash + 1) + "_rels/" + part.substring(slash + 1) + ".rels";
+    }
+
+    /** A target relative to the part that links to it, or absolute ("/word/styles.xml"), as a part name. */
+    static String resolve(String sourcePart, String target) {
+        String path = target.startsWith("/") ? target.substring(1)
+                : sourcePart.substring(0, sourcePart.lastIndexOf('/') + 1) + target;
+        Deque<String> segments = new ArrayDeque<>();
+        for (String segment : path.split("/")) {
+            if (segment.equals("..")) {
+                segments.pollLast();
+            } else if (!segment.isEmpty() && !segment.equals(".")) {
+                segments.addLast(segment);
+            }
+        }
+        return String.join("/", segments);
+    }
+
+    @Override
+    public void close() throws IOException {
+        zip.close();
+    }
+
+    /** Stops reading a part past LARGEST_PART. */
+    private static final class LimitedInputStream extends FilterInputStream {
+
+        private final String part;
+        private long left = LARGEST_PART;
+
+        LimitedInputStream(InputStream in, String part) {
+            super(in);
+            this.part = part;
+        }
+
+        @Override
+        public int read() throws IOException {
+            int b = super.read();
+            if (b >= 0) {
+                count(1);
+            }
+            return b;
+        }
+
+        @Override
+        public int read(byte[] buffer, int offset, int length) throws IOException {
+            int n = super.read(buffer, offset, length);
+            if (n > 0) {
+                count(n);
+            }
+            return n;
+        }
+
+        private void count(int bytes) throws DocxException {
+            left -= bytes;
+            if (left < 0) {
+                throw new DocxException(part, "larger than " + (LARGEST_PART >> 20) + " MiB once unzipped: refused");
+            }
+        }
+    }
+}
