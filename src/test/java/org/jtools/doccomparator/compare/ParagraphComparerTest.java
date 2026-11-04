@@ -12,6 +12,7 @@ import java.util.Map;
 import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.ListItem;
 import org.jtools.doccomparator.document.Paragraph;
+import org.jtools.doccomparator.document.Picture;
 import org.jtools.doccomparator.document.Style;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.junit.jupiter.api.Test;
@@ -105,6 +106,28 @@ class ParagraphComparerTest {
     private static StyleSheet normal(Map<String, String> paragraph) {
         return new StyleSheet(Map.of("Normal", new Style("Normal", "Normal", "paragraph", null,
                 new Formatting(paragraph), Formatting.NONE)), Formatting.NONE, Formatting.NONE, "Normal");
+    }
+
+    /** A picture added: only on its side; one swapped: changed, whatever the words beside it do. */
+    @Test
+    void picturesDifferByTheirImages() {
+        Paragraph none = paragraph(null, 0, null, run("See the pump."));
+        Paragraph one = paragraph(null, 0, null, run("See the pump."), Paragraphs.picture("pump"));
+        ParagraphDiff added = compare(Paragraphs.FULL, none, one);
+        assertEquals("See the pump.|[\uFFFC]", marked(one.text(), added.right()));
+
+        Paragraph colour = paragraph(null, 0, null, run("The colour "), Paragraphs.picture("green"));
+        Paragraph color = paragraph(null, 0, null, run("The color "), Paragraphs.picture("red"));
+        ParagraphDiff swapped = compare(Paragraphs.FULL, colour, color);
+        int at = color.text().indexOf(Picture.IN_TEXT);
+        assertTrue(swapped.right().stream().anyMatch(span -> span.start() <= at && at < span.end() && span.differs()),
+                "the picture swapped is marked, never matched character by character: "
+                        + marked(color.text(), swapped.right()));
+
+        Paragraph same = paragraph(null, 0, null, run("The colour "), Paragraphs.picture("green"));
+        Paragraph wordChanged = paragraph(null, 0, null, run("The color "), Paragraphs.picture("green"));
+        String kept = marked(wordChanged.text(), compare(Paragraphs.FULL, same, wordChanged).right());
+        assertTrue(kept.endsWith(" \uFFFC"), "the same picture beside a word changed is not marked: " + kept);
     }
 
     @Test

@@ -87,6 +87,25 @@ class PairerTest {
                 new Pairer.Match(0, 4, 1, true), new Pairer.Match(1, 5, 1, true)), matches);
     }
 
+    /** Two figures swapped: each found where it went, moved, by its image. */
+    @Test
+    void aMovedFigureIsFoundByItsImage() {
+        List<Unit> left = List.of(unit("pump"), unit(PUMP), unit("valve"), unit(TRAY));
+        List<Unit> right = List.of(unit("valve"), unit(PUMP), unit("pump"), unit(TRAY));
+        List<Pairer.Match> matches = Pairer.pair(left, right);
+        assertTrue(matches.contains(new Pairer.Match(1, 1, 1, false)));
+        assertTrue(matches.stream().filter(Pairer.Match::moved).count() >= 1, "moved: " + matches);
+        assertTrue(matches.stream().noneMatch(m -> m.left() == 0 && m.right() == 0), "not the other figure");
+        assertEquals(4, matches.size(), "each paired: " + matches);
+    }
+
+    private Unit unit(String figure) {
+        if (figure.length() > 10) {
+            return Paragraphs.units(vocabulary, figure).getFirst();
+        }
+        return Paragraphs.unit(Paragraphs.paragraph(null, 0, null, Paragraphs.picture(figure)), false, vocabulary);
+    }
+
     @Test
     void aShortTextFoundSeveralTimesIsNotLinkedAcrossTheDocument() {
         List<Pairer.Match> matches = Pairer.pair(units(vocabulary, "N/A", "N/A", PUMP),

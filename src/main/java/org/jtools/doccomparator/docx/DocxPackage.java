@@ -111,6 +111,9 @@ final class DocxPackage implements AutoCloseable {
         }
     }
 
+    /** The binary parts read so far, by name in lower case. */
+    private final Map<String, Binary> binaries = new HashMap<>();
+
     /** A binary part read: its SHA-256 in hexadecimal, and its bytes, null when larger than the size kept. */
     record Binary(String digest, byte[] bytes) {
     }
@@ -120,6 +123,10 @@ final class DocxPackage implements AutoCloseable {
      * only counted; past LARGEST_PART, refused as any part.
      */
     Binary binary(String part, int keptBytes) throws DocxException {
+        Binary known = binaries.get(part.toLowerCase(Locale.ROOT));
+        if (known != null) {
+            return known;   // an image used again — an icon in every step — read and kept once
+        }
         ZipEntry entry = entries.get(part.toLowerCase(Locale.ROOT));
         if (entry == null) {
             throw new DocxException(fileName, "it has no part " + part);
@@ -148,7 +155,9 @@ final class DocxPackage implements AutoCloseable {
         } catch (IOException e) {
             throw new DocxException(fileName, part + " cannot be read: " + e.getMessage());
         }
-        return new Binary(HexFormat.of().formatHex(digest.digest()), keeping ? kept.toByteArray() : null);
+        Binary binary = new Binary(HexFormat.of().formatHex(digest.digest()), keeping ? kept.toByteArray() : null);
+        binaries.put(part.toLowerCase(Locale.ROOT), binary);
+        return binary;
     }
 
     /** "word/document.xml" → "word/_rels/document.xml.rels"; "" (the package) → "_rels/.rels". */

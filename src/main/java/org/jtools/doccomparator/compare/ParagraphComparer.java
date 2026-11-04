@@ -121,7 +121,7 @@ final class ParagraphComparer {
                     position(tb, 0, b.text()), position(tb, rangeB[0], b.text()));
 
             List<Diff.Edit> edits = absorbSmallEqualities(
-                    Diff.of(codes(ta, rangeA, a), codes(tb, rangeB, b)), ta, rangeA[0]);
+                    Diff.of(codes(ta, rangeA, a), codes(tb, rangeB, b)), ta, rangeA[0], a.text());
             for (Diff.Edit edit : edits) {
                 int fromA = rangeA[0] + edit.fromA();
                 int toA = rangeA[0] + edit.toA();
@@ -205,8 +205,10 @@ final class ParagraphComparer {
 
         /** The characters of x and y compared one by one, if they are close enough to show it so; false if not. */
         private boolean refined(String x, int startA, String y, int startB) {
-            if (x.length() > LONGEST_REFINED || y.length() > LONGEST_REFINED || !hasLetter(x) || !hasLetter(y)) {
-                return false;   // too long; or a number, which reads better whole: "2025" → "2026"
+            if (x.length() > LONGEST_REFINED || y.length() > LONGEST_REFINED || !hasLetter(x) || !hasLetter(y)
+                    || x.indexOf(Picture.IN_TEXT) >= 0 || y.indexOf(Picture.IN_TEXT) >= 0) {
+                // too long; a number, which reads better whole ("2025" → "2026"); a picture, told by its image only
+                return false;
             }
             int[] cx = x.codePoints().toArray();
             int[] cy = y.codePoints().toArray();
@@ -264,7 +266,8 @@ final class ParagraphComparer {
      * Between two changes, a stretch of a blank or a mark or two is taken into the change: "housing and hoses" →
      * "housing, hoses" reads better as one change than as pieces around a shared space.
      */
-    private static List<Diff.Edit> absorbSmallEqualities(List<Diff.Edit> edits, List<Token> tokensA, int offsetA) {
+    private static List<Diff.Edit> absorbSmallEqualities(List<Diff.Edit> edits, List<Token> tokensA, int offsetA,
+                                                         String textA) {
         List<Diff.Edit> result = new ArrayList<>(edits);
         boolean absorbed = true;
         while (absorbed) {
@@ -273,7 +276,7 @@ final class ParagraphComparer {
                 Diff.Edit edit = result.get(i);
                 if (edit.equal() && edit.toA() - edit.fromA() <= ABSORBED_TOKENS
                         && tokensA.subList(offsetA + edit.fromA(), offsetA + edit.toA()).stream()
-                                .noneMatch(token -> token.type() == Token.Type.WORD)) {
+                                .noneMatch(token -> token.type() == Token.Type.WORD || isPicture(token, textA))) {
                     Diff.Edit before = result.get(i - 1);
                     Diff.Edit after = result.get(i + 1);
                     result.subList(i - 1, i + 2).clear();
@@ -284,6 +287,11 @@ final class ParagraphComparer {
             }
         }
         return result;
+    }
+
+    /** A picture's character: same as any other in the text, a picture differs by its image only. */
+    private static boolean isPicture(Token token, String text) {
+        return token.end() - token.start() == 1 && text.charAt(token.start()) == Picture.IN_TEXT;
     }
 
     /** Where a token starts in the text; the text's end past the last token. */

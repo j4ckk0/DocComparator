@@ -8,6 +8,7 @@ import java.util.TreeMap;
 import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.ListItem;
 import org.jtools.doccomparator.document.Paragraph;
+import org.jtools.doccomparator.document.Picture;
 import org.jtools.doccomparator.document.Run;
 import org.jtools.doccomparator.document.Story;
 
@@ -34,6 +35,12 @@ final class Paragraphs {
             values.put(property, "true");
         }
         return new Run(text, null, new Formatting(values));
+    }
+
+    /** A picture's run: its character, its image told by this digest. */
+    static Run picture(String digest) {
+        return new Run(String.valueOf(Picture.IN_TEXT), null, Formatting.NONE,
+                new Picture(Picture.Kind.IMAGE, digest, 100, 60, "png", digest, new byte[] {1}));
     }
 
     static Item item(Paragraph paragraph) {

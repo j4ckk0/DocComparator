@@ -242,8 +242,7 @@ public final class ComparatorPanel extends JPanel {
             protected Comparison doInBackground() throws IOException {
                 WordDocument a = knownLeft != null ? knownLeft : read(left);
                 WordDocument b = knownRight != null ? knownRight : read(right);
-                PictureImages.prepare(a);   // decoded here, away from the window's thread
-                PictureImages.prepare(b);
+                PictureImages.prepare(a, b);   // decoded here, away from the window's thread
                 return DocumentComparer.compare(a, b, with);
             }
 

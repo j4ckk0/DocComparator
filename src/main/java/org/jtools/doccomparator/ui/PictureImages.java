@@ -4,10 +4,12 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
@@ -37,7 +39,7 @@ final class PictureImages {
     /** The longer side of a picture as decoded, in pixels: more than a side of the view shows. */
     static final int PREVIEW = 1000;
     /** The most pixels a picture may say it has to be decoded at all. */
-    static final long LARGEST = 400_000_000L;
+    static final long LARGEST = 100_000_000L;
 
     private static final Map<String, Optional<BufferedImage>> DECODED = new ConcurrentHashMap<>();
 
@@ -62,31 +64,39 @@ final class PictureImages {
                 .orElse(null);
     }
 
-    /** Decodes every picture of a document, away from the window's thread: drawing them then takes no time. */
-    static void prepare(WordDocument document) {
-        List<Story> stories = new ArrayList<>(List.of(document.body()));
-        stories.addAll(document.headersAndFooters());
-        stories.addAll(document.notes());
-        for (Story story : stories) {
-            prepare(story.blocks());
+    /**
+     * Decodes every picture of these documents, away from the window's thread: drawing them then takes no time. Those
+     * of documents no longer shown are let go.
+     */
+    static void prepare(WordDocument... documents) {
+        Set<String> shown = new HashSet<>();
+        for (WordDocument document : documents) {
+            List<Story> stories = new ArrayList<>(List.of(document.body()));
+            stories.addAll(document.headersAndFooters());
+            stories.addAll(document.notes());
+            for (Story story : stories) {
+                prepare(story.blocks(), shown);
+            }
         }
+        DECODED.keySet().retainAll(shown);
     }
 
-    private static void prepare(List<Block> blocks) {
+    private static void prepare(List<Block> blocks, Set<String> shown) {
         for (Block block : blocks) {
             switch (block) {
                 case Paragraph paragraph -> {
                     for (Run run : paragraph.runs()) {
                         if (run.picture() != null) {
+                            shown.add(run.picture().digest());
                             of(run.picture());
                         }
                     }
                 }
-                case TextBox box -> prepare(box.blocks());
+                case TextBox box -> prepare(box.blocks(), shown);
                 case Table table -> {
                     for (Table.Row row : table.rows()) {
                         for (Table.Cell cell : row.cells()) {
-                            prepare(cell.blocks());
+                            prepare(cell.blocks(), shown);
                         }
                     }
                 }
@@ -115,8 +125,8 @@ final class PictureImages {
             } finally {
                 reader.dispose();
             }
-        } catch (IOException | RuntimeException e) {
-            return null;   // a picture that cannot be read is shown as such
+        } catch (IOException | RuntimeException | OutOfMemoryError e) {
+            return null;   // a picture that cannot be read, or not in the memory there is, is shown as such
         }
     }
 }

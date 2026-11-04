@@ -90,7 +90,8 @@ final class Pairer {
             }
             Unit l = left.get(candidate.left());
             Unit r = right.get(candidate.right());
-            boolean sameText = l.key().equals(r.key()) && l.words().length > 0
+            // the same text, found once on each side, with something to tell it by: words, or a picture's image
+            boolean sameText = l.key().equals(r.key()) && (l.words().length > 0 || !l.pictures().isEmpty())
                     && leftKeys.get(l.key()) == 1 && rightKeys.get(r.key()) == 1;
             boolean close = candidate.similarity() >= SIMILAR_WHEN_MOVED
                     && Math.min(l.words().length, r.words().length) >= WORDS_WHEN_MOVED;

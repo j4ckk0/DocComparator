@@ -192,6 +192,18 @@ class DocxReaderTest {
         assertEquals(64, picture.digest().length(), "SHA-256 in hexadecimal");
     }
 
+    /** An image used twice — an icon in two steps — is read once, its bytes shared. */
+    @Test
+    void anImageUsedAgainIsReadOnce() throws IOException {
+        WordDocument document = read(TestDocx.body("<w:p>" + drawing("rIdIcon", "icon") + "</w:p><w:p>"
+                + drawing("rIdIcon", "icon") + "</w:p>")
+                .binary("word/media/icon.png", PNG)
+                .link("word/document.xml", "rIdIcon", "image", "media/icon.png", false));
+        List<Paragraph> paragraphs = paragraphs(document.body());
+        assertTrue(paragraphs.get(0).runs().getFirst().picture().bytes()
+                == paragraphs.get(1).runs().getFirst().picture().bytes(), "the same bytes, kept once");
+    }
+
     /** Word writes a picture twice for older versions of itself, as it does a text box: read once. */
     @Test
     void aPictureForOlderWordsIsReadOnce() throws IOException {

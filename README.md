@@ -28,8 +28,9 @@ and never followed: a picture whose relationship points outside the document, wh
 is shown as a frame saying so, never fetched.
 
 **Pictures are decoded as untrusted.** A document's pictures are decoded by the JDK's ImageIO, its size read first: one
-saying it has more than 400 million pixels is not decoded; the others at most 1000 pixels on their longer side, a line
-in so many skipped, whatever they hold; one larger than 32 MiB is not kept. ImageIO's cache, which it keeps on disk in
+saying it has more than 100 million pixels is not decoded, nor one the memory there is cannot hold; the others at most 1000 pixels on their longer side, a line
+in so many skipped, whatever they hold; one larger than 32 MiB is not kept; an image used again is read and kept once; those of documents no longer shown
+are let go. ImageIO's cache, which it keeps on disk in
 the temporary directory unless told not to, is turned off as the program starts: decoding writes nothing.
 
 Two checks run with every build, so a change that breaks the rule does not build:

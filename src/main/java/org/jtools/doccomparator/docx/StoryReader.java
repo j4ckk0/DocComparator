@@ -362,8 +362,8 @@ final class StoryReader {
                         child.plainAttribute("title"), child.plainAttribute("name"));
                 case "graphicData" -> {
                     String uri = child.plainAttribute("uri");
-                    if (uri != null && (uri.endsWith("/chart") || uri.contains("/diagram"))) {
-                        drawing.unsupported = uri.endsWith("/chart") ? "chart" : "diagram";
+                    if (uri != null && (uri.contains("/chart") || uri.contains("/diagram"))) {   // chartex too
+                        drawing.unsupported = uri.contains("/chart") ? "chart" : "diagram";
                     }
                 }
                 case "blip" -> drawing.pictures.add(pictures.image(child.relationshipAttribute("embed"),
