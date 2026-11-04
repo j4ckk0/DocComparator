@@ -13,7 +13,6 @@ import org.jtools.doccomparator.document.ListItem;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Picture;
 import org.jtools.doccomparator.document.Run;
-import org.jtools.doccomparator.document.Style;
 import org.jtools.doccomparator.document.StyleSheet;
 
 /**
@@ -324,8 +323,8 @@ final class ParagraphComparer {
     /** How two runs are formatted otherwise, as the options compare it: their character style, their own properties. */
     private List<PropertyDifference> runDifferences(Run a, Run b) {
         Differences differences = new Differences(options);
-        differences.add(Aspect.STYLES, "character style", styleName(leftStyles, a.styleId()),
-                styleName(rightStyles, b.styleId()));
+        differences.add(Aspect.STYLES, "character style", leftStyles.nameOf(a.styleId()),
+                rightStyles.nameOf(b.styleId()));
         differences.formatting(Aspects.Source.RUN, "", a.formatting(), b.formatting());
         return differences.list();
     }
@@ -355,26 +354,9 @@ final class ParagraphComparer {
         return differences.list();
     }
 
-    String leftStyleName(String id) {
-        return styleName(leftStyles, id);
-    }
-
-    String rightStyleName(String id) {
-        return styleName(rightStyles, id);
-    }
-
-    /** A style by its name, which is the same in two documents when its id may not be ("Heading1", "Titre1"). */
-    static String styleName(StyleSheet styles, String id) {
-        if (id == null) {
-            return null;
-        }
-        Style style = styles.style(id);
-        return style == null || style.name() == null ? id : style.name();
-    }
-
     /** A paragraph without a style is in the default one, which Word names "Normal". */
     private static String paragraphStyleName(StyleSheet styles, String id) {
-        return Objects.requireNonNullElse(styleName(styles, styles.paragraphStyle(id)), "Normal");
+        return Objects.requireNonNullElse(styles.nameOf(styles.paragraphStyle(id)), "Normal");
     }
 
     private static String heading(int level) {

@@ -43,6 +43,15 @@ public record StyleSheet(Map<String, Style> styles, Formatting defaultParagraph,
     }
 
     /**
+     * A style's name, which is the same in two documents when its id may not be ("Heading1", "Titre1"); its id when the
+     * document gives it no name; null for none.
+     */
+    public String nameOf(String id) {
+        Style style = style(id);
+        return style == null || style.name() == null ? id : style.name();
+    }
+
+    /**
      * The heading level a paragraph of this style has, from 1; 0 when it is not a heading. The style's outline level
      * says, else its name ("heading 2"), else the style it is based on.
      */

@@ -33,7 +33,7 @@ public final class DocumentComparer {
         this.right = right;
         this.options = options;
         this.paragraphs = new ParagraphComparer(options, vocabulary, left.styles(), right.styles());
-        this.tables = new TableComparer(options, paragraphs);
+        this.tables = new TableComparer(options, paragraphs, left.styles(), right.styles());
     }
 
     public static Comparison compare(WordDocument left, WordDocument right, CompareOptions options) {
@@ -164,8 +164,8 @@ public final class DocumentComparer {
                 continue;
             }
             differences.add(Aspect.STYLES, style + " type", styleA.type(), styleB.type());
-            differences.add(Aspect.STYLES, style + " based on", ParagraphComparer.styleName(a, styleA.basedOn()),
-                    ParagraphComparer.styleName(b, styleB.basedOn()));
+            differences.add(Aspect.STYLES, style + " based on", a.nameOf(styleA.basedOn()),
+                    b.nameOf(styleB.basedOn()));
             differences.formattingAs(Aspect.STYLES, style + " paragraph ", styleA.paragraph(), styleB.paragraph());
             differences.formattingAs(Aspect.STYLES, style + " text ", styleA.run(), styleB.run());
         }

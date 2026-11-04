@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.List;
 import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import org.jtools.doccomparator.document.Formatting;
+import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
 
 /**
@@ -25,10 +26,14 @@ final class TableComparer {
 
     private final CompareOptions options;
     private final ParagraphComparer paragraphs;
+    private final StyleSheet leftStyles;
+    private final StyleSheet rightStyles;
 
-    TableComparer(CompareOptions options, ParagraphComparer paragraphs) {
+    TableComparer(CompareOptions options, ParagraphComparer paragraphs, StyleSheet leftStyles, StyleSheet rightStyles) {
         this.options = options;
         this.paragraphs = paragraphs;
+        this.leftStyles = leftStyles;
+        this.rightStyles = rightStyles;
     }
 
     TableComparison compare(Unit a, Unit b) {
@@ -84,8 +89,8 @@ final class TableComparer {
         differences.add(Aspect.SECTIONS, "place", a.item().placeInStructure(), b.item().placeInStructure());
         Table x = a.item().table();
         Table y = b.item().table();
-        differences.add(Aspect.STYLES, "table style", paragraphs.leftStyleName(x.styleId()),
-                paragraphs.rightStyleName(y.styleId()));
+        differences.add(Aspect.STYLES, "table style", leftStyles.nameOf(x.styleId()),
+                rightStyles.nameOf(y.styleId()));
         differences.formatting(Aspects.Source.TABLE, "table ", x.formatting(), y.formatting());
         return new ParagraphDiff(List.of(), List.of(), List.of(), List.of(), differences.list());
     }
