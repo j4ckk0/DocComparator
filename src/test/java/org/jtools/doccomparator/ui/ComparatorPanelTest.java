@@ -117,6 +117,39 @@ class ComparatorPanelTest {
         }
     }
 
+    /** No document open: the empty sides dark in a dark look, from the start and once the look turns dark. */
+    @Test
+    void theEmptyWindowTakesTheLooksColours() throws Exception {
+        LookAndFeel before = UIManager.getLookAndFeel();
+        System.setProperty("flatlaf.useNativeLibrary", "false");
+        try {
+            ComparatorPanel[] panel = new ComparatorPanel[1];
+            SwingUtilities.invokeAndWait(() -> {
+                try {
+                    UIManager.setLookAndFeel(new FlatDarkLaf());
+                } catch (UnsupportedLookAndFeelException e) {
+                    throw new IllegalStateException(e);
+                }
+                panel[0] = new ComparatorPanel();
+                assertTrue(view(panel[0]).palette().dark, "dark from the start");
+                try {
+                    UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
+                } catch (ReflectiveOperationException | UnsupportedLookAndFeelException e) {
+                    throw new IllegalStateException(e);
+                }
+                SwingUtilities.updateComponentTreeUI(panel[0]);
+            });
+            SwingUtilities.invokeAndWait(() -> { });   // the look taken, after
+            SwingUtilities.invokeAndWait(() -> assertFalse(view(panel[0]).palette().dark, "light once the look is"));
+        } finally {
+            UIManager.setLookAndFeel(before);
+        }
+    }
+
+    private static ComparisonView view(ComparatorPanel panel) {
+        return (ComparisonView) find(panel, ComparisonView.class);
+    }
+
     private static List<Component> radios(Container container) {
         List<Component> found = new ArrayList<>();
         for (Component component : container.getComponents()) {

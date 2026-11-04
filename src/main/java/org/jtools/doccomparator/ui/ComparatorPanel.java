@@ -124,6 +124,7 @@ public final class ComparatorPanel extends JPanel {
             getInputMap(WHEN_IN_FOCUSED_WINDOW).put(key, action);
             getActionMap().put(action, action);
         }
+        showEmptyView();
         updateActions();
     }
 
@@ -222,7 +223,7 @@ public final class ComparatorPanel extends JPanel {
         showEmptySides();
         if (leftPath == null && rightPath == null) {
             comparison = null;
-            view.setLines(List.of(), -1, Palette.of(controls.shown().documentView()));
+            showEmptyView();
             view.setWaitingSide(-1);
             statusLine.say("");
             return;
@@ -312,6 +313,11 @@ public final class ComparatorPanel extends JPanel {
         };
         running = worker;
         worker.execute();
+    }
+
+    /** No document open: the two empty sides, in the colours of the look in use. */
+    private void showEmptyView() {
+        view.setLines(List.of(), -1, Palette.of(controls.shown().documentView()));
     }
 
     /** While a side has no document: what goes there, and how to open it; the side opened, its document's name. */
@@ -434,6 +440,8 @@ public final class ComparatorPanel extends JPanel {
                 show(comparison);
             } else if (leftPath != null || rightPath != null) {
                 compare();
+            } else {
+                showEmptyView();
             }
         });
     }
