@@ -16,6 +16,10 @@ It is a desktop program that runs on its own: each distribution carries its Java
 where it is unpacked, and it **never reaches the network**: no update check, no telemetry, no name lookup (see
 [No network](#no-network)). It speaks French and English.
 
+[**Download the latest release**](https://github.com/j4ckk0/DocComparator/releases/latest) for Windows or Linux — nothing
+to install, a Java runtime is inside: unpack it anywhere and start `doccomparator.bat` (Windows) or `doccomparator.sh`
+(Linux).
+
 | | |
 |---|---|
 | You compare documents | [**Screenshots**](#screenshots), then [**The window**](#the-window): what it shows and how to use it |
