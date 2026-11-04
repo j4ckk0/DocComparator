@@ -408,11 +408,11 @@ public final class ComparatorPanel extends JPanel {
      * A side without its document: its name (the text of side), then how to open it, its shortcut said, or paste a
      * text there; or opened.
      */
-    private static ComparisonView.EmptySide emptySide(DocumentSource source, String side, String open) {
+    private static EmptySide emptySide(DocumentSource source, String side, String open) {
         if (source != null) {
-            return new ComparisonView.EmptySide(true, source.name(), List.of(I18n.text("empty.opened")));
+            return new EmptySide(true, source.name(), List.of(I18n.text("empty.opened")));
         }
-        return new ComparisonView.EmptySide(false, I18n.text(side), List.of(I18n.text("empty.drop"),
+        return new EmptySide(false, I18n.text(side), List.of(I18n.text("empty.drop"),
                 I18n.text("empty.choose", open), I18n.text("empty.type"), I18n.text("empty.paste", "Ctrl+V"), "",
                 I18n.text("empty.two")));
     }

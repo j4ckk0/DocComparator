@@ -20,19 +20,15 @@ package org.jtools.doccomparator.ui;
  * #L%
  */
 
-import java.awt.BasicStroke;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.font.FontRenderContext;
-import java.awt.font.TextLayout;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +56,8 @@ final class ComparisonView extends JComponent implements Scrollable {
     static final String CHOSEN_SIDE = "chosenSide";
 
     static final int GUTTER = 26;
-    private static final int MARGIN = 28;
+    /** Between a side's edge and its text: room for a heading's level, a list's mark. */
+    static final int MARGIN = 28;
     private static final int RIGHT_PADDING = 8;
     private static final int TITLE_HEIGHT = 26;
     /** The width of a page's text, in pixels at a scale of 1: A4, 21 cm, less an inch on each side. */
@@ -71,10 +68,6 @@ final class ComparisonView extends JComponent implements Scrollable {
     private List<Line> lines = List.of();
     /** The colours the lines were built in, which the view draws around them. */
     private Palette palette = Palette.LIGHT;
-    /** What a side says while there are no lines: whether its document is open, a title, then lines of text. */
-    record EmptySide(boolean opened, String title, List<String> lines) {
-    }
-
     private final Map<Side, EmptySide> emptySides = new EnumMap<>(Map.of(Side.LEFT, new EmptySide(false, "", List.of()),
             Side.RIGHT, new EmptySide(false, "", List.of())));
     private int laidOutWidth = -1;
@@ -336,11 +329,12 @@ final class ComparisonView extends JComponent implements Scrollable {
                 paintEmpty(g);
                 return;
             }
+            LinePainter painter = new LinePainter(palette, fonts, context, getWidth(), columnWidth(getWidth()));
             int first = Math.max(0, lineAt(clip.y));
             for (int i = first; i < lines.size() && lines.get(i).top < clip.y + clip.height; i++) {
-                paintLine(g, lines.get(i), i == current);
+                painter.paintLine(g, lines.get(i), i, i == current);
             }
-            paintGutterBelow(g, clip);
+            paintGutterBelow(g, clip, painter);
             if (waitingSide != null) {
                 paintSide(g, waitingSide, true);   // over its empty half, where it stays as the other scrolls
             }
@@ -359,27 +353,15 @@ final class ComparisonView extends JComponent implements Scrollable {
     }
 
     /** The gutter under the last line, down to the bottom: the two sides kept apart where they have no lines. */
-    private void paintGutterBelow(Graphics2D g, Rectangle clip) {
+    private void paintGutterBelow(Graphics2D g, Rectangle clip, LinePainter painter) {
         Line last = lines.getLast();
         int top = Math.max(clip.y, last.top + last.height);
         if (top < clip.y + clip.height) {
-            paintBlankGutter(g, columnWidth(getWidth()), top, clip.y + clip.height - top);
+            painter.paintBlankGutter(g, columnWidth(getWidth()), top, clip.y + clip.height - top);
         }
     }
 
-    /** The gutter where nothing is marked: its own shade between two lines, setting the sides apart. */
-    private void paintBlankGutter(Graphics2D g, int x, int y, int height) {
-        g.setColor(palette.gutter);
-        g.fillRect(x, y, GUTTER, height);
-        g.setColor(palette.grid);
-        g.fillRect(x, y, 1, height);
-        g.fillRect(x + GUTTER - 1, y, 1, height);
-    }
-
-    /**
-     * A side waiting for its document, or opened: a place framed with dashes, saying so; the side chosen, framed in its
-     * colour.
-     */
+    /** A side waiting for its document, or opened (EmptySide); over the lines, the gutter beside it covered too. */
     private void paintSide(Graphics2D g, Side side, boolean overLines) {
         Rectangle visible = getVisibleRect();
         int column = columnWidth(getWidth());
@@ -389,176 +371,8 @@ final class ComparisonView extends JComponent implements Scrollable {
             g.setColor(palette.background);
             g.fillRect(side.of(0, column), visible.y, sideWidth + GUTTER, visible.height);
         }
-        int x = left + 16;
-        int y = visible.y + 16;
-        int width = sideWidth - 32;
-        int height = Math.max(120, visible.height - 32);
-        EmptySide says = emptySides.get(side);
-        boolean opened = says.opened();
-        boolean isChosen = side == chosen;
-        g.setColor(opened ? palette.background : isChosen ? palette.chosenSideInside : palette.noSide);
-        g.fillRoundRect(x, y, width, height, 16, 16);
-        g.setColor(isChosen ? palette.chosenSide : opened ? palette.grid : palette.faint);
-        g.setStroke(new BasicStroke(isChosen ? 3 : 2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1,
-                new float[] {8, 6}, 0));
-        g.drawRoundRect(x, y, width, height, 16, 16);
-        g.setStroke(new BasicStroke(1));
-        Font title = fonts.heading().deriveFont(fonts.heading().getSize2D() + 4);
-        int lineY = y + height / 2 - ((says.lines().size() + 1) * g.getFontMetrics(fonts.text()).getHeight()) / 2;
-        g.setFont(title);
-        g.setColor(palette.text);
-        g.drawString(says.title(), x + Math.max(8, (width - g.getFontMetrics().stringWidth(says.title())) / 2), lineY);
-        lineY += g.getFontMetrics().getHeight() + 8;
-        g.setFont(fonts.text());
-        g.setColor(palette.faint);
-        for (String line : says.lines()) {
-            g.drawString(line, x + Math.max(8, (width - g.getFontMetrics().stringWidth(line)) / 2), lineY);
-            lineY += g.getFontMetrics().getHeight();
-        }
-    }
-
-    private void paintLine(Graphics2D g, Line line, boolean isCurrent) {
-        int width = getWidth();
-        if (line.isTitle()) {
-            g.setColor(palette.title);
-            g.fillRect(0, line.top, width, line.height);
-            g.setColor(palette.titleText);
-            g.setFont(fonts.heading());
-            TextLayout title = new TextLayout(line.title, fonts.heading(), context);
-            title.draw(g, 10, line.top + (line.height + title.getAscent() - title.getDescent()) / 2f);
-        } else {
-            int column = columnWidth(width);
-            paintLineSide(g, line.left, 0, line.top, column, line.height - 1);
-            paintLineSide(g, line.right, column + GUTTER, line.top, width - column - GUTTER, line.height - 1);
-            paintGutter(g, line, column, line.top, line.height - 1);
-            g.setColor(palette.separator);
-            g.drawLine(0, line.top + line.height - 1, width, line.top + line.height - 1);
-        }
-        if (isCurrent) {
-            g.setColor(palette.current);
-            g.setStroke(new BasicStroke(2));
-            g.drawRect(1, line.top + 1, width - 3, line.height - 2);
-            g.setStroke(new BasicStroke(1));
-        }
-    }
-
-    private void paintLineSide(Graphics2D g, LineSide side, int x, int y, int width, int height) {
-        if (side == null) {
-            hatch(g, x, y, width, height);
-            return;
-        }
-        g.setColor(palette.line(side.marking));
-        g.fillRect(x, y, width, height);
-        if (side.marker != null) {
-            g.setColor(palette.faint);
-            g.setFont(fonts.small());
-            // on the first line of the text: below the space a paragraph keeps before it (the document view)
-            float baseline = side.text != null ? side.text.firstBaseline() : g.getFontMetrics().getAscent() + 1;
-            g.drawString(side.marker, x + 6, y + LineSide.PADDING
-                    + (side.caption == null ? 0 : side.caption.height() + LineSide.GAP) + baseline);
-        }
-        paintContent(g, side, x + MARGIN, y);
-    }
-
-    /** What a side holds, top to bottom, from its top: its caption, its text or its grid, its notes, its link. */
-    private void paintContent(Graphics2D g, LineSide side, int x, int y) {
-        int top = y + LineSide.PADDING;
-        if (side.caption != null) {
-            side.caption.paint(g, x, top);
-            top += side.caption.height() + LineSide.GAP;
-        }
-        if (side.columns != null) {
-            paintGrid(g, side, x, top);
-            top += side.gridHeight();
-        } else {
-            side.text.paint(g, x, top);
-            top += side.text.height();
-        }
-        for (TextBlock block : new TextBlock[] {side.notes, side.link()}) {
-            if (block != null) {
-                top += LineSide.GAP;
-                block.paint(g, x, top);
-                top += block.height();
-            }
-        }
-    }
-
-    /** The cells of a table's row under their columns; a narrow empty place for a column this side has not got. */
-    private void paintGrid(Graphics2D g, LineSide side, int x, int top) {
-        int height = side.gridHeight();
-        for (int c = 0; c < side.columns.size(); c++) {
-            LineSide column = side.columns.get(c);
-            int left = Math.round(x + side.columnX(c));
-            int right = Math.round(x + side.columnX(c) + side.columnWidth(c));
-            if (column == null) {
-                hatch(g, left, top, right - left, height);
-            } else {
-                g.setColor(column.marking == LineSide.Marking.SAME && column.shading != null ? column.shading
-                        : palette.line(column.marking));
-                g.fillRect(left, top, right - left, height);
-                paintContent(g, column, left + LineSide.PADDING, top);
-            }
-            g.setColor(palette.grid);
-            g.drawRect(left, top, right - left - 1, height - 1);
-        }
-    }
-
-    private void hatch(Graphics2D g, int x, int y, int width, int height) {
-        g.setColor(palette.noSide);
-        g.fillRect(x, y, width, height);
-        Graphics2D hatch = (Graphics2D) g.create(x, y, width, height);
-        hatch.setColor(palette.noSideHatch);
-        for (int d = -height; d < width; d += 10) {
-            hatch.drawLine(d, height, d + height, 0);
-        }
-        hatch.dispose();
-    }
-
-    /** Between the sides, a sign of how the line compares: ≠ changed, ≈ the same text otherwise, arrows for the rest. */
-    private void paintGutter(Graphics2D g, Line line, int x, int y, int height) {
-        LineSide.Marking marking = line.marking();
-        if (marking == LineSide.Marking.SAME) {
-            paintBlankGutter(g, x, y, height);
-            return;
-        }
-        Color mark = palette.mark(marking);
-        g.setColor(palette.line(marking));
-        g.fillRect(x, y, GUTTER, height);
-        g.setColor(mark);
-        g.fillRect(x, y, 3, height);
-        g.fillRect(x + GUTTER - 3, y, 3, height);
-        int cx = x + GUTTER / 2;
-        int cy = y + Math.min(height / 2, 14);
-        switch (marking) {
-            case CHANGED, OTHERWISE -> {
-                g.setFont(fonts.heading());
-                String sign = marking == LineSide.Marking.CHANGED ? "≠" : "≈";
-                g.drawString(sign, cx - g.getFontMetrics().stringWidth(sign) / 2, cy + g.getFontMetrics().getAscent() / 2 - 1);
-            }
-            case MOVED -> {
-                LineSide moved = line.left != null && line.left.moved() ? line.left : line.right;
-                boolean down = moved != null && moved.counterpartLine > lines.indexOf(line);
-                g.fill(arrow(cx, cy, down ? 1 : -1, true));
-            }
-            case ORPHAN -> {
-                if (line.left != null && line.left.marking == LineSide.Marking.ORPHAN) {
-                    g.fill(arrow(cx - 3, cy, -1, false));
-                }
-                if (line.right != null && line.right.marking == LineSide.Marking.ORPHAN) {
-                    g.fill(arrow(cx + 3, cy, 1, false));
-                }
-            }
-            default -> {
-            }
-        }
-    }
-
-    /** A small triangle at (cx, cy), pointing down or right (direction 1), up or left (-1). */
-    private static Polygon arrow(int cx, int cy, int direction, boolean vertical) {
-        int s = 5;
-        return vertical
-                ? new Polygon(new int[] {cx - s, cx + s, cx}, new int[] {cy - s * direction, cy - s * direction, cy + s * direction}, 3)
-                : new Polygon(new int[] {cx - s * direction, cx - s * direction, cx + s * direction}, new int[] {cy - s, cy + s, cy}, 3);
+        emptySides.get(side).paint(g, new Rectangle(left + 16, visible.y + 16, sideWidth - 32,
+                Math.max(120, visible.height - 32)), side == chosen, palette, fonts);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

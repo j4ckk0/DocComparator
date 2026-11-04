@@ -110,7 +110,7 @@ action is. `MainWindow` keeps only the look: `onDarkMode` and `showDarkMode`, as
 
 **Effort / risk:** small. `everyButtonDoesSomething` and the dark-look tests cover it.
 
-### 5. `ComparisonView` paints, lays out, hit-tests and holds the selection (640 lines)
+### 5. `ComparisonView` paints, lays out, hit-tests and holds the selection (640 lines) — done (`LinePainter`, `EmptySide`; the view at 461 lines)
 
 **Where:** `ComparisonView.java`.
 
