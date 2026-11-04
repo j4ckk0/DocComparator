@@ -198,6 +198,24 @@ class ComparatorPanelTest {
         return texts;
     }
 
+    /** Text pasted on each side: compared as two documents are, a paragraph a line; the title saying so. */
+    @Test
+    void pastedTextsAreCompared() throws Exception {
+        ComparatorPanel[] panel = new ComparatorPanel[1];
+        SwingUtilities.invokeAndWait(() -> {
+            panel[0] = new ComparatorPanel();
+            panel[0].paste(true, "one\ntwo\nthree");
+            panel[0].paste(false, "one\r\n2\r\nthree\r\n");
+        });
+        int[] differences = new int[1];
+        for (int wait = 0; wait < 500 && differences[0] == 0; wait++) {   // compared away from the window's thread
+            Thread.sleep(10);
+            SwingUtilities.invokeAndWait(() -> differences[0] = view(panel[0]).differenceCount()[0]);
+        }
+        assertEquals(1, differences[0], "two → 2");
+        assertEquals("Pasted text ↔ Pasted text — DocComparator", panel[0].title());
+    }
+
     /** No document open: the empty sides dark in a dark look, from the start and once the look turns dark. */
     @Test
     void theEmptyWindowTakesTheLooksColours() throws Exception {

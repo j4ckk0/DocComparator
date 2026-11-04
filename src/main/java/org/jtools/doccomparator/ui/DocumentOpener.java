@@ -2,7 +2,7 @@ package org.jtools.doccomparator.ui;
 
 import java.nio.file.Path;
 
-/** What a side's head and a drop ask of the comparison: documents opened, and why one could not be. */
+/** What a side's head, a drop and a paste ask of the comparison: documents opened, and why one could not be. */
 interface DocumentOpener {
 
     /** Opens this document on its side, the other side kept. */
@@ -10,6 +10,9 @@ interface DocumentOpener {
 
     /** Opens two documents, left and right. */
     void open(Path left, Path right);
+
+    /** Compares this text on its side, as a document of a paragraph a line, the other side kept. */
+    void paste(boolean onLeft, String text);
 
     /** Whether the left side has its document. */
     boolean leftOpened();

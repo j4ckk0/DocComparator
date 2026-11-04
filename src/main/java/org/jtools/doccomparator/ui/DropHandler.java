@@ -14,9 +14,9 @@ import javax.swing.TransferHandler;
 import org.jtools.doccomparator.i18n.I18n;
 
 /**
- * Documents dropped: two at once, left and right; one, on the side it is dropped on (or the side given). As a list
- * of files (Windows, macOS) or of file URIs (Linux). Anything else goes to the handler given, if any: text dropped
- * on a path field is typed in it.
+ * Documents dropped or pasted: two at once, left and right; one, on the side it is dropped on (or the side given). As
+ * a list of files (Windows, macOS) or of file URIs (Linux). Anything else goes to the handler given, if any: text
+ * dropped on a path field is typed in it. Without one, text is compared as a document, on the same side.
  */
 final class DropHandler extends TransferHandler {
 
@@ -61,13 +61,25 @@ final class DropHandler extends TransferHandler {
             }
             return true;
         }
-        return otherwise != null && otherwise.canImport(support);
+        if (otherwise != null) {
+            return otherwise.canImport(support);
+        }
+        if (support.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+            if (support.isDrop()) {
+                support.setDropAction(COPY);
+            }
+            return true;
+        }
+        return false;
     }
 
     @Override
     public boolean importData(TransferSupport support) {
         if (!hasFiles(support)) {
-            return otherwise != null && otherwise.importData(support);
+            if (otherwise != null) {
+                return otherwise.importData(support);
+            }
+            return pasteText(support);
         }
         List<Path> files = files(support);
         if (files.isEmpty()) {
@@ -79,6 +91,24 @@ final class DropHandler extends TransferHandler {
             boolean onLeft = side != null ? side : leftHalf(support);
             opener.open(onLeft, files.getFirst());
         }
+        return true;
+    }
+
+    /** Text dropped or pasted, compared on its side; nothing but blanks is refused. */
+    private boolean pasteText(TransferSupport support) {
+        String text;
+        try {
+            text = support.isDataFlavorSupported(DataFlavor.stringFlavor)
+                    ? (String) support.getTransferable().getTransferData(DataFlavor.stringFlavor) : null;
+        } catch (UnsupportedFlavorException | IOException e) {
+            opener.refuse(I18n.text("drop.failed", e.getMessage()));
+            return false;
+        }
+        if (text == null || text.isBlank()) {
+            opener.refuse(I18n.text("paste.nothing"));
+            return false;
+        }
+        opener.paste(side != null ? side : leftHalf(support), text);
         return true;
     }
 

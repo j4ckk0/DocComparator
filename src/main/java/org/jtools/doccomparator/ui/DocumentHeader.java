@@ -19,7 +19,8 @@ import org.jtools.doccomparator.i18n.I18nLabels;
 
 /**
  * The head of a side, as Beyond Compare has it: the path of its document, which can be typed (Enter opens it), a
- * button to choose one, what can be said of the document under them; documents dropped on it open on its side.
+ * button to choose one, what can be said of the document under them; documents dropped on it open on its side, text
+ * dropped on it, but not on the path, is compared there.
  */
 final class DocumentHeader extends JPanel {
 
@@ -71,14 +72,20 @@ final class DocumentHeader extends JPanel {
         }
     }
 
-    /** Shows the side's document: its path, and what is worth saying of it once read (read null until then). */
-    void show(Path document, WordDocument read) {
-        path.setText(document == null ? "" : document.toAbsolutePath().toString());
-        if (document == null) {
+    /**
+     * Shows what the side compares: a document's path, and what is worth saying of it once read (read null until
+     * then); or that it is text pasted, the path left empty to be typed.
+     */
+    void show(DocumentSource source, WordDocument read) {
+        path.setText(source instanceof DocumentSource.File file ? file.path().toAbsolutePath().toString() : "");
+        if (source == null) {
             about.setText(" ");
             return;
         }
         List<String> said = new ArrayList<>();
+        if (source instanceof DocumentSource.Pasted) {
+            said.add(I18n.text("header.pasted"));
+        }
         if (read != null && read.template().named() != null) {
             said.add(I18n.text("header.template", read.template().named()));
         }

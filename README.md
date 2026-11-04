@@ -128,6 +128,12 @@ dropped on, its head included. Dropping works from Windows' Explorer and from Li
 `file://` URIs, decoded by `FileUris` without the JDK's networking classes). The two sides scroll as one, each
 paragraph beside its match, as high as the taller.
 
+Text can be compared too, without a document: copy it anywhere and paste it on a side (Ctrl+V on the left,
+Ctrl+Shift+V on the right, or the File menu), or drop it there. Each line is a paragraph, without style or
+formatting, so text pasted against a Word document is best compared with *Text only*: the other switches would show
+the document's styles and template as differences. A pasted side can face another pasted text or a document; a
+document copied in Explorer opens as if dropped.
+
 - **Two views**, in the ribbon's *View* or the *View* menu. *Diff*, the text plain and compact, the differences at a
   glance, as Beyond Compare shows them. *Document*, each paragraph as Word lays it out, through its styles: fonts,
   sizes, bold, italic, underline, colours and highlighting; alignment, justified lines included, indents, space before
@@ -330,13 +336,14 @@ holds. Previous versions' archives are removed from `releases/` once the new one
 |---|---|
 | `src/main/java/org/jtools/doccomparator/` | `Launcher` (the entry point, given two documents or none), `MainWindow` (the window, its menus, its look), `Settings` (kept beside the program), `Looks` (FlatLaf's looks, light and dark, its native libraries off), `NoNetworkResolver` (see "No network") |
 | `…/document/` | what a Word document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
+| `…/text/` | `TextReader` (text pasted into a `WordDocument`, a paragraph a line) |
 | `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `DrawingReader` (a drawing's pictures and text boxes), `StylesReader`, `Numbering`, `FormattingReader`, `Pictures` (a part's pictures, through its relationships, nothing outside fetched) |
 | `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Pairing`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `PropertyNames` |
-| `…/ui/` | `ComparatorPanel` (the documents, read and compared in the background), `OptionControls` (the ribbon and the Compare and View menus, kept in step), `DocumentHeader` and `DropHandler` (a side's head, documents dropped), `StatusLine`, `CopyMenu`, `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `ListNumbers` (list items numbered as Word does), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux) |
+| `…/ui/` | `ComparatorPanel` (the documents, read and compared in the background), `OptionControls` (the ribbon and the Compare and View menus, kept in step), `DocumentSource` (what a side compares: a file, or text pasted), `DocumentHeader` and `DropHandler` (a side's head, documents and text dropped or pasted), `StatusLine`, `CopyMenu`, `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `ListNumbers` (list items numbered as Word does), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux) |
 | `…/i18n/` | the languages (see "Languages"): `I18nLanguage`, `I18n`, `I18nLabels`, `I18nLanguageBox` |
 | `src/main/resources/org/jtools/doccomparator/i18n/` | the texts, one file per language |
 | `src/main/resources/META-INF/services/` | what installs `NoNetworkResolver` |
-| `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `compare/`: each step, tables, and `SamplesTest`; `ui/LinesTest`, the view, drawn without a screen; `i18n/I18nTest`, the languages' files |
+| `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `text/TextReaderTest`; `compare/`: each step, tables, and `SamplesTest`; `ui/LinesTest`, the view, drawn without a screen; `i18n/I18nTest`, the languages' files |
 | `samples/` | the sample documents, and the script that writes them (see "Samples") |
 | `src/dist/`, `src/assembly/` | the launchers of the distributions, FlatLaf's licence, and what goes in them |
 | `scripts/` | the scripts above |
