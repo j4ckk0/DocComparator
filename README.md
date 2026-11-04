@@ -63,6 +63,9 @@ What stays outside these checks:
     fonts (a document in a script they lack would show empty boxes): not done;
   - the C library asking the local name service cache (`/var/run/nscd/socket`) for the user's name.
 
+  The program's own settings — its look — are kept beside it, in its folder (`doccomparator.properties`), when they are
+  changed, and nowhere else.
+
   The JVM's performance counters are kept in memory (`-XX:-UsePerfData` in every launcher), not in a file of `/tmp` or
   `%TEMP%`.
 - **What runs on Windows.** `doccomparator.bat` starts the program with the bundled `javaw.exe`, signed by the Eclipse
@@ -145,6 +148,10 @@ paragraph beside its match, as high as the taller.
 - **Tables** take a line for their columns, lettered A, B, C… on each side, a column added, removed or moved said so,
   then a line for each row, its cells under their columns, an empty narrow place where a side has not got a column.
 - **The map** at the right shows every difference at its height in the documents; a click goes there.
+- **The look**, in *View ▸ Look*: the looks Java has — Nimbus, the default, the same on every system; the system's
+  (Windows, GTK on Linux); Metal… —, the window shown in it at once. The one chosen is kept for the next time in
+  `doccomparator.properties`, beside the program: in its folder, never in the registry or the user's folder; written
+  only when the look is changed, and not at all where the folder cannot be written in.
 - **The ribbon**, as Word has it: groups side by side, each its name under its buttons — *Go*, *Text*, *Structure*,
   *Formatting*, *Document*, *Show*, *Presets*.
 - **Previous and next difference**: F7 and Shift+F7, or *Go*. *Only differences* hides the lines that are the
@@ -291,7 +298,7 @@ Both are built from either system. Previous versions' archives are removed from 
 
 | Path | What it holds |
 |---|---|
-| `src/main/java/org/jtools/doccomparator/` | `Launcher` (the entry point, given two documents or none), `MainWindow` (the window, its menus), `NoNetworkResolver` (see "No network") |
+| `src/main/java/org/jtools/doccomparator/` | `Launcher` (the entry point, given two documents or none), `MainWindow` (the window, its menus, its look), `Settings` (kept beside the program), `NoNetworkResolver` (see "No network") |
 | `…/document/` | what a Word document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
 | `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `StylesReader`, `Numbering`, `FormattingReader`, `Pictures` (a part's pictures, through its relationships, nothing outside fetched) |
 | `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Row`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `PropertyNames` |

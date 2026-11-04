@@ -1,14 +1,26 @@
 package org.jtools.doccomparator.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Font;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.Action;
 import javax.swing.JButton;
+import javax.swing.LookAndFeel;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+import org.jtools.doccomparator.compare.CompareOptions;
+import org.jtools.doccomparator.compare.DocumentComparer;
+import org.jtools.doccomparator.docx.DocxReader;
 import org.junit.jupiter.api.Test;
 
 /** The panel, made without a screen: what its buttons do. */
@@ -35,6 +47,53 @@ class ComparatorPanelTest {
             assertNotNull(button.getAction() != null ? button.getAction()
                     : button.getActionListeners().length > 0 ? button : null, button.getText());
         }
+    }
+
+    /** Another look while a comparison is shown: the window takes it, the comparison laid out again in its fonts. */
+    @Test
+    void anotherLookIsTakenAtOnce() throws Exception {
+        LookAndFeel before = UIManager.getLookAndFeel();
+        try {
+            UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
+            ComparatorPanel[] panel = new ComparatorPanel[1];
+            SwingUtilities.invokeAndWait(() -> {
+                panel[0] = new ComparatorPanel();
+                try {
+                    panel[0].show(DocumentComparer.compare(
+                            DocxReader.read(Path.of("samples", "procedure-revA.docx")),
+                            DocxReader.read(Path.of("samples", "procedure-revB.docx")), CompareOptions.DEFAULT));
+                } catch (IOException e) {
+                    throw new IllegalStateException(e);
+                }
+            });
+            ComparisonView view = (ComparisonView) find(panel[0], ComparisonView.class);
+            Font metal = view.fonts().text();
+            SwingUtilities.invokeAndWait(() -> {
+                try {
+                    UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
+                } catch (ReflectiveOperationException | UnsupportedLookAndFeelException e) {
+                    throw new IllegalStateException(e);
+                }
+                SwingUtilities.updateComponentTreeUI(panel[0]);
+            });
+            SwingUtilities.invokeAndWait(() -> { });   // the comparison shown again, after
+            assertNotEquals(metal, view.fonts().text(), "Nimbus's fonts");
+            assertFalse(view.lines().isEmpty(), "the comparison still shown");
+        } finally {
+            UIManager.setLookAndFeel(before);
+        }
+    }
+
+    private static Component find(Container container, Class<?> type) {
+        for (Component component : container.getComponents()) {
+            if (type.isInstance(component)) {
+                return component;
+            }
+            if (component instanceof Container inner && find(inner, type) != null) {
+                return find(inner, type);
+            }
+        }
+        return null;
     }
 
     private static List<JButton> buttons(Container container) {

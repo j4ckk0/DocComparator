@@ -41,7 +41,7 @@ final class ComparisonView extends JComponent implements Scrollable {
     /** The width of a page's text, in pixels at a scale of 1: A4, 21 cm, less an inch on each side. */
     private static final float PAGE_TEXT_WIDTH = 9026 / 15f;
 
-    private final Fonts fonts;
+    private Fonts fonts;
     private final FontRenderContext context = new FontRenderContext(null, true, true);
     private List<Line> lines = List.of();
     /** What a side says while there are no lines: whether its document is open, a title, then lines of text. */
@@ -54,8 +54,7 @@ final class ComparisonView extends JComponent implements Scrollable {
     private int current = -1;
 
     ComparisonView() {
-        Font base = UIManager.getFont("Label.font");
-        fonts = Fonts.of(base == null ? new Font(Font.SANS_SERIF, Font.PLAIN, 12) : base);
+        fonts = lookFonts();
         setOpaque(true);
         setBackground(Palette.BACKGROUND);
         setFocusable(true);
@@ -72,6 +71,22 @@ final class ComparisonView extends JComponent implements Scrollable {
 
     Fonts fonts() {
         return fonts;
+    }
+
+    /** The fonts of the look of the time, its labels' font their base. */
+    private static Fonts lookFonts() {
+        Font base = UIManager.getFont("Label.font");
+        return Fonts.of(base == null ? new Font(Font.SANS_SERIF, Font.PLAIN, 12) : base);
+    }
+
+    /** Another look: its fonts; the lines, laid out again (the panel makes them anew, in these). */
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        if (fonts != null) {
+            fonts = lookFonts();
+            laidOutWidth = -1;
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------

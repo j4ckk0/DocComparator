@@ -523,13 +523,16 @@ public final class ComparatorPanel extends JPanel {
         JLabel title = new JLabel(name, JLabel.CENTER);
         title.setFont(title.getFont().deriveFont(title.getFont().getSize2D() - 1));
         title.setForeground(Palette.FAINT);
-        JPanel group = new JPanel(new BorderLayout(0, 2));
+        JPanel group = new JPanel(new BorderLayout(0, 2)) {
+            @Override
+            public Dimension getMaximumSize() {   // as wide as it needs in the look of the time, as high as the highest
+                return new Dimension(getPreferredSize().width, Integer.MAX_VALUE);
+            }
+        };
         group.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Palette.GRID),
                 BorderFactory.createEmptyBorder(0, 5, 0, 5)));
         group.add(grid, BorderLayout.CENTER);
         group.add(title, BorderLayout.SOUTH);
-        // as wide as it needs, as high as the highest group: every name on the same line
-        group.setMaximumSize(new Dimension(group.getPreferredSize().width, Integer.MAX_VALUE));
         return group;
     }
 
@@ -886,6 +889,28 @@ public final class ComparatorPanel extends JPanel {
         public int getIconHeight() {
             return 12;
         }
+    }
+
+    /**
+     * Another look (View ▸ Look): once every part of the window has taken it, the comparison shown again, laid out in
+     * its fonts; the right-click menu, not a part of the window, told too.
+     */
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        if (view == null) {
+            return;   // called as the panel is made, before its parts
+        }
+        SwingUtilities.invokeLater(() -> {
+            if (view.getComponentPopupMenu() != null) {
+                SwingUtilities.updateComponentTreeUI(view.getComponentPopupMenu());
+            }
+            if (comparison != null) {
+                show(comparison);
+            } else if (leftPath != null || rightPath != null) {
+                compare();
+            }
+        });
     }
 
     @Override
