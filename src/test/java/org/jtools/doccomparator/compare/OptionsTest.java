@@ -26,7 +26,7 @@ class OptionsTest {
         assertEquals(List.of(), all, "no layout by default");
         Comparison comparison = DocumentComparer.compare(REVISION_A, REVISION_B, CompareOptions.DEFAULT);
         assertEquals("Headers and footers", comparison.stories().get(1).title());
-        assertEquals(Row.Status.SAME, row(comparison, "Records").status(), "a heading's level is layout");
+        assertEquals(Pairing.Status.SAME, pairing(comparison, "Records").status(), "a heading's level is layout");
     }
 
     @Test
@@ -60,9 +60,9 @@ class OptionsTest {
 
     @Test
     void theIndentationIsComparedAsItApplies() {
-        Row indented = row(DocumentComparer.compare(REVISION_A, REVISION_B,
+        Pairing indented = pairing(DocumentComparer.compare(REVISION_A, REVISION_B,
                 CompareOptions.TEXT_ONLY.with(Aspect.INDENTATION, true)), "The parts needed");
-        assertEquals(Row.Status.OTHERWISE, indented.status());
+        assertEquals(Pairing.Status.OTHERWISE, indented.status());
         assertEquals(List.of(new PropertyDifference(Aspect.INDENTATION, "indent left", "(none)", "720")),
                 indented.diff().properties());
     }
@@ -84,15 +84,15 @@ class OptionsTest {
     void withoutTheTextOnlyTheLayoutCounts() {
         CompareOptions layout = CompareOptions.LAYOUT_ONLY;
         Comparison comparison = DocumentComparer.compare(REVISION_A, REVISION_B, layout);
-        Row changed = row(comparison, "This procedure describes");
-        assertEquals(Row.Status.SAME, changed.status(), "its words differ, but they do not count");
+        Pairing changed = pairing(comparison, "This procedure describes");
+        assertEquals(Pairing.Status.SAME, changed.status(), "its words differ, but they do not count");
         assertEquals(changed.right().text(), marked(changed.right().text(), changed.diff().right()),
                 "nor shown: nothing marked in it");
-        assertEquals(Row.Status.SAME, row(comparison, "It replaces revision A").status(), "added: text");
-        Row moved = row(comparison, "Safety");
+        assertEquals(Pairing.Status.SAME, pairing(comparison, "It replaces revision A").status(), "added: text");
+        Pairing moved = pairing(comparison, "Safety");
         assertTrue(moved.moved(), "still linked to its match");
-        assertEquals(Row.Status.SAME, moved.status(), "but a move is a matter of text");
-        assertEquals(Row.Status.OTHERWISE, row(comparison, "Records").status(), "its level still counts");
+        assertEquals(Pairing.Status.SAME, moved.status(), "but a move is a matter of text");
+        assertEquals(Pairing.Status.OTHERWISE, pairing(comparison, "Records").status(), "its level still counts");
         assertFalse(comparison.same());
     }
 
@@ -102,10 +102,10 @@ class OptionsTest {
         String[][] moved = {{"Part", "Reference"}, {"Seal", "KP-J-031"}, {"Filter", "KP-F-110"}};
         WordDocument a = document(TableComparerTest.table(parts));
         WordDocument b = document(TableComparerTest.table(moved));
-        assertEquals(Row.Status.OTHERWISE, DocumentComparer.compare(a, b, CompareOptions.ALL).stories().getFirst()
-                .rows().getFirst().status());
-        assertEquals(Row.Status.SAME, DocumentComparer.compare(a, b, CompareOptions.TEXT_ONLY).stories().getFirst()
-                .rows().getFirst().status());
+        assertEquals(Pairing.Status.OTHERWISE, DocumentComparer.compare(a, b, CompareOptions.ALL).stories().getFirst()
+                .pairings().getFirst().status());
+        assertEquals(Pairing.Status.SAME, DocumentComparer.compare(a, b, CompareOptions.TEXT_ONLY).stories().getFirst()
+                .pairings().getFirst().status());
     }
 
     /** Found with its switch alone, under its kind; not found with every other switch on. */
@@ -124,13 +124,13 @@ class OptionsTest {
         Comparison comparison = DocumentComparer.compare(REVISION_A, REVISION_B, options);
         List<PropertyDifference> all = new ArrayList<>(comparison.documentDifferences());
         for (StoryComparison story : comparison.stories()) {
-            for (Row row : story.rows()) {
-                all.addAll(row.diff().properties());
-                all.addAll(row.diff().leftFormatting().stream().flatMap(f -> f.differences().stream()).toList());
-                if (row.table() != null) {
-                    row.table().rowProperties().forEach(all::addAll);
-                    for (List<Row> cells : row.table().cells()) {
-                        for (Row cell : cells) {
+            for (Pairing pairing : story.pairings()) {
+                all.addAll(pairing.diff().properties());
+                all.addAll(pairing.diff().leftFormatting().stream().flatMap(f -> f.differences().stream()).toList());
+                if (pairing.table() != null) {
+                    pairing.table().rowProperties().forEach(all::addAll);
+                    for (List<Pairing> cells : pairing.table().cells()) {
+                        for (Pairing cell : cells) {
                             if (cell != null) {
                                 all.addAll(cell.diff().properties());
                             }
@@ -142,10 +142,10 @@ class OptionsTest {
         return all;
     }
 
-    private static Row row(Comparison comparison, String start) {
-        return comparison.stories().getFirst().rows().stream()
-                .filter(row -> row.right() != null && row.right().text().startsWith(start)).findFirst()
-                .orElseThrow(() -> new AssertionError("no row on the right starts with " + start));
+    private static Pairing pairing(Comparison comparison, String start) {
+        return comparison.stories().getFirst().pairings().stream()
+                .filter(pairing -> pairing.right() != null && pairing.right().text().startsWith(start)).findFirst()
+                .orElseThrow(() -> new AssertionError("no pairing on the right starts with " + start));
     }
 
     private static WordDocument document(org.jtools.doccomparator.document.Table table) {

@@ -16,7 +16,7 @@ import org.jtools.doccomparator.document.WordDocument;
 
 /**
  * Compares two Word documents: their paragraphs and tables paired (Pairer), the pairs compared (ParagraphComparer,
- * TableComparer), then laid out in rows for a side-by-side view, kind of story by kind of story; and the documents
+ * TableComparer), then laid out in pairings for a side-by-side view, kind of story by kind of story; and the documents
  * themselves.
  */
 public final class DocumentComparer {
@@ -57,43 +57,43 @@ public final class DocumentComparer {
         List<Unit> l = units(leftStories);
         List<Unit> r = units(rightStories);
         List<Slot> slots = Slot.align(l.size(), r.size(), Pairer.pair(l, r));
-        List<Row> rows = new ArrayList<>();
+        List<Pairing> pairings = new ArrayList<>();
         for (Slot slot : slots) {
             if (slot.left() >= 0 && slot.right() >= 0) {
-                rows.add(pair(l.get(slot.left()), r.get(slot.right()), -1));
+                pairings.add(pair(l.get(slot.left()), r.get(slot.right()), -1));
             } else if (slot.left() >= 0) {
                 Unit unit = l.get(slot.left());
                 if (slot.moved()) {
-                    Row pair = pair(unit, r.get(slots.get(slot.counterpart()).right()), slot.counterpart());
-                    rows.add(new Row(pair.left(), null, pair.status(), pair.counterpart(), pair.diff(), pair.table()));
+                    Pairing pair = pair(unit, r.get(slots.get(slot.counterpart()).right()), slot.counterpart());
+                    pairings.add(new Pairing(pair.left(), null, pair.status(), pair.counterpart(), pair.diff(), pair.table()));
                 } else {
-                    rows.add(new Row(unit.item(), null, alone(Row.Status.LEFT_ONLY), -1, ParagraphDiff.alone(
+                    pairings.add(new Pairing(unit.item(), null, alone(Pairing.Status.LEFT_ONLY), -1, ParagraphDiff.alone(
                             unit.isTable() ? "" : unit.text(), true, options.text()),
                             unit.isTable() ? tables.alone(unit, true) : null));
                 }
             } else {
                 Unit unit = r.get(slot.right());
                 if (slot.moved()) {
-                    Row pair = pair(l.get(slots.get(slot.counterpart()).left()), unit, slot.counterpart());
-                    rows.add(new Row(null, pair.right(), pair.status(), pair.counterpart(), pair.diff(), pair.table()));
+                    Pairing pair = pair(l.get(slots.get(slot.counterpart()).left()), unit, slot.counterpart());
+                    pairings.add(new Pairing(null, pair.right(), pair.status(), pair.counterpart(), pair.diff(), pair.table()));
                 } else {
-                    rows.add(new Row(null, unit.item(), alone(Row.Status.RIGHT_ONLY), -1, ParagraphDiff.alone(
+                    pairings.add(new Pairing(null, unit.item(), alone(Pairing.Status.RIGHT_ONLY), -1, ParagraphDiff.alone(
                             unit.isTable() ? "" : unit.text(), false, options.text()),
                             unit.isTable() ? tables.alone(unit, false) : null));
                 }
             }
         }
-        return new StoryComparison(title, rows);
+        return new StoryComparison(title, pairings);
     }
 
     /** A paragraph or table alone counts as text: added, or removed. */
-    private Row.Status alone(Row.Status status) {
-        return options.text() ? status : Row.Status.SAME;
+    private Pairing.Status alone(Pairing.Status status) {
+        return options.text() ? status : Pairing.Status.SAME;
     }
 
     /** Two paragraphs, or two tables, compared; a moved pair otherwise the same is shown moved, when the text counts. */
-    private Row pair(Unit a, Unit b, int counterpart) {
-        Row.Status status;
+    private Pairing pair(Unit a, Unit b, int counterpart) {
+        Pairing.Status status;
         ParagraphDiff diff;
         TableComparison table = null;
         if (a.isTable()) {
@@ -102,12 +102,12 @@ public final class DocumentComparer {
             status = tables.status(table, diff);
         } else {
             diff = paragraphs.compare(a, b);
-            status = Row.statusOf(diff);
+            status = Pairing.statusOf(diff);
         }
-        if (counterpart >= 0 && status == Row.Status.SAME && options.text()) {
-            status = Row.Status.MOVED;
+        if (counterpart >= 0 && status == Pairing.Status.SAME && options.text()) {
+            status = Pairing.Status.MOVED;
         }
-        return new Row(a.item(), b.item(), status, counterpart, diff, table);
+        return new Pairing(a.item(), b.item(), status, counterpart, diff, table);
     }
 
     /** The paragraphs to compare; with the blanks left out, empty ones are not. */

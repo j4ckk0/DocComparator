@@ -13,7 +13,7 @@ import org.jtools.doccomparator.compare.DocumentComparer;
 import org.jtools.doccomparator.compare.FormatSpan;
 import org.jtools.doccomparator.compare.Item;
 import org.jtools.doccomparator.compare.PropertyDifference;
-import org.jtools.doccomparator.compare.Row;
+import org.jtools.doccomparator.compare.Pairing;
 import org.jtools.doccomparator.compare.Slot;
 import org.jtools.doccomparator.compare.Span;
 import org.jtools.doccomparator.compare.StoryComparison;
@@ -28,7 +28,7 @@ import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.WordDocument;
 
 /**
- * A comparison into the lines of the view: a title for each part, then its rows. Rows with a paragraph on one side
+ * A comparison into the lines of the view: a title for each part, then its pairings. Those with a paragraph on one side
  * only that follow one another share lines, the left ones beside the right ones, as Beyond Compare shows them: what was
  * removed beside what was added in its place — each still its own difference. A table takes a line for its columns,
  * then one for each of its rows.
@@ -131,56 +131,56 @@ final class Lines {
     }
 
     private void addStory(StoryComparison story) {
-        List<Row> rows = story.rows();
-        if (rows.isEmpty()) {
+        List<Pairing> pairings = story.pairings();
+        if (pairings.isEmpty()) {
             return;
         }
         int titleLine = lines.size();
         lines.add(Line.title(story.title()));
         leftNumbers = new ListNumbers();
         rightNumbers = new ListNumbers();
-        Map<Integer, Integer> lineOfRow = new HashMap<>();
+        Map<Integer, Integer> lineOfPairing = new HashMap<>();
         Map<Cell, Integer> moved = new HashMap<>();
         int r = 0;
-        while (r < rows.size()) {
-            Row row = rows.get(r);
-            if (row.table() != null) {
-                addTable(row, r, lineOfRow, moved);
+        while (r < pairings.size()) {
+            Pairing pairing = pairings.get(r);
+            if (pairing.table() != null) {
+                addTable(pairing, r, lineOfPairing, moved);
                 r++;
                 continue;
             }
-            if (row.left() != null && row.right() != null) {
-                add(Line.of(cell(row, true), cell(row, false)), true, lineOfRow, moved, r);
+            if (pairing.left() != null && pairing.right() != null) {
+                add(Line.of(cell(pairing, true), cell(pairing, false)), true, lineOfPairing, moved, r);
                 r++;
                 continue;
             }
             List<Integer> lefts = new ArrayList<>();
             List<Integer> rights = new ArrayList<>();
-            for (; r < rows.size() && rows.get(r).table() == null
-                    && (rows.get(r).left() == null || rows.get(r).right() == null); r++) {
-                (rows.get(r).left() != null ? lefts : rights).add(r);
+            for (; r < pairings.size() && pairings.get(r).table() == null
+                    && (pairings.get(r).left() == null || pairings.get(r).right() == null); r++) {
+                (pairings.get(r).left() != null ? lefts : rights).add(r);
             }
             for (int k = 0; k < Math.max(lefts.size(), rights.size()); k++) {
-                int leftRow = k < lefts.size() ? lefts.get(k) : -1;
-                int rightRow = k < rights.size() ? rights.get(k) : -1;
-                boolean comparable = leftRow >= 0 && rows.get(leftRow).moved()
-                        || rightRow >= 0 && rows.get(rightRow).moved();
+                int leftIndex = k < lefts.size() ? lefts.get(k) : -1;
+                int rightIndex = k < rights.size() ? rights.get(k) : -1;
+                boolean comparable = leftIndex >= 0 && pairings.get(leftIndex).moved()
+                        || rightIndex >= 0 && pairings.get(rightIndex).moved();
                 if (shown.onlyComparable()) {   // a moved one alone on its line: its neighbour may be one not comparable
-                    if (leftRow >= 0 && rows.get(leftRow).moved()) {
-                        add(Line.of(cell(rows.get(leftRow), true), null), true, lineOfRow, moved, leftRow);
+                    if (leftIndex >= 0 && pairings.get(leftIndex).moved()) {
+                        add(Line.of(cell(pairings.get(leftIndex), true), null), true, lineOfPairing, moved, leftIndex);
                     }
-                    if (rightRow >= 0 && rows.get(rightRow).moved()) {
-                        add(Line.of(null, cell(rows.get(rightRow), false)), true, lineOfRow, moved, rightRow);
+                    if (rightIndex >= 0 && pairings.get(rightIndex).moved()) {
+                        add(Line.of(null, cell(pairings.get(rightIndex), false)), true, lineOfPairing, moved, rightIndex);
                     }
                     continue;
                 }
-                add(Line.of(leftRow < 0 ? null : cell(rows.get(leftRow), true),
-                        rightRow < 0 ? null : cell(rows.get(rightRow), false)), comparable, lineOfRow, moved,
-                        leftRow, rightRow);
+                add(Line.of(leftIndex < 0 ? null : cell(pairings.get(leftIndex), true),
+                        rightIndex < 0 ? null : cell(pairings.get(rightIndex), false)), comparable, lineOfPairing, moved,
+                        leftIndex, rightIndex);
             }
         }
         moved.forEach((cell, line) -> {
-            int target = lineOfRow.get(cell.row.counterpart());
+            int target = lineOfPairing.get(cell.pairing.counterpart());
             // the way to its match, said unless the text is left out: a move is a matter of text
             boolean said = options.text() && !(cell.caption == null && cell.columns != null);
             cell.linkTo(target, target > line, said ? fonts.small() : null, palette);
@@ -190,23 +190,23 @@ final class Lines {
     }
 
     /**
-     * Adds a line, unless only differences are shown and it has none; the rows given are then on it, unless they are on
-     * a line already (a table, on its first).
+     * Adds a line, unless only differences are shown and it has none; the pairings given are then on it, unless they
+     * are on a line already (a table, on its first).
      */
-    private void add(Line line, boolean comparable, Map<Integer, Integer> lineOfRow, Map<Cell, Integer> moved,
-                     int... rows) {
+    private void add(Line line, boolean comparable, Map<Integer, Integer> lineOfPairing, Map<Cell, Integer> moved,
+                     int... pairings) {
         if (shown.onlyDifferences() && !line.differs() || shown.onlyComparable() && !comparable) {
             return;
         }
         int index = lines.size();
         lines.add(line);
-        for (int r : rows) {
+        for (int r : pairings) {
             if (r >= 0) {
-                lineOfRow.putIfAbsent(r, index);
+                lineOfPairing.putIfAbsent(r, index);
             }
         }
         for (Cell cell : new Cell[] {line.left, line.right}) {
-            if (cell != null && cell.row != null && cell.row.moved()) {
+            if (cell != null && cell.pairing != null && cell.pairing.moved()) {
                 moved.put(cell, index);
             }
         }
@@ -219,23 +219,23 @@ final class Lines {
      * A table: a first line with its columns, lettered on each side as a spreadsheet does, then a line for each row,
      * its cells under its columns. A side that has not got a column shows a narrow empty place for it.
      */
-    private void addTable(Row row, int index, Map<Integer, Integer> lineOfRow, Map<Cell, Integer> moved) {
-        TableComparison table = row.table();
-        Cell.Look tableLook = look(row);
-        boolean comparable = row.left() != null && row.right() != null || row.moved();
-        add(Line.of(row.left() == null ? null : tableHeader(row, true, tableLook),
-                row.right() == null ? null : tableHeader(row, false, tableLook)), comparable, lineOfRow, moved, index);
+    private void addTable(Pairing pairing, int index, Map<Integer, Integer> lineOfPairing, Map<Cell, Integer> moved) {
+        TableComparison table = pairing.table();
+        Cell.Look tableLook = look(pairing);
+        boolean comparable = pairing.left() != null && pairing.right() != null || pairing.moved();
+        add(Line.of(pairing.left() == null ? null : tableHeader(pairing, true, tableLook),
+                pairing.right() == null ? null : tableHeader(pairing, false, tableLook)), comparable, lineOfPairing, moved, index);
         for (int r = 0; r < table.rows().size(); r++) {
             Slot slot = table.rows().get(r);
             boolean rowComparable = comparable && (slot.left() >= 0 && slot.right() >= 0 || slot.moved());
-            add(Line.of(slot.left() < 0 || row.left() == null ? null : tableRow(row, r, true),
-                    slot.right() < 0 || row.right() == null ? null : tableRow(row, r, false)), rowComparable,
-                    lineOfRow, moved, index);
+            add(Line.of(slot.left() < 0 || pairing.left() == null ? null : tableRow(pairing, r, true),
+                    slot.right() < 0 || pairing.right() == null ? null : tableRow(pairing, r, false)), rowComparable,
+                    lineOfPairing, moved, index);
         }
     }
 
-    private Cell tableHeader(Row row, boolean onLeft, Cell.Look look) {
-        TableComparison table = row.table();
+    private Cell tableHeader(Pairing pairing, boolean onLeft, Cell.Look look) {
+        TableComparison table = pairing.table();
         List<Cell> columns = new ArrayList<>();
         for (int c : shownColumns(table)) {
             Slot slot = table.columns().get(c);
@@ -250,14 +250,14 @@ final class Lines {
             columns.add(new Cell(columnLook, null, null, null,
                     TextBlock.plain(columnName(column) + said, fonts.small(), palette.faint, palette), null, null));
         }
-        Item item = onLeft ? row.left() : row.right();
-        String notes = notes(row, onLeft, List.of());
-        return new Cell(look, row, null, TextBlock.plain(location(item, true), fonts.small(), palette.faint, palette),
+        Item item = onLeft ? pairing.left() : pairing.right();
+        String notes = notes(pairing, onLeft, List.of());
+        return new Cell(look, pairing, null, TextBlock.plain(location(item, true), fonts.small(), palette.faint, palette),
                 null, columns, notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), palette.faint, palette));
     }
 
-    private Cell tableRow(Row row, int r, boolean onLeft) {
-        TableComparison table = row.table();
+    private Cell tableRow(Pairing pairing, int r, boolean onLeft) {
+        TableComparison table = pairing.table();
         Slot rowSlot = table.rows().get(r);
         Cell.Look look = look(rowSlot);
         List<Cell> columns = new ArrayList<>();
@@ -267,7 +267,7 @@ final class Lines {
                 columns.add(null);
                 continue;
             }
-            Row cell = table.cell(r, c);
+            Pairing cell = table.cell(r, c);
             if (cell == null || (onLeft ? cell.left() : cell.right()) == null) {
                 columns.add(new Cell(Cell.Look.SAME, null, null, null,
                         TextBlock.plain("", fonts.text(), palette.text, palette), null, null));   // under a merged cell
@@ -288,7 +288,7 @@ final class Lines {
         }
         String notes = String.join("  \u00B7  ", rowProperties.stream()
                 .map(d -> d.property() + ": " + (onLeft ? d.left() : d.right())).toList());
-        return new Cell(look, row, String.valueOf(number), null, null, columns,
+        return new Cell(look, pairing, String.valueOf(number), null, null, columns,
                 notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), palette.faint, palette));
     }
 
@@ -313,11 +313,11 @@ final class Lines {
         return name.toString();
     }
 
-    private static Cell.Look look(Row row) {
-        if (row.moved() && row.status() != Row.Status.SAME) {
+    private static Cell.Look look(Pairing pairing) {
+        if (pairing.moved() && pairing.status() != Pairing.Status.SAME) {
             return Cell.Look.MOVED;
         }
-        return switch (row.status()) {
+        return switch (pairing.status()) {
             case SAME -> Cell.Look.SAME;
             case MOVED -> Cell.Look.MOVED;
             case OTHERWISE -> Cell.Look.OTHERWISE;
@@ -344,17 +344,17 @@ final class Lines {
     // -----------------------------------------------------------------------------------------------------------------
     // Paragraphs
 
-    private Cell cell(Row row, boolean onLeft) {
-        return cell(row, onLeft, look(row));
+    private Cell cell(Pairing pairing, boolean onLeft) {
+        return cell(pairing, onLeft, look(pairing));
     }
 
-    private Cell cell(Row row, boolean onLeft, Cell.Look look) {
-        Item item = onLeft ? row.left() : row.right();
+    private Cell cell(Pairing pairing, boolean onLeft, Cell.Look look) {
+        Item item = onLeft ? pairing.left() : pairing.right();
         // alone: nothing on the other side compared with it (a moved row of a table is compared with its match)
-        boolean alone = (row.left() == null || row.right() == null) && !row.moved()
-                && (onLeft ? row.diff().right() : row.diff().left()).isEmpty();
-        List<Span> spans = alone ? List.of() : onLeft ? row.diff().left() : row.diff().right();
-        List<FormatSpan> formatting = onLeft ? row.diff().leftFormatting() : row.diff().rightFormatting();
+        boolean alone = (pairing.left() == null || pairing.right() == null) && !pairing.moved()
+                && (onLeft ? pairing.diff().right() : pairing.diff().left()).isEmpty();
+        List<Span> spans = alone ? List.of() : onLeft ? pairing.diff().left() : pairing.diff().right();
+        List<FormatSpan> formatting = onLeft ? pairing.diff().leftFormatting() : pairing.diff().rightFormatting();
         boolean heading = item.paragraph().headingLevel() > 0;
         boolean inTable = !item.places().isEmpty() && !item.places().getLast().textBox();
         DocumentLook laidOut = styles == null ? null : DocumentLook.of(styles[onLeft ? 0 : 1], item.paragraph());
@@ -373,8 +373,8 @@ final class Lines {
                 palette.text, palette, spans, formatting, "(empty paragraph)", laidOut).withPictures(pictures(item));
         String location = inTable ? null : location(item, false);
         TextBlock caption = location == null ? null : TextBlock.plain(location, fonts.small(), palette.faint, palette);
-        String notes = notes(row, onLeft, formatting);
-        return new Cell(look, inTable ? null : row, marker, caption, text, null,
+        String notes = notes(pairing, onLeft, formatting);
+        return new Cell(look, inTable ? null : pairing, marker, caption, text, null,
                 notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), palette.faint, palette));
     }
 
@@ -414,9 +414,9 @@ final class Lines {
     }
 
     /** What else differs, this side's values: "heading: heading 2 · formatting (dotted): bold: true → (none)". */
-    private static String notes(Row row, boolean onLeft, List<FormatSpan> formatting) {
+    private static String notes(Pairing pairing, boolean onLeft, List<FormatSpan> formatting) {
         List<String> notes = new ArrayList<>();
-        for (PropertyDifference difference : row.diff().properties()) {
+        for (PropertyDifference difference : pairing.diff().properties()) {
             notes.add(difference.property() + ": " + (onLeft ? difference.left() : difference.right()));
         }
         Set<PropertyDifference> formats = new LinkedHashSet<>();

@@ -49,7 +49,7 @@ final class TableComparer {
         int[] columnOfB = Slot.rightPartners(columns, columnsB.size());
         int[] rowOfA = Slot.leftPartners(rows, rowsA.size());
         int[] rowOfB = Slot.rightPartners(rows, rowsB.size());
-        List<List<Row>> cells = new ArrayList<>();
+        List<List<Pairing>> cells = new ArrayList<>();
         List<List<PropertyDifference>> rowProperties = new ArrayList<>();
         for (Slot row : rows) {
             int left = row.left() >= 0 ? row.left() : partner(rowOfB, row.right());
@@ -59,7 +59,7 @@ final class TableComparer {
                 differences.formatting(Aspects.Source.ROW, "row ", rowFormatting(a, left), rowFormatting(b, right));
             }
             rowProperties.add(differences.list());
-            List<Row> line = new ArrayList<>();
+            List<Pairing> line = new ArrayList<>();
             for (Slot column : columns) {
                 Unit x = cell(a, row.left(), column.left());
                 Unit y = cell(b, row.right(), column.right());
@@ -96,7 +96,7 @@ final class TableComparer {
     }
 
     /** How two tables compare: rows and columns added, removed or moved count with the table layout only. */
-    Row.Status status(TableComparison table, ParagraphDiff properties) {
+    Pairing.Status status(TableComparison table, ParagraphDiff properties) {
         return table.status(properties, options.has(Aspect.TABLE_LAYOUT));
     }
 
@@ -109,10 +109,10 @@ final class TableComparer {
             columns.add(onLeft ? new Slot(c, -1, -1) : new Slot(-1, c, -1));
         }
         List<Slot> rows = new ArrayList<>();
-        List<List<Row>> cells = new ArrayList<>();
+        List<List<Pairing>> cells = new ArrayList<>();
         for (int r = 0; r < rowCount; r++) {
             rows.add(onLeft ? new Slot(r, -1, -1) : new Slot(-1, r, -1));
-            List<Row> line = new ArrayList<>();
+            List<Pairing> line = new ArrayList<>();
             for (int c = 0; c < columnCount; c++) {
                 Unit cell = table.cells()[r][c];
                 line.add(cell == null ? null : cellAlone(cell, onLeft));
@@ -123,7 +123,7 @@ final class TableComparer {
     }
 
     /** Two cells: their text as two paragraphs, and their own properties (shading, borders…). */
-    private Row pair(Unit x, Unit y) {
+    private Pairing pair(Unit x, Unit y) {
         ParagraphDiff text = paragraphs.compare(x, y);
         Differences differences = new Differences(options);
         differences.formatting(Aspects.Source.CELL, "cell ", x.item().cell(), y.item().cell());
@@ -131,25 +131,25 @@ final class TableComparer {
         properties.addAll(differences.list());
         ParagraphDiff diff = new ParagraphDiff(text.left(), text.right(), text.leftFormatting(), text.rightFormatting(),
                 properties);
-        return new Row(x.item(), y.item(), Row.statusOf(diff), -1, diff, null);
+        return new Pairing(x.item(), y.item(), Pairing.statusOf(diff), -1, diff, null);
     }
 
     private static Formatting rowFormatting(Unit table, int row) {
         return table.item().table().rows().get(row).formatting();
     }
 
-    private static Row withoutRight(Row pair) {
-        return new Row(pair.left(), null, pair.status(), -1, pair.diff(), null);
+    private static Pairing withoutRight(Pairing pair) {
+        return new Pairing(pair.left(), null, pair.status(), -1, pair.diff(), null);
     }
 
-    private static Row withoutLeft(Row pair) {
-        return new Row(null, pair.right(), pair.status(), -1, pair.diff(), null);
+    private static Pairing withoutLeft(Pairing pair) {
+        return new Pairing(null, pair.right(), pair.status(), -1, pair.diff(), null);
     }
 
     /** A cell alone, in a row or a column the other table has not got: text added or removed, if the text counts. */
-    private Row cellAlone(Unit cell, boolean onLeft) {
-        Row.Status status = !options.text() ? Row.Status.SAME : onLeft ? Row.Status.LEFT_ONLY : Row.Status.RIGHT_ONLY;
-        return new Row(onLeft ? cell.item() : null, onLeft ? null : cell.item(), status, -1,
+    private Pairing cellAlone(Unit cell, boolean onLeft) {
+        Pairing.Status status = !options.text() ? Pairing.Status.SAME : onLeft ? Pairing.Status.LEFT_ONLY : Pairing.Status.RIGHT_ONLY;
+        return new Pairing(onLeft ? cell.item() : null, onLeft ? null : cell.item(), status, -1,
                 ParagraphDiff.alone(cell.text(), onLeft, options.text()), null);
     }
 

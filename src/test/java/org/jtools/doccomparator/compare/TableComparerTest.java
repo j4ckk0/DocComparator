@@ -29,10 +29,10 @@ class TableComparerTest {
 
     @Test
     void theSameTableIsTheSame() {
-        Row row = compare(PARTS, PARTS);
-        assertEquals(Row.Status.SAME, row.status());
-        assertEquals(3, row.table().columns().size());
-        assertEquals(4, row.table().rows().size());
+        Pairing pairing = compare(PARTS, PARTS);
+        assertEquals(Pairing.Status.SAME, pairing.status());
+        assertEquals(3, pairing.table().columns().size());
+        assertEquals(4, pairing.table().rows().size());
     }
 
     @Test
@@ -41,24 +41,24 @@ class TableComparerTest {
         TableComparison table = compare(PARTS, edited).table();
         assertEquals(List.of(new Slot(0, 0, -1), new Slot(1, 1, -1), new Slot(2, -1, -1), new Slot(-1, 2, -1),
                 new Slot(3, 3, -1)), table.rows());
-        assertEquals(Row.Status.LEFT_ONLY, table.cell(2, 0).status());
-        assertEquals(Row.Status.RIGHT_ONLY, table.cell(3, 0).status());
+        assertEquals(Pairing.Status.LEFT_ONLY, table.cell(2, 0).status());
+        assertEquals(Pairing.Status.RIGHT_ONLY, table.cell(3, 0).status());
     }
 
     @Test
     void aMovedRowIsComparedWithItsMatch() {
         String[][] moved = {PARTS[0], PARTS[2], PARTS[3], {"Suction filter element", "KP-F-111", "1"}};
-        Row row = compare(PARTS, moved);
-        TableComparison table = row.table();
+        Pairing pairing = compare(PARTS, moved);
+        TableComparison table = pairing.table();
         Slot left = table.rows().get(1);
         assertEquals(1, left.left());
         assertTrue(left.moved());
         Slot right = table.rows().get(left.counterpart());
         assertEquals(3, right.right());
-        assertEquals(Row.Status.CHANGED, table.cell(1, 1).status(), "KP-F-110 → KP-F-111");
+        assertEquals(Pairing.Status.CHANGED, table.cell(1, 1).status(), "KP-F-110 → KP-F-111");
         assertEquals("KP-F-110", table.cell(1, 1).left().text());
         assertNull(table.cell(1, 1).right(), "its match is on its own line");
-        assertEquals(Row.Status.CHANGED, row.status());
+        assertEquals(Pairing.Status.CHANGED, pairing.status());
     }
 
     @Test
@@ -68,8 +68,8 @@ class TableComparerTest {
                 {"KP-F-110", "Suction filter element", "Keldar"},
                 {"KP-J-031", "Cover seal", "Keldar"},
                 {"KP-H-046", "Hydraulic oil ISO VG 46", "Oleo"}};
-        Row row = compare(PARTS, reordered);
-        TableComparison table = row.table();
+        Pairing pairing = compare(PARTS, reordered);
+        TableComparison table = pairing.table();
         List<Slot> columns = table.columns();
         // Part and Reference swapped: one of them in place, the other moved; Quantity removed, Supplier added: not
         // the same column, though at the same place
@@ -77,7 +77,7 @@ class TableComparerTest {
         assertEquals(2, columns.stream().filter(Slot::moved).count());
         assertTrue(columns.contains(new Slot(2, -1, -1)), "Quantity");
         assertTrue(columns.contains(new Slot(-1, 2, -1)), "Supplier");
-        assertTrue(row.diff().properties().isEmpty(), "as many rows and columns: " + row.diff().properties());
+        assertTrue(pairing.diff().properties().isEmpty(), "as many rows and columns: " + pairing.diff().properties());
         assertTrue(table.layoutDiffers());
     }
 
@@ -90,8 +90,8 @@ class TableComparerTest {
                 {"Hydraulic oil ISO VG 46", "KP-H-046", "8 drums"}};
         TableComparison table = compare(PARTS, rewritten).table();
         assertEquals(List.of(new Slot(0, 0, -1), new Slot(1, 1, -1), new Slot(2, 2, -1)), table.columns());
-        assertEquals(Row.Status.SAME, table.cell(0, 2).status());
-        assertEquals(Row.Status.CHANGED, table.cell(1, 2).status(), "1 → 12");
+        assertEquals(Pairing.Status.SAME, table.cell(0, 2).status());
+        assertEquals(Pairing.Status.CHANGED, table.cell(1, 2).status(), "1 → 12");
     }
 
     @Test
@@ -104,44 +104,45 @@ class TableComparerTest {
         TableComparison table = compare(merged, plain).table();
         assertEquals(3, table.columns().size());
         assertEquals("Spare parts kit", table.cell(1, 0).left().text());
-        assertEquals(Row.Status.RIGHT_ONLY, table.cell(1, 1).status(), "covered on the left, empty on the right");
-        assertEquals(Row.Status.SAME, table.cell(1, 2).status());
+        assertEquals(Pairing.Status.RIGHT_ONLY, table.cell(1, 1).status(), "covered on the left, empty on the right");
+        assertEquals(Pairing.Status.SAME, table.cell(1, 2).status());
     }
 
     @Test
     void aTablesStyleAndPlaceCountEachWithTheirSwitch() {
         Table styled = new Table("TableGrid", new Formatting(Map.of("jc", "center")), table(PARTS).rows());
         Table plain = table(PARTS);
-        assertEquals(Row.Status.SAME, compare(styled, plain, CompareOptions.TEXT_ONLY).status());
-        Row styles = compare(styled, plain, CompareOptions.TEXT_ONLY.with(Aspect.STYLES, true));
+        assertEquals(Pairing.Status.SAME, compare(styled, plain, CompareOptions.TEXT_ONLY).status());
+        Pairing styles = compare(styled, plain, CompareOptions.TEXT_ONLY.with(Aspect.STYLES, true));
         assertEquals(List.of(new PropertyDifference(Aspect.STYLES, "table style", "TableGrid", "(none)")),
                 styles.diff().properties());
-        Row layout = compare(styled, plain, CompareOptions.TEXT_ONLY.with(Aspect.TABLE_LAYOUT, true));
+        Pairing layout = compare(styled, plain, CompareOptions.TEXT_ONLY.with(Aspect.TABLE_LAYOUT, true));
         assertEquals(List.of(new PropertyDifference(Aspect.TABLE_LAYOUT, "table alignment", "center", "(none)")),
                 layout.diff().properties(), "jc of a table places it: its layout");
     }
 
     @Test
     void aTableIsPairedWithATableOnly() {
-        List<Row> rows = DocumentComparer.compare(document(paragraph("Part Reference Quantity"), table(PARTS)),
-                document(table(PARTS)), Paragraphs.FULL).stories().getFirst().rows();
-        assertEquals(2, rows.size());
-        assertEquals(Row.Status.LEFT_ONLY, rows.get(0).status());
-        assertEquals(Row.Status.SAME, rows.get(1).status());
+        List<Pairing> pairings = DocumentComparer.compare(document(paragraph("Part Reference Quantity"), table(PARTS)),
+                document(table(PARTS)), Paragraphs.FULL).stories().getFirst().pairings();
+        assertEquals(2, pairings.size());
+        assertEquals(Pairing.Status.LEFT_ONLY, pairings.get(0).status());
+        assertEquals(Pairing.Status.SAME, pairings.get(1).status());
     }
 
-    private static Row compare(String[][] left, String[][] right) {
+    private static Pairing compare(String[][] left, String[][] right) {
         return compare(table(left), table(right));
     }
 
-    private static Row compare(Table left, Table right) {
+    private static Pairing compare(Table left, Table right) {
         return compare(left, right, Paragraphs.FULL);
     }
 
-    private static Row compare(Table left, Table right, CompareOptions options) {
-        List<Row> rows = DocumentComparer.compare(document(left), document(right), options).stories().getFirst().rows();
-        assertEquals(1, rows.size(), "the tables are paired");
-        return rows.getFirst();
+    private static Pairing compare(Table left, Table right, CompareOptions options) {
+        List<Pairing> pairings = DocumentComparer.compare(document(left), document(right), options).stories().getFirst()
+                .pairings();
+        assertEquals(1, pairings.size(), "the tables are paired");
+        return pairings.getFirst();
     }
 
     private static WordDocument document(Block... blocks) {

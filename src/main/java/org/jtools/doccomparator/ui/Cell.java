@@ -4,7 +4,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.font.FontRenderContext;
 import java.util.List;
-import org.jtools.doccomparator.compare.Row;
+import org.jtools.doccomparator.compare.Pairing;
 
 /**
  * One side of a line of the view: a paragraph and how it compares, a row of a table, or a property of the document.
@@ -29,8 +29,8 @@ final class Cell {
     static final float MISSING_COLUMN = 0.3f;
 
     final Look look;
-    /** The row of the comparison it shows (for a row of a table, the table's); null for a property of the document. */
-    final Row row;
+    /** The pairing it shows (for a row of a table, the table's); null for a property of the document. */
+    final Pairing pairing;
     /** A short sign in the margin: the heading level ("H2"), a list item's mark, a table row's number. */
     final String marker;
     final TextBlock caption;
@@ -49,9 +49,9 @@ final class Cell {
     private float[] columnWidth = new float[0];
     private int gridHeight;
 
-    Cell(Look look, Row row, String marker, TextBlock caption, TextBlock text, List<Cell> columns, TextBlock notes) {
+    Cell(Look look, Pairing pairing, String marker, TextBlock caption, TextBlock text, List<Cell> columns, TextBlock notes) {
         this.look = look;
-        this.row = row;
+        this.pairing = pairing;
         this.marker = marker;
         this.caption = caption;
         this.text = text;

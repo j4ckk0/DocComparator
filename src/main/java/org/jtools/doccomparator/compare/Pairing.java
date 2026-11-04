@@ -1,19 +1,19 @@
 package org.jtools.doccomparator.compare;
 
 /**
- * A line of the side-by-side view: a paragraph (or a table) of the left document and the one of the right it is paired
- * with, or one of them alone. A moved paragraph is shown alone where it is on each side, each row naming the other.
- * The cells of compared tables are rows too.
+ * A paragraph (or a table) of the left document and the one of the right it is paired with, or one of them alone: what
+ * a line of the side-by-side view shows. A moved paragraph has a pairing where it is on each side, each naming the
+ * other. The cells of compared tables are pairings too.
  *
  * @param left        the left paragraph, null for none
  * @param right       the right paragraph, null for none
- * @param counterpart for a moved paragraph, the row holding its match; -1 otherwise
+ * @param counterpart for a moved paragraph, the pairing holding its match; -1 otherwise
  * @param diff        how the paragraph differs from its match; for one alone, its whole text only on its side; for a
  *                    table, its own properties only
  * @param table       for a table, how it compares with its match, row by row and column by column (or how it is laid
  *                    out, alone); null for a paragraph
  */
-public record Row(Item left, Item right, Status status, int counterpart, ParagraphDiff diff, TableComparison table) {
+public record Pairing(Item left, Item right, Status status, int counterpart, ParagraphDiff diff, TableComparison table) {
 
     public enum Status {
         /** The same, as the options compare it. */
@@ -34,7 +34,7 @@ public record Row(Item left, Item right, Status status, int counterpart, Paragra
         return counterpart >= 0;
     }
 
-    /** Whether the row shows a difference: one to go to from the previous or the next. */
+    /** Whether the pairing shows a difference: one to go to from the previous or the next. */
     public boolean differs() {
         return status != Status.SAME;
     }

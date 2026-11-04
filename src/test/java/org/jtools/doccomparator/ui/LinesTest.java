@@ -141,7 +141,7 @@ class LinesTest {
             for (Cell cell : new Cell[] {line.left, line.right}) {
                 if (cell != null && cell.text != null) {
                     assertNull(cell.link(), "no move said: " + cell.text.text());
-                    assertTrue(cell.row == null || (cell.row.left() == null ? List.<Span>of() : cell.row.diff().left())
+                    assertTrue(cell.pairing == null || (cell.pairing.left() == null ? List.<Span>of() : cell.pairing.diff().left())
                             .stream().noneMatch(Span::differs), cell.text.text());
                 }
             }
