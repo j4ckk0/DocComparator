@@ -31,8 +31,16 @@ jobs:
       - name: Deploy the externals (JDK, Maven, the JREs bundled)
         run: scripts/setup.sh
 
+      - name: A display for the run that makes the Linux AOT cache
+        run: command -v xvfb-run || { sudo apt-get update -q && sudo apt-get install -y -q xvfb; }
+
       - name: Build and test, then package
         run: scripts/package.sh
+
+      - name: Say so should the Linux archive lack its AOT cache (it still works, starting slower)
+        run: |
+          tar tzf "releases/doccomparator-${GITHUB_REF_NAME#v}-linux.tar.gz" | grep -q '/doccomparator.aot$' \
+            || echo "::warning::the Linux archive goes without its AOT cache: see the package step's log"
 
       - name: Release notes
         run: scripts/release.sh --body "${GITHUB_REF_NAME#v}" > body.md && cat body.md

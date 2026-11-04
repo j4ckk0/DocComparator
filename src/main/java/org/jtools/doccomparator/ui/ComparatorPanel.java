@@ -370,6 +370,11 @@ public final class ComparatorPanel extends JPanel {
         return (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);
     }
 
+    /** Whether a comparison is shown: both documents read and compared. */
+    public boolean compared() {
+        return comparison != null;
+    }
+
     /** Shows a comparison, keeping the place the view was at. */
     public void show(Comparison result) {
         comparison = result;

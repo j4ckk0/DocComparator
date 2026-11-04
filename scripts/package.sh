@@ -27,6 +27,50 @@ for archive in releases/doccomparator-*-windows.zip releases/doccomparator-*-lin
   echo "== $archive removed (previous release)"
 done
 
+# Java's AOT cache in the Linux distribution, doccomparator.aot, for a faster start: made by running the program once,
+# as it ships (its launcher, its JRE, its flags), on the two sample procedures, then packed with it and checked as
+# unpacked elsewhere. With no display, xvfb-run gives one. Should that fail, the archive goes without the cache: the
+# program starts slower, nothing more. The Windows distribution has none: its cache would have to be made on Windows.
+aot_cache() {   # the Linux archive
+  local archive=$1 top=doccomparator-$version train=target/aot-training check=target/aot-check
+  local run=()
+  if [ -z "${DISPLAY:-}" ]; then
+    if ! command -v xvfb-run >/dev/null; then
+      echo "== WARNING: no display and no xvfb-run: $archive goes without its AOT cache" >&2
+      return 0
+    fi
+    run=(xvfb-run -a)
+  fi
+  rm -rf "${train:?}" "${check:?}"
+  mkdir -p "$train" "$check"
+  tar -xzf "$archive" -C "$train"
+  local dist=$PWD/$train/$top
+  if ! JAVA_TOOL_OPTIONS="-XX:AOTCacheOutput=$dist/doccomparator.aot -D$training=true" timeout 300 \
+      ${run[@]+"${run[@]}"} "$dist/doccomparator.sh" \
+      "$PWD/samples/procedure-revA.docx" "$PWD/samples/procedure-revB.docx" \
+      > "$train.log" 2>&1 || [ ! -s "$dist/doccomparator.aot" ]; then
+    tail -5 "$train.log" >&2
+    echo "== WARNING: the training run failed ($train.log): $archive goes without its AOT cache" >&2
+    return 0
+  fi
+  tar -czf "$archive.part" -C "$train" "$top"
+  # unpacked under another name, the cache must be used: AOTMode=on fails rather than pass it over
+  tar -xzf "$archive.part" -C "$check"
+  mv "$check/$top" "$check/moved"
+  if ! timeout 120 ${run[@]+"${run[@]}"} "$check/moved/jre/bin/java" -XX:-UsePerfData -XX:+UseCompactObjectHeaders \
+      -XX:AOTMode=on -XX:AOTCache="$check/moved/doccomparator.aot" -D$training=true \
+      -jar "$check/moved/doccomparator.jar" \
+      > "$check.log" 2>&1; then
+    rm -f "$archive.part"
+    tail -5 "$check.log" >&2
+    echo "== WARNING: the AOT cache is not used once unpacked ($check.log): $archive goes without it" >&2
+    return 0
+  fi
+  mv -f "$archive.part" "$archive"
+  echo "== $archive: AOT cache added ($(du -h "$dist/doccomparator.aot" | cut -f1))"
+}
+training=doccomparator.training   # Launcher.TRAINING
+
 # What each archive must carry: a distribution runs with nothing installed. The entries go to grep whole, never
 # through a pipe it may leave early: under pipefail the writer left behind would fail the check.
 check() {   # archive, its entries, what it must hold
@@ -38,6 +82,7 @@ check() {   # archive, its entries, what it must hold
 }
 windows=releases/doccomparator-$version-windows.zip
 linux=releases/doccomparator-$version-linux.tar.gz
+aot_cache "$linux"
 check "$windows" "$(unzip -Z1 "$windows")" doccomparator.jar DocComparator.exe doccomparator.bat README.md LICENSE NOTICE licenses/FlatLaf-LICENSE.txt jre/bin/java.exe
 check "$linux" "$(tar tzf "$linux")" doccomparator.jar doccomparator.sh README.md LICENSE NOTICE licenses/FlatLaf-LICENSE.txt jre/bin/java
 echo "== releases/ checked: $windows, $linux"

@@ -392,6 +392,13 @@ installing where they are unpacked:
 Both are built from either system, and hold the program's `LICENSE` and `NOTICE`, and, in `licenses/`, the licence
 of FlatLaf, whose classes `doccomparator.jar` holds. Previous versions' archives are removed from `releases/` once the new one is built.
 
+The Linux archive also carries `doccomparator.aot`, Java's AOT cache of the program: the classes it loads, already
+read and linked, so that its window opens sooner (here, in 0.35 s instead of 0.65 s). `scripts/package.sh` makes it by running the
+program once, as it ships, on the two sample procedures (it needs a display, or `xvfb-run`), then checks that the cache
+is used once the archive is unpacked elsewhere; should either fail, the archive goes without it, with a warning. The
+cache is only read, and `doccomparator.sh` passes it over silently should it not match the jar or the JRE. The Windows
+archive has none: its cache would have to be made on Windows.
+
 ## Publishing
 
 The licence, how the program reaches Maven Central (`org.jtools:doccomparator`), and how a version becomes a release on GitHub (a pushed tag `vX.Y`): [PUBLISHING.md](PUBLISHING.md); what each version brought: [CHANGELOG.md](CHANGELOG.md).

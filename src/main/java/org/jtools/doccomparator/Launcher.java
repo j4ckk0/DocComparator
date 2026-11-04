@@ -23,6 +23,7 @@ package org.jtools.doccomparator;
 import java.nio.file.Path;
 import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.i18n.I18nLanguage;
 
@@ -32,6 +33,15 @@ import org.jtools.doccomparator.i18n.I18nLanguage;
  * {@code doccomparator old.docx new.docx}.
  */
 public final class Launcher {
+
+    /**
+     * Set by scripts/package.sh to make the AOT cache: the program shows its window, compares the two documents given,
+     * then exits, for Java to record what it loaded.
+     */
+    static final String TRAINING = "doccomparator.training";
+
+    /** How long the training run waits for its comparison before it gives up, failing. */
+    private static final int TRAINING_LIMIT_MS = 120_000;
 
     private Launcher() {
     }
@@ -47,7 +57,27 @@ public final class Launcher {
             if (args.length == 2) {
                 window.open(Path.of(args[0]), Path.of(args[1]));
             }
+            if (Boolean.getBoolean(TRAINING)) {
+                exitOnceShown(window, args.length == 2);
+            }
         });
+    }
+
+    /** Exits once the window is shown and, with documents, their comparison too, given a moment to be drawn. */
+    private static void exitOnceShown(MainWindow window, boolean comparing) {
+        long limit = System.currentTimeMillis() + TRAINING_LIMIT_MS;
+        boolean[] ready = {false};
+        new Timer(100, tick -> {
+            if (ready[0]) {
+                window.dispose();
+                System.exit(0);
+            }
+            ready[0] = window.isShowing() && (!comparing || window.compared());
+            if (System.currentTimeMillis() > limit) {
+                System.err.println("training: nothing compared after " + TRAINING_LIMIT_MS / 1000 + " s");
+                System.exit(1);
+            }
+        }).start();
     }
 
 }
