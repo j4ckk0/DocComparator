@@ -167,6 +167,10 @@
                     <requiresJdk>false</requiresJdk>
                     <requires64Bit>true</requires64Bit>
                     <minVersion>21</minVersion>
+                    <opts>
+                      <!-- the JVM's performance counters in memory, not in a file of %TEMP% -->
+                      <opt>-XX:-UsePerfData</opt>
+                    </opts>
                   </jre>
                   <versionInfo>
                     <fileVersion>${windowsVersion}</fileVersion>

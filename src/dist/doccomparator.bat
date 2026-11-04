@@ -1,4 +1,6 @@
 @echo off
-rem Run DocComparator with the bundled JRE, in a console (its messages). Arguments are passed to the program.
-rem DocComparator.exe starts the same program without a console.
-"%~dp0jre\bin\java.exe" -jar "%~dp0doccomparator.jar" %*
+rem Starts DocComparator with the bundled JRE, without a console. Arguments are passed to the program.
+rem It runs javaw.exe, signed by the Eclipse Foundation: no executable of ours, unsigned, that a security policy
+rem might refuse (DocComparator.exe does the same, and is not signed).
+rem -XX:-UsePerfData: the JVM's performance counters stay in memory, not in a file of %TEMP%.
+start "" "%~dp0jre\bin\javaw.exe" -XX:-UsePerfData -jar "%~dp0doccomparator.jar" %*

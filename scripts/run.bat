@@ -40,5 +40,5 @@ if "%NEED_BUILD%"=="1" (
   call mvn -q clean package || exit /b 1
 )
 
-java -jar "%JAR%" %ARGS%
+java -XX:-UsePerfData -jar "%JAR%" %ARGS%
 exit /b %errorlevel%
