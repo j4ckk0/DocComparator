@@ -20,7 +20,7 @@ import org.jtools.doccomparator.document.Table;
  * </ol>
  * Cells are placed on the table's grid (TableGrid): a merged cell where it starts. The tables', rows' and cells' own
  * properties are compared as the options say: their widths and heights with the table layout, their shading, borders
- * and the like with the cell formatting.
+ * and the like with the cells (Cells).
  */
 final class TableComparer {
 

@@ -229,12 +229,12 @@ headers and footers: the content; the layout is there to switch on when it matte
 | Characters | the formatting set on the text: bold, italic, underline, font, size, colour, highlight… |
 | Indentation, Spacing, Alignment | paragraphs' indents, space before and after, line spacing, alignment — as they apply, through the paragraph's style and those it is based on |
 | Paragraphs | the rest of a paragraph's own formatting: borders, shading, tabs, keep with next… |
-| Cell formatting | cells' and tables' shading, borders, margins, vertical alignment; header rows, rows kept on one page |
+| Cells | cells' and tables' shading, borders, margins, vertical alignment; header rows, rows kept on one page |
 | Template | the template attached, the one named |
 | Headers and footers | their text, as a part of its own |
 
 Which switch a property is on depends on where it is set: `jc` aligns a paragraph's text (Alignment) but places a table
-(Table layout); `shd` shades text (Characters), a paragraph (Paragraphs) or a cell (Cell formatting) — `Aspects` says
+(Table layout); `shd` shades text (Characters), a paragraph (Paragraphs) or a cell (Cells) — `Aspects` says
 which. A property and its attributes are one difference, named as a reader says it: "cell shading: clear, color auto,
 fill D9E2F3". Word's `cnfStyle`, the table style's banding flags it writes on rows, cells and paragraphs, is never
 compared: Word rewrites it on every row below one inserted.
