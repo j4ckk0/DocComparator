@@ -36,8 +36,8 @@ final class ComparisonView extends JComponent implements Scrollable {
     static final String LINES = "lines";
 
     private static final int GUTTER = 26;
-    /** The width of the band down each edge of the side chosen. */
-    private static final int CHOSEN_EDGE = 3;
+    /** The width of the band down the outer edge of the side chosen. */
+    private static final int CHOSEN_EDGE = 4;
     private static final int MARGIN = 28;
     private static final int RIGHT_PADDING = 8;
     private static final int TITLE_HEIGHT = 26;
@@ -320,16 +320,12 @@ final class ComparisonView extends JComponent implements Scrollable {
     }
 
     /**
-     * The side text pasted goes to, a band down each of its edges: drawn the whole height of the view, it scrolls with
-     * the lines.
+     * The side text pasted goes to, a band down its outer edge — the gutter between the sides left to both: drawn the
+     * whole height of the view, it scrolls with the lines.
      */
     private void paintChosenSide(Graphics2D g, Rectangle clip) {
-        int column = columnWidth(getWidth());
-        int left = leftChosen ? 0 : column + GUTTER;
-        int right = leftChosen ? column : getWidth();
         g.setColor(palette.chosenSide);
-        g.fillRect(left, clip.y, CHOSEN_EDGE, clip.height);
-        g.fillRect(right - CHOSEN_EDGE, clip.y, CHOSEN_EDGE, clip.height);
+        g.fillRect(leftChosen ? 0 : getWidth() - CHOSEN_EDGE, clip.y, CHOSEN_EDGE, clip.height);
     }
 
     /**
