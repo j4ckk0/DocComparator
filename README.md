@@ -114,8 +114,11 @@ paragraph beside its match, as high as the taller.
   and after, line spacing; a paragraph's and a cell's shading — at a scale that fits a page's width in each side. A
   font the machine has not got is shown in one made to take its place (Carlito for Calibri, Liberation for Arial and
   Times New Roman, on Linux), else in Java's own. Paragraphs stay side by side, paired, their differences marked over
-  their formatting. List items show their numbers and bullets at the start of their line, the text at the list's indent. Not shown: the
-  page breaks, pictures.
+  their formatting. List items show their numbers and bullets at the start of their line, the text at the list's indent. Page and
+  section breaks the document states are drawn across the page where they are: a page break in the text, a paragraph's
+  "page break before", a section's end — one of an empty paragraph, which is left out with the blanks, above the
+  paragraph after it. The program does not lay out pages: where Word's pages end of themselves is not shown. Not shown
+  either: pictures.
 - **Colours**, after Beyond Compare's: red, the text differs, the very words or letters marked darker; purple, on one
   side only; teal, moved; amber, the same text but its structure or style differs. A red bar marks where the other side has text this one has not; a dotted line, text formatted otherwise (its
   tooltip says how). A sign between the sides says the same at a glance.

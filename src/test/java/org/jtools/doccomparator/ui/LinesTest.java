@@ -165,6 +165,21 @@ class LinesTest {
         assertNotNull(indented.text, "laid out");
     }
 
+    /** Page breaks in the document view: a paragraph's own, and one of an empty paragraph carried over to the next. */
+    @Test
+    void theDocumentViewShowsPageBreaks() throws IOException {
+        List<Line> document = Lines.of(compare("procedure-revB.docx"), false, false, true, FONTS);
+        assertEquals(DocumentLook.PAGE_BREAK,
+                document.get(lineWith(document, "Safety", true)).left.text.breakBefore(), "page break before");
+        assertEquals(DocumentLook.PAGE_BREAK,
+                document.get(lineWith(document, "Records", true)).left.text.breakBefore(), "an empty paragraph's");
+        assertEquals(DocumentLook.PAGE_BREAK,
+                document.get(lineWith(document, "Records", false)).right.text.breakBefore());
+        assertNull(document.get(lineWith(document, "Purpose", true)).left.text.breakBefore());
+        List<Line> diff = Lines.of(compare("procedure-revB.docx"), false, FONTS);
+        assertNull(diff.get(lineWith(diff, "Records", true)).left.text.breakBefore(), "the diff view has none");
+    }
+
     /** List items: in the document view, their number in their text, where Word puts it; in the diff view, in the margin. */
     @Test
     void theDocumentViewShowsListNumbersInTheText() throws IOException {

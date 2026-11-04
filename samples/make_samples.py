@@ -2,7 +2,8 @@
 """
 Writes the sample documents of samples/, to try DocComparator on (README, "Samples"):
 
-  procedure-revA.docx      the reference: a maintenance procedure, revision A
+  procedure-revA.docx      the reference: a maintenance procedure, revision A (Safety on a new page, a page break
+                           before Records)
   procedure-revB.docx      its next version: paragraphs added and removed, sentences changed, two sections swapped,
                            a table row added, formatting changed, a paragraph indented, the table's header shaded
                            and taller, a cell's border, extra blanks, tracked changes, another footer and template
@@ -331,7 +332,7 @@ def procedure_revision_a():
         paragraph("Repairs of the motor and of the electrical cabinet are not covered by this document; they are "
                   "described in procedure KP-MP-020."),
 
-        h1("Safety"),
+        paragraph("Safety", style=ids["Heading1"], extra="<w:pageBreakBefore/>"),               # a new page
         paragraph("Before any operation, the pump must be stopped, isolated and locked out with a personal padlock."),
         paragraph("The residual pressure in the circuit can reach 12 bar for several minutes after the stop",
                   footnote_reference(1, ids["FootnoteReference"]),
@@ -351,6 +352,7 @@ def procedure_revision_a():
                ["Cover seal", "KP-J-031", "1"],
                ["Hydraulic oil ISO VG 46", "KP-H-046", "2 litres"]], ids["TableGrid"]),
 
+        paragraph('<w:r><w:br w:type="page"/></w:r>'),                                          # a page break, alone
         h1("Records"),
         paragraph("Record the date, the outlet pressure and your name in the maintenance log kept next to the bench. "
                   "A pressure below 180 bar ", run("must", b=True),
@@ -413,7 +415,7 @@ def procedure_revision_b():
               header_fill="D9E2F3", header_height=400,                                             # header shaded, taller
               borders={(4, 2): 12}),                                                               # a red border under 3 litres
 
-        h1("Safety"),
+        paragraph("Safety", style=ids["Heading1"], extra="<w:pageBreakBefore/>"),               # a new page
         paragraph("Before any operation, the pump must be stopped, isolated and locked out with a personal padlock."),
         paragraph("The residual pressure in the circuit can reach 15 bar for several minutes after the stop",
                   footnote_reference(1, ids["FootnoteReference"]),
@@ -421,6 +423,7 @@ def procedure_revision_b():
         paragraph(run("Wear safety glasses and oil-resistant gloves at all times.", i=True)),      # now in italics
         paragraph(),                                                                               # an empty paragraph
 
+        paragraph('<w:r><w:br w:type="page"/></w:r>'),                                          # a page break, alone
         h2("Records"),                                                                             # heading 1 → 2
         paragraph("Record the date, the outlet pressure and your name in the maintenance log kept ",
                   deleted("next to the bench"), inserted("in the workshop office"),                # tracked replacement

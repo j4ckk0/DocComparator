@@ -1,7 +1,9 @@
 package org.jtools.doccomparator.ui;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.Shape;
@@ -11,6 +13,7 @@ import java.awt.font.TextAttribute;
 import java.awt.font.TextHitInfo;
 import java.awt.font.TextLayout;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.text.AttributedString;
 import java.util.ArrayList;
@@ -50,6 +53,15 @@ final class TextBlock {
     private int height;
     private float shadingLeft;
     private float shadingRight;
+    /** The breaks across the block (the document view): where, from its top, and their names. */
+    private record Break(float y, String label) {
+    }
+
+    /** The height a break takes. */
+    private static final float BREAK_HEIGHT = 22;
+
+    private final List<Break> breaks = new ArrayList<>();
+    private float blockWidth;
     /** A list item's number, laid out, and where it starts across; null for none. */
     private TextLayout number;
     private float numberX;
@@ -87,7 +99,7 @@ final class TextBlock {
         tops.clear();
         boolean laidOut = look != null && !text.isEmpty();
         float pixels = PIXELS_PER_POINT * scale;
-        String shown = text.isEmpty() ? placeholder : shown(text);
+        String shown = text.isEmpty() ? placeholder : laidOut ? asWordShowsIt(text) : shown(text);
         AttributedString attributed = new AttributedString(shown);
         attributed.addAttribute(TextAttribute.FONT, text.isEmpty() ? font.deriveFont(Font.ITALIC) : font);
         if (laidOut) {
@@ -115,6 +127,9 @@ final class TextBlock {
         float after = laidOut ? look.after() * pixels : 0;
         shadingLeft = left;
         shadingRight = width - right;
+        blockWidth = width;
+        breaks.clear();
+        float breakHeight = BREAK_HEIGHT * Math.max(0.8f, scale);
 
         // a list item's number where its first line starts, the text after it at the indent — Word's tab — or further
         number = null;
@@ -127,20 +142,25 @@ final class TextBlock {
         }
 
         LineBreakMeasurer measurer = new LineBreakMeasurer(attributed.getIterator(), context);
-        float top = before;
+        float top = 0;
+        if (laidOut && look.breakBefore() != null) {
+            breaks.add(new Break(top + breakHeight / 2, look.breakBefore()));
+            top += breakHeight;
+        }
+        top += before;
         boolean firstOne = true;
         while (measurer.getPosition() < shown.length()) {
             int start = measurer.getPosition();
             float lineLeft = firstOne && number != null ? textAfterNumber
                     : Math.max(0, left + (firstOne ? firstLine : 0));
             float available = Math.max(20, width - lineLeft - right);
-            int end = lineEnd(shown, start);
+            int end = text.isEmpty() ? shown.length() : lineEnd(text, start);
             TextLayout layout = measurer.nextLayout(available, end, false);
             if (layout == null) {
                 break;
             }
             boolean lastOfParagraph = measurer.getPosition() >= shown.length()
-                    || shown.charAt(measurer.getPosition() - 1) == '↵';
+                    || !text.isEmpty() && isBreak(text.charAt(measurer.getPosition() - 1));
             float x = lineLeft;
             if (laidOut) {
                 switch (look.alignment()) {
@@ -160,9 +180,18 @@ final class TextBlock {
             xs.add(x);
             tops.add(top);
             top += lineHeight(layout, pixels, laidOut);
+            if (laidOut && text.charAt(measurer.getPosition() - 1) == '\f') {   // a page break ends the line
+                breaks.add(new Break(top + breakHeight / 2, DocumentLook.PAGE_BREAK));
+                top += breakHeight;
+            }
             firstOne = false;
         }
-        height = (int) Math.ceil(top + after);
+        top += after;
+        if (laidOut && look.breakAfter() != null) {
+            breaks.add(new Break(top + breakHeight / 2, look.breakAfter()));
+            top += breakHeight;
+        }
+        height = (int) Math.ceil(top);
         return height;
     }
 
@@ -197,6 +226,11 @@ final class TextBlock {
         return text;
     }
 
+    /** The break shown before the text (the document view): "Page break", "Section break"; null for none. */
+    String breakBefore() {
+        return look == null ? null : look.breakBefore();
+    }
+
     /** A list item's number, shown in the text (the document view); null for none. */
     String number() {
         return look == null ? null : look.number();
@@ -211,6 +245,9 @@ final class TextBlock {
         if (look != null && look.shading() != null && !layouts.isEmpty()) {
             g.setColor(look.shading());
             g.fill(new Rectangle2D.Float(x + shadingLeft, y, shadingRight - shadingLeft, height));
+        }
+        for (Break pageBreak : breaks) {
+            paintBreak(g, x, y + pageBreak.y(), pageBreak.label());
         }
         for (int i = 0; i < layouts.size(); i++) {
             TextLayout layout = layouts.get(i);
@@ -312,6 +349,39 @@ final class TextBlock {
         return List.of();
     }
 
+    /** A break across the page, dashed, its name in the middle: "Page break", "Section break". */
+    private void paintBreak(Graphics2D g, float x, float y, String label) {
+        Graphics2D dashed = (Graphics2D) g.create();
+        dashed.setColor(Palette.FAINT);
+        dashed.setStroke(new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1, new float[] {6, 4}, 0));
+        dashed.draw(new Line2D.Float(x, y, x + blockWidth, y));
+        dashed.setFont(font.deriveFont(Font.PLAIN, Math.max(9, font.getSize2D() - 2)));
+        FontMetrics metrics = dashed.getFontMetrics();
+        int width = metrics.stringWidth(label) + 12;
+        float left = x + (blockWidth - width) / 2;
+        dashed.setColor(Palette.BACKGROUND);
+        dashed.fill(new Rectangle2D.Float(left, y - metrics.getHeight() / 2f, width, metrics.getHeight()));
+        dashed.setColor(Palette.FAINT);
+        dashed.drawString(label, left + 6, y + metrics.getAscent() / 2f - 1);
+        dashed.dispose();
+    }
+
+    /**
+     * The text as Word shows it (the document view): a tab as a wide space, a break as a space ending its line — in
+     * their places, so that the offsets stay the same.
+     */
+    static String asWordShowsIt(String text) {
+        char[] chars = text.toCharArray();
+        for (int i = 0; i < chars.length; i++) {
+            chars[i] = chars[i] == '\t' ? '\u2003' : isBreak(chars[i]) ? ' ' : chars[i];
+        }
+        return new String(chars);
+    }
+
+    private static boolean isBreak(char c) {
+        return c == '\n' || c == '\r' || c == '\u000B' || c == '\f';
+    }
+
     /** The text as shown: a sign for each tab and break, in its place, so that the offsets stay the same. */
     static String shown(String text) {
         char[] chars = text.toCharArray();
@@ -325,9 +395,13 @@ final class TextBlock {
         return new String(chars);
     }
 
-    /** Where the line starting there must end at the latest: after the next break. */
-    private static int lineEnd(String shown, int start) {
-        int arrow = shown.indexOf('↵', start);
-        return arrow < 0 ? shown.length() : arrow + 1;
+    /** Where the line starting there must end at the latest: after the next break of the text. */
+    private static int lineEnd(String text, int start) {
+        for (int i = start; i < text.length(); i++) {
+            if (isBreak(text.charAt(i))) {
+                return i + 1;
+            }
+        }
+        return text.length();
     }
 }

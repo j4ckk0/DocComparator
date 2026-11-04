@@ -15,7 +15,11 @@ import org.jtools.doccomparator.document.StyleSheet;
  * number. Lengths in points.
  */
 record DocumentLook(List<StyledRun> runs, Alignment alignment, float left, float right, float firstLine, float before,
-                    float after, float lineFactor, float exactLine, boolean atLeast, Color shading, String number) {
+                    float after, float lineFactor, float exactLine, boolean atLeast, Color shading, String number,
+                    String breakBefore, String breakAfter) {
+
+    static final String PAGE_BREAK = "Page break";
+    static final String SECTION_BREAK = "Section break";
 
     enum Alignment {
         LEFT, CENTER, RIGHT, JUSTIFIED
@@ -82,13 +86,20 @@ record DocumentLook(List<StyledRun> runs, Alignment alignment, float left, float
             offset += run.text().length();
         }
         return new DocumentLook(runs, alignment, left, right, firstLine, points(p.get("spacing.before")),
-                points(p.get("spacing.after")), lineFactor, exactLine, atLeast, color(p.get("shd.fill")), null);
+                points(p.get("spacing.after")), lineFactor, exactLine, atLeast, color(p.get("shd.fill")), null,
+                on(p, "pageBreakBefore") ? PAGE_BREAK : null, paragraph.endsSection() ? SECTION_BREAK : null);
     }
 
     /** The same, its list item's number ("3.", "•") at the start of its first line. */
     DocumentLook withNumber(String text) {
         return new DocumentLook(runs, alignment, left, right, firstLine, before, after, lineFactor, exactLine, atLeast,
-                shading, text);
+                shading, text, breakBefore, breakAfter);
+    }
+
+    /** The same, a break before it: one of an empty paragraph not shown (blanks left out), carried over. */
+    DocumentLook withBreakBefore(String label) {
+        return new DocumentLook(runs, alignment, left, right, firstLine, before, after, lineFactor, exactLine, atLeast,
+                shading, number, breakBefore != null ? breakBefore : label, breakAfter);
     }
 
     /** A cell's shading, if it has one. */
