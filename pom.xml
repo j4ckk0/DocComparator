@@ -303,6 +303,8 @@
                     <opts>
                       <!-- the JVM's performance counters in memory, not in a file of %TEMP% -->
                       <opt>-XX:-UsePerfData</opt>
+                      <!-- smaller objects, less memory for a document -->
+                      <opt>-XX:+UseCompactObjectHeaders</opt>
                     </opts>
                   </jre>
                   <versionInfo>

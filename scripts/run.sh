@@ -40,4 +40,4 @@ cp "$JAR" "$RUN_JAR.$$"
 mv -f "$RUN_JAR.$$" "$RUN_JAR"
 
 release_build_lock
-exec java -XX:-UsePerfData -jar "$RUN_JAR" ${args[@]+"${args[@]}"}
+exec java -XX:-UsePerfData -XX:+UseCompactObjectHeaders -jar "$RUN_JAR" ${args[@]+"${args[@]}"}

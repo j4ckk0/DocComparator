@@ -122,6 +122,8 @@ What stays outside these checks:
 
   The JVM's performance counters are kept in memory (`-XX:-UsePerfData` in every launcher), not in a file of `/tmp` or
   `%TEMP%`.
+  Every launcher also asks for Java 25's compact object headers (`-XX:+UseCompactObjectHeaders`): smaller objects,
+  about a tenth less memory for a comparison.
 - **What runs on Windows.** `doccomparator.bat` starts the program with the bundled `javaw.exe`, signed by the Eclipse
   Foundation, without a console: no executable of ours, unsigned, that a security policy (AppLocker, an antivirus'
   heuristics) might refuse. `DocComparator.exe`, the same without a script, is not signed; signing it takes a
