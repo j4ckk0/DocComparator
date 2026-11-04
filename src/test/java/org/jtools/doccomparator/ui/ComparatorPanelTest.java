@@ -47,6 +47,7 @@ import java.util.List;
 import javax.swing.AbstractButton;
 import javax.swing.Action;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -269,6 +270,46 @@ class ComparatorPanelTest {
             assertFalse(shown(previous, panel), "collapsed from the menu");
             assertEquals(List.of(false, false), told, "told of the choices made, not of the setting");
         });
+    }
+
+    /**
+     * Dark, in the ribbon and in the View menu: one choice, each kept in step with the other and the listener told;
+     * shown from outside (the look of the time), no one told.
+     */
+    @Test
+    void darkIsOneChoiceInTheRibbonAndTheMenu() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            ComparatorPanel panel = new ComparatorPanel();
+            List<Boolean> told = new ArrayList<>();
+            panel.onDarkMode(told::add);
+            JMenuItem item = Arrays.stream(panel.viewMenu().getMenuComponents())
+                    .filter(c -> c instanceof JMenuItem i && "Dark mode".equals(i.getText())).map(JMenuItem.class::cast)
+                    .findFirst().orElseThrow();
+            AbstractButton box = checkBox(panel, "Dark");
+
+            panel.showDarkMode(true);
+            assertTrue(box.isSelected() && item.isSelected(), "both ticked by the look");
+            item.doClick();
+            assertFalse(box.isSelected(), "the box follows the menu");
+            box.doClick();
+            assertTrue(item.isSelected(), "the menu follows the box");
+            assertEquals(List.of(false, true), told, "told of the choices made, not of the look shown");
+        });
+    }
+
+    private static AbstractButton checkBox(Container container, String text) {
+        for (Component component : container.getComponents()) {
+            if (component instanceof JCheckBox box && text.equals(box.getText())) {
+                return box;
+            }
+            if (component instanceof Container inner) {
+                AbstractButton found = checkBox(inner, text);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     /** Whether a component would be seen in this container: it and every container between them visible. */

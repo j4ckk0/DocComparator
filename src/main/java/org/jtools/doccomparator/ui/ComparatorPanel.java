@@ -195,12 +195,12 @@ public final class ComparatorPanel extends JPanel {
         listener.accept(documentNames());
     }
 
-    /** Told when the Dark box of the ribbon is ticked or not: the window changes its look. */
+    /** Told when Dark is ticked or not, in the ribbon or the View menu: the window changes its look. */
     public void onDarkMode(Consumer<Boolean> listener) {
         controls.onDarkMode(listener);
     }
 
-    /** Shows whether the look is dark in the ribbon's Dark box, telling no one. */
+    /** Shows whether the look is dark, in the ribbon's Dark box and the View menu's Dark item, telling no one. */
     public void showDarkMode(boolean dark) {
         controls.showDarkMode(dark);
     }
@@ -223,7 +223,7 @@ public final class ComparatorPanel extends JPanel {
         return List.of(previous, next);
     }
 
-    /** The views, as a menu of the window. */
+    /** The views, the ribbon and the dark look, as a menu of the window. */
     public JMenu viewMenu() {
         return controls.viewMenu();
     }

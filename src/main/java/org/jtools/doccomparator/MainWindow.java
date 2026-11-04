@@ -30,7 +30,6 @@ import javax.swing.Action;
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
 import javax.swing.JFrame;
-import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -54,7 +53,6 @@ final class MainWindow extends JFrame {
     private final Settings settings;
     /** The menus' own labels; the panel's are its own. */
     private final I18nLabels labels = new I18nLabels();
-    private final JCheckBoxMenuItem darkMode = new JCheckBoxMenuItem();
     private final I18nLanguageBox language = new I18nLanguageBox(labels);
     private final ButtonGroup looks = new ButtonGroup();
     private final List<JRadioButtonMenuItem> lookItems = new ArrayList<>();
@@ -135,14 +133,12 @@ final class MainWindow extends JFrame {
         return UIManager.getLookAndFeel().getClass().getName();
     }
 
-    /** Shows the window in this look, keeps it for the next time, and says so in the menu and the ribbon. */
+    /** Shows the window in this look, keeps it for the next time, and says so in the menus and the ribbon. */
     private void applyLook(String className) {
         Looks.use(className);
         SwingUtilities.updateComponentTreeUI(this);
         settings.set(Settings.LOOK, currentLook());
-        boolean dark = Looks.isDark();
-        darkMode.setSelected(dark);
-        panel.showDarkMode(dark);
+        panel.showDarkMode(Looks.isDark());
         for (JRadioButtonMenuItem item : lookItems) {
             item.setSelected(currentLook().equals(item.getClientProperty("look")));
         }
@@ -173,12 +169,7 @@ final class MainWindow extends JFrame {
         }
         JMenuBar bar = new JMenuBar();
         bar.add(file);
-        JMenu view = panel.viewMenu();
-        view.addSeparator();
-        labels.menu(darkMode, "menu.view.dark");
-        darkMode.setSelected(Looks.isDark());
-        darkMode.addActionListener(e -> applyLook(Looks.inMode(currentLook(), darkMode.isSelected())));
-        view.add(darkMode);
+        JMenu view = panel.viewMenu();   // its Dark item the panel's, kept in step with the ribbon's box
         view.add(lookMenu());
         bar.add(view);
         bar.add(panel.compareMenu());

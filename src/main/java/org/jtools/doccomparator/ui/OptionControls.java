@@ -87,8 +87,11 @@ final class OptionControls {
     private final List<AbstractButton> viewButtons = new ArrayList<>();
     /** While the buttons are set to the options: their changes are not choices. */
     private boolean showingOptions;
-    private final JCheckBox darkBox = new JCheckBox();
+    /** Whether the look is dark, as the ribbon's Dark box and the View menu's Dark item show it. */
+    private boolean darkMode;
+    private final List<AbstractButton> darkButtons = new ArrayList<>();
     private Consumer<Boolean> darkModeListener = dark -> { };
+    /** While the Dark buttons are set to the look: their changes are not choices. */
     private boolean showingDarkMode;
     /** Whether the ribbon is open, its groups shown; collapsed, its strip says where its options are. */
     private boolean ribbonOpen = true;
@@ -125,19 +128,35 @@ final class OptionControls {
         return shown;
     }
 
-    /** Told when the Dark box of the ribbon is ticked or not: the window changes its look. */
+    /** Told when Dark is ticked or not, in the ribbon or the View menu: the window changes its look. */
     void onDarkMode(Consumer<Boolean> listener) {
         darkModeListener = listener;
     }
 
-    /** Shows whether the look is dark in the ribbon's Dark box, telling no one. */
+    /** Shows whether the look is dark, in the ribbon's Dark box and the View menu's Dark item, telling no one. */
     void showDarkMode(boolean dark) {
+        darkMode = dark;
         showingDarkMode = true;
         try {
-            darkBox.setSelected(dark);
+            for (AbstractButton button : darkButtons) {
+                button.setSelected(dark);
+            }
         } finally {
             showingDarkMode = false;
         }
+    }
+
+    /** A button choosing the dark look, kept in step with the others choosing it. */
+    private <B extends AbstractButton> B registerDark(B button) {
+        darkButtons.add(button);
+        button.setSelected(darkMode);
+        button.addItemListener(e -> {
+            if (!showingDarkMode) {
+                showDarkMode(button.isSelected());
+                darkModeListener.accept(darkMode);
+            }
+        });
+        return button;
     }
 
     /** Told when the ribbon is opened (true) or collapsed. */
@@ -189,13 +208,8 @@ final class OptionControls {
         JRadioButton document = viewButton("ribbon.view.document", "ribbon.view.document.tip", true);
         views.add(diff);
         views.add(document);
-        labels.text(darkBox, "ribbon.view.dark");
-        labels.tip(darkBox, "ribbon.view.dark.tip");
-        darkBox.addItemListener(e -> {
-            if (!showingDarkMode) {
-                darkModeListener.accept(darkBox.isSelected());
-            }
-        });
+        JCheckBox darkBox = registerDark(labels.tip(labels.text(new JCheckBox(), "ribbon.view.dark"),
+                "ribbon.view.dark.tip"));
         ribbon.add(group("ribbon.group.view", 3, diff, document, darkBox));
         ribbon.add(group("ribbon.group.text", 3, aspectBox(Aspect.TEXT), aspectBox(Aspect.BLANKS)));
         for (Map.Entry<String, List<Aspect>> layout : LAYOUT) {
@@ -330,7 +344,7 @@ final class OptionControls {
         shownChanged.accept(true);
     }
 
-    /** The views, as a menu of the window. */
+    /** The views, the ribbon and the dark look, as a menu of the window. */
     JMenu viewMenu() {
         JMenu menu = labels.menu(new JMenu(), "menu.view");
         ButtonGroup group = new ButtonGroup();
@@ -342,6 +356,8 @@ final class OptionControls {
         }
         menu.addSeparator();
         menu.add(new JCheckBoxMenuItem(ribbonAction));
+        menu.addSeparator();
+        menu.add(registerDark(labels.menu(new JCheckBoxMenuItem(), "menu.view.dark")));
         return menu;
     }
 

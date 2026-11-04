@@ -93,7 +93,7 @@ returning `"a.docx ↔ b.docx"`, empty with none). `MainWindow` composes `names 
 
 **Effort / risk:** small. Two classes, one test (`pastedTextsAreCompared` checks the title).
 
-### 4. The dark mode is the one choice not kept by `OptionControls`
+### 4. The dark mode is the one choice not kept by `OptionControls` — done
 
 **Where:**
 - `OptionControls` keeps every other choice of the View and Compare menus in step with the ribbon, through one rule
