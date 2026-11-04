@@ -33,10 +33,10 @@ import java.util.Map;
  *
  * <p>The pairs that keep the order of both documents come first: of all such sequences, the one that pairs the most
  * text, which favours a long paragraph over a short one, and the same text over a close one. Paragraphs left over may
- * still have their match elsewhere, out of order: moved, and shown as such. A moved pair needs more evidence than one in
- * order, so that short common texts ("Yes.", a "1" in a table) are not linked across the document by chance. Last,
- * between two pairs in order, paragraphs left over on both sides are paired with less evidence than at first: in
- * place, a paragraph rewritten in good part is still the one that was there.
+ * still have their match elsewhere, out of order: moved, and shown as such. A moved pair needs more evidence than one
+ * in order, so that short common texts ("Yes.", a "1" in a table) are not linked across the document by chance. Last,
+ * between two pairs in order, paragraphs left over on both sides are paired with less evidence than at first: in place,
+ * a paragraph rewritten in good part is still the one that was there.
  */
 final class Pairer {
 
@@ -275,7 +275,8 @@ final class Pairer {
     private static List<Candidate> longestChain(List<Candidate> candidates, int rightSize) {
         List<Candidate> sorted = new ArrayList<>(candidates);
         // by left, and for one left from the last right: none of them may then follow another
-        sorted.sort(Comparator.comparingInt(Candidate::left).thenComparing(Candidate::right, Comparator.reverseOrder()));
+        sorted.sort(Comparator.comparingInt(Candidate::left)
+                .thenComparing(Candidate::right, Comparator.reverseOrder()));
         double[] treeWeight = new double[rightSize + 1];
         int[] treeEnd = new int[rightSize + 1];
         Arrays.fill(treeEnd, -1);

@@ -143,7 +143,8 @@ final class TableComparer {
             }
             cells.add(line);
         }
-        return new TableComparison(columns, rows, cells, rows.stream().map(row -> List.<PropertyDifference>of()).toList());
+        return new TableComparison(columns, rows, cells,
+                rows.stream().map(row -> List.<PropertyDifference>of()).toList());
     }
 
     /** Two cells: their text as two paragraphs, and their own properties (shading, borders…). */
@@ -173,7 +174,8 @@ final class TableComparer {
 
     /** A cell alone, in a row or a column the other table has not got: text added or removed, if the text counts. */
     private Pairing cellAlone(Unit cell, boolean onLeft) {
-        Pairing.Status status = !options.text() ? Pairing.Status.SAME : onLeft ? Pairing.Status.LEFT_ONLY : Pairing.Status.RIGHT_ONLY;
+        Pairing.Status status = !options.text() ? Pairing.Status.SAME
+                : onLeft ? Pairing.Status.LEFT_ONLY : Pairing.Status.RIGHT_ONLY;
         return new Pairing(onLeft ? cell.item() : null, onLeft ? null : cell.item(), status, -1,
                 ParagraphDiff.alone(cell.text(), onLeft, options.text()), null);
     }

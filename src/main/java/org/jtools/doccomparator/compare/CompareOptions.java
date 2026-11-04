@@ -48,7 +48,8 @@ public record CompareOptions(Set<Aspect> aspects) {
     }
 
     /** The text, the headers and footers included: the content, the layout left out until asked for. */
-    public static final CompareOptions DEFAULT = new CompareOptions(EnumSet.of(Aspect.TEXT, Aspect.HEADERS_AND_FOOTERS));
+    public static final CompareOptions DEFAULT =
+            new CompareOptions(EnumSet.of(Aspect.TEXT, Aspect.HEADERS_AND_FOOTERS));
     /** The text alone, the body's and the notes'. */
     public static final CompareOptions TEXT_ONLY = new CompareOptions(EnumSet.of(Aspect.TEXT));
     /** Everything but the text and the blanks: the layout, the headers and footers included. */

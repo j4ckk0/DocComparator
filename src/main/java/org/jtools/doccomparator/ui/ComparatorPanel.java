@@ -83,7 +83,8 @@ public final class ComparatorPanel extends JPanel {
     private final Action pasteHere = action("action.pasteHere", "action.pasteHere.tip",
             KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK), () -> paste(view.chosenSide()));
     private final Action pasteLeft = action("action.pasteLeft", "action.pasteLeft.tip", null, () -> paste(Side.LEFT));
-    private final Action pasteRight = action("action.pasteRight", "action.pasteRight.tip", null, () -> paste(Side.RIGHT));
+    private final Action pasteRight = action("action.pasteRight", "action.pasteRight.tip", null,
+            () -> paste(Side.RIGHT));
     private final Action swap = action("action.swap", "action.swap.tip", null, this::swap);
     private final Action previous = action("action.previous", "action.previous.tip",
             KeyStroke.getKeyStroke(KeyEvent.VK_F7, InputEvent.SHIFT_DOWN_MASK), () -> goToDifference(false));

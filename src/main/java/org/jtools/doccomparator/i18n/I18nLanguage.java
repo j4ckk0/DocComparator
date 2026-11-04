@@ -22,7 +22,9 @@ package org.jtools.doccomparator.i18n;
 
 import java.util.Locale;
 
-/** A language the program speaks: its texts in i18n/messages_&lt;code&gt;.properties. French until another is chosen. */
+/**
+ * A language the program speaks: its texts in i18n/messages_&lt;code&gt;.properties. French until another is chosen.
+ */
 public enum I18nLanguage {
 
     FRENCH("fr"),

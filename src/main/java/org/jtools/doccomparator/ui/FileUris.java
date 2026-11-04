@@ -27,10 +27,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Files dropped from a Linux desktop arrive as a text/uri-list — "file:///home/me/My%20report.docx", one a line — rather
- * than as a list of files. Decoded here by hand: the JDK's URI classes are networking classes, which the program does
- * not use (README, "No network"). Only file URIs are kept, and of those only the ones on this machine: a file
- * URI naming another host is not a file the program may open.
+ * Files dropped from a Linux desktop arrive as a text/uri-list — "file:///home/me/My%20report.docx", one a line —
+ * rather than as a list of files. Decoded here by hand: the JDK's URI classes are networking classes, which the program
+ * does not use (README, "No network"). Only file URIs are kept, and of those only the ones on this machine: a file URI
+ * naming another host is not a file the program may open.
  */
 final class FileUris {
 

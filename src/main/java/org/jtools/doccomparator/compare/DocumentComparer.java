@@ -86,20 +86,22 @@ public final class DocumentComparer {
                 Unit unit = l.get(slot.left());
                 if (slot.moved()) {
                     Pairing pair = pair(unit, r.get(slots.get(slot.counterpart()).right()), slot.counterpart());
-                    pairings.add(new Pairing(pair.left(), null, pair.status(), pair.counterpart(), pair.diff(), pair.table()));
+                    pairings.add(new Pairing(pair.left(), null, pair.status(), pair.counterpart(), pair.diff(),
+                            pair.table()));
                 } else {
-                    pairings.add(new Pairing(unit.item(), null, alone(Pairing.Status.LEFT_ONLY), -1, ParagraphDiff.alone(
-                            unit.isTable() ? "" : unit.text(), true, options.text()),
+                    pairings.add(new Pairing(unit.item(), null, alone(Pairing.Status.LEFT_ONLY), -1,
+                            ParagraphDiff.alone(unit.isTable() ? "" : unit.text(), true, options.text()),
                             unit.isTable() ? tables.alone(unit, true) : null));
                 }
             } else {
                 Unit unit = r.get(slot.right());
                 if (slot.moved()) {
                     Pairing pair = pair(l.get(slots.get(slot.counterpart()).left()), unit, slot.counterpart());
-                    pairings.add(new Pairing(null, pair.right(), pair.status(), pair.counterpart(), pair.diff(), pair.table()));
+                    pairings.add(new Pairing(null, pair.right(), pair.status(), pair.counterpart(), pair.diff(),
+                            pair.table()));
                 } else {
-                    pairings.add(new Pairing(null, unit.item(), alone(Pairing.Status.RIGHT_ONLY), -1, ParagraphDiff.alone(
-                            unit.isTable() ? "" : unit.text(), false, options.text()),
+                    pairings.add(new Pairing(null, unit.item(), alone(Pairing.Status.RIGHT_ONLY), -1,
+                            ParagraphDiff.alone(unit.isTable() ? "" : unit.text(), false, options.text()),
                             unit.isTable() ? tables.alone(unit, false) : null));
                 }
             }
@@ -112,7 +114,9 @@ public final class DocumentComparer {
         return options.text() ? status : Pairing.Status.SAME;
     }
 
-    /** Two paragraphs, or two tables, compared; a moved pair otherwise the same is shown moved, when the text counts. */
+    /**
+     * Two paragraphs, or two tables, compared; a moved pair otherwise the same is shown moved, when the text counts.
+     */
     private Pairing pair(Unit a, Unit b, int counterpart) {
         Pairing.Status status;
         ParagraphDiff diff;

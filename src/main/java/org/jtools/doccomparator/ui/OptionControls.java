@@ -71,9 +71,10 @@ final class OptionControls {
 
     /** The kinds of layout, by group (the key of its name), in the ribbon and the Compare menu. */
     private static final List<Map.Entry<String, List<Aspect>>> LAYOUT = List.of(
-            Map.entry("ribbon.group.structure", List.of(Aspect.HEADINGS, Aspect.LISTS, Aspect.SECTIONS, Aspect.TABLE_LAYOUT)),
-            Map.entry("ribbon.group.formatting", List.of(Aspect.STYLES, Aspect.CHARACTERS, Aspect.INDENTATION, Aspect.SPACING,
-                    Aspect.ALIGNMENT, Aspect.PARAGRAPHS, Aspect.CELLS)),
+            Map.entry("ribbon.group.structure",
+                    List.of(Aspect.HEADINGS, Aspect.LISTS, Aspect.SECTIONS, Aspect.TABLE_LAYOUT)),
+            Map.entry("ribbon.group.formatting", List.of(Aspect.STYLES, Aspect.CHARACTERS, Aspect.INDENTATION,
+                    Aspect.SPACING, Aspect.ALIGNMENT, Aspect.PARAGRAPHS, Aspect.CELLS)),
             Map.entry("ribbon.group.document", List.of(Aspect.TEMPLATE, Aspect.HEADERS_AND_FOOTERS)));
     /** The client property telling which view a button chooses. */
     private static final String DOCUMENT_VIEW = "documentView";
@@ -117,7 +118,8 @@ final class OptionControls {
             }
         }, "menu.view.ribbon", null);
         ribbonAction.putValue(Action.SELECTED_KEY, true);
-        ribbonAction.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_F1, InputEvent.CTRL_DOWN_MASK));
+        ribbonAction.putValue(Action.ACCELERATOR_KEY,
+                KeyStroke.getKeyStroke(KeyEvent.VK_F1, InputEvent.CTRL_DOWN_MASK));
     }
 
     CompareOptions options() {
@@ -234,7 +236,8 @@ final class OptionControls {
         ribbon.add(Box.createHorizontalGlue());
 
         JPanel bar = new JPanel(new BorderLayout());
-        bar.setBorder(BorderFactory.createCompoundBorder(new RibbonEdge(), BorderFactory.createEmptyBorder(0, 0, 1, 0)));
+        bar.setBorder(BorderFactory.createCompoundBorder(new RibbonEdge(),
+                BorderFactory.createEmptyBorder(0, 0, 1, 0)));
         bar.add(ribbon, BorderLayout.CENTER);
         labels.text(ribbonCollapsed, "ribbon.collapsed");
         ribbonCollapsed.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
@@ -279,7 +282,9 @@ final class OptionControls {
         }
     }
 
-    /** A group of the ribbon: its items in columns of so many, top to bottom, then left to right; its name under them. */
+    /**
+     * A group of the ribbon: its items in columns of so many, top to bottom, then left to right; its name under them.
+     */
     private JPanel group(String name, int rows, JComponent... items) {
         int columns = (items.length + rows - 1) / rows;
         JPanel grid = new JPanel(new GridLayout(rows, columns, 6, 0));

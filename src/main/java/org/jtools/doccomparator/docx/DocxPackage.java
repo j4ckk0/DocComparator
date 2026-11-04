@@ -49,7 +49,9 @@ import org.jtools.doccomparator.i18n.I18n;
  */
 final class DocxPackage implements AutoCloseable {
 
-    /** The most one part may hold once unzipped: far beyond any document, short of what a crafted zip could inflate to. */
+    /**
+     * The most one part may hold once unzipped: far beyond any document, short of what a crafted zip could inflate to.
+     */
     static final long LARGEST_PART = 512L << 20;
 
     private final String fileName;
@@ -99,7 +101,8 @@ final class DocxPackage implements AutoCloseable {
                     String target = xml.plainAttribute("Target");
                     boolean external = "External".equals(xml.plainAttribute("TargetMode"));
                     if (id != null && type != null && target != null) {
-                        relationships.add(new Relationship(id, type, external ? target : resolve(part, target), external));
+                        relationships.add(new Relationship(id, type, external ? target : resolve(part, target),
+                                external));
                     }
                 }
                 xml.skip();

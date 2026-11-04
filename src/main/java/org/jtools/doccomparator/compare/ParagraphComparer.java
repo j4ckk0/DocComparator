@@ -166,7 +166,10 @@ final class ParagraphComparer {
                     position(tb, rangeB[1], b.text()), b.text().length());
         }
 
-        /** The tokens compared, [from, to): all of them, or with the blanks left out, those between the first and last that are not blanks. */
+        /**
+         * The tokens compared, [from, to): all of them, or with the blanks left out, those between the first and last
+         * that are not blanks.
+         */
         private int[] comparedRange(List<Token> tokens) {
             int from = 0;
             int to = tokens.size();
@@ -181,7 +184,10 @@ final class ParagraphComparer {
             return new int[] {from, to};
         }
 
-        /** Each token's code: its text's; a blank's, the same for all when blanks are left out; a picture's, its image's. */
+        /**
+         * Each token's code: its text's; a blank's, the same for all when blanks are left out; a picture's, its
+         * image's.
+         */
         private int[] codes(List<Token> tokens, int[] range, Unit unit) {
             int[] codes = new int[range[1] - range[0]];
             for (int i = 0; i < codes.length; i++) {
@@ -355,7 +361,8 @@ final class ParagraphComparer {
      */
     private List<PropertyDifference> properties(Paragraph a, Paragraph b, Item itemA, Item itemB) {
         Differences differences = new Differences(options);
-        differences.add(Aspect.SECTIONS, Phrase.of("compared.story"), Phrase.of("value.story." + itemA.story().kind().name()),
+        differences.add(Aspect.SECTIONS, Phrase.of("compared.story"),
+                Phrase.of("value.story." + itemA.story().kind().name()),
                 Phrase.of("value.story." + itemB.story().kind().name()));
         differences.add(Aspect.HEADINGS, Phrase.of("compared.heading"), heading(a.headingLevel()),
                 heading(b.headingLevel()));
@@ -364,8 +371,8 @@ final class ParagraphComparer {
                 itemB.placeInStructure());
         differences.add(Aspect.SECTIONS, Phrase.of("compared.section"), a.endsSection() ? ENDS_HERE : null,
                 b.endsSection() ? ENDS_HERE : null);
-        differences.add(Aspect.STYLES, Phrase.of("compared.paragraphStyle"), paragraphStyleName(leftStyles, a.styleId()),
-                paragraphStyleName(rightStyles, b.styleId()));
+        differences.add(Aspect.STYLES, Phrase.of("compared.paragraphStyle"),
+                paragraphStyleName(leftStyles, a.styleId()), paragraphStyleName(rightStyles, b.styleId()));
 
         Formatting appliedA = leftStyles.effectiveParagraph(a);
         Formatting appliedB = rightStyles.effectiveParagraph(b);

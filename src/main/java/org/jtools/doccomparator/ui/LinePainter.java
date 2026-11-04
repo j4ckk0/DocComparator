@@ -60,7 +60,8 @@ final class LinePainter {
             title.draw(g, 10, line.top + (line.height + title.getAscent() - title.getDescent()) / 2f);
         } else {
             paintLineSide(g, line.left, 0, line.top, column, line.height - 1);
-            paintLineSide(g, line.right, column + ComparisonView.GUTTER, line.top, width - column - ComparisonView.GUTTER, line.height - 1);
+            paintLineSide(g, line.right, column + ComparisonView.GUTTER, line.top,
+                    width - column - ComparisonView.GUTTER, line.height - 1);
             paintGutter(g, line, index, column, line.top, line.height - 1);
             g.setColor(palette.separator);
             g.drawLine(0, line.top + line.height - 1, width, line.top + line.height - 1);
@@ -145,7 +146,9 @@ final class LinePainter {
         hatch.dispose();
     }
 
-    /** Between the sides, a sign of how the line compares: ≠ changed, ≈ the same text otherwise, arrows for the rest. */
+    /**
+     * Between the sides, a sign of how the line compares: ≠ changed, ≈ the same text otherwise, arrows for the rest.
+     */
     private void paintGutter(Graphics2D g, Line line, int index, int x, int y, int height) {
         LineSide.Marking marking = line.marking();
         if (marking == LineSide.Marking.SAME) {
@@ -164,7 +167,8 @@ final class LinePainter {
             case CHANGED, OTHERWISE -> {
                 g.setFont(fonts.heading());
                 String sign = marking == LineSide.Marking.CHANGED ? "≠" : "≈";
-                g.drawString(sign, cx - g.getFontMetrics().stringWidth(sign) / 2, cy + g.getFontMetrics().getAscent() / 2 - 1);
+                g.drawString(sign, cx - g.getFontMetrics().stringWidth(sign) / 2,
+                        cy + g.getFontMetrics().getAscent() / 2 - 1);
             }
             case MOVED -> {
                 LineSide moved = line.left != null && line.left.moved() ? line.left : line.right;
@@ -188,8 +192,10 @@ final class LinePainter {
     private static Polygon arrow(int cx, int cy, int direction, boolean vertical) {
         int s = 5;
         return vertical
-                ? new Polygon(new int[] {cx - s, cx + s, cx}, new int[] {cy - s * direction, cy - s * direction, cy + s * direction}, 3)
-                : new Polygon(new int[] {cx - s * direction, cx - s * direction, cx + s * direction}, new int[] {cy - s, cy + s, cy}, 3);
+                ? new Polygon(new int[] {cx - s, cx + s, cx},
+                        new int[] {cy - s * direction, cy - s * direction, cy + s * direction}, 3)
+                : new Polygon(new int[] {cx - s * direction, cx - s * direction, cx + s * direction},
+                        new int[] {cy - s, cy + s, cy}, 3);
     }
 
     /** The gutter where nothing is marked: its own shade between two lines, setting the sides apart. */

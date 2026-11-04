@@ -46,7 +46,8 @@ final class Differences {
 
     /** Values as the documents have them, said the same in every language; null for none. */
     void add(Aspect aspect, Phrase property, String left, String right) {
-        add(aspect, property, left == null ? null : Phrase.verbatim(left), right == null ? null : Phrase.verbatim(right));
+        add(aspect, property, left == null ? null : Phrase.verbatim(left),
+                right == null ? null : Phrase.verbatim(right));
     }
 
     void add(Aspect aspect, Phrase property, Phrase left, Phrase right) {

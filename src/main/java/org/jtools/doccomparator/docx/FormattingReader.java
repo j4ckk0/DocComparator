@@ -29,7 +29,9 @@ import org.jtools.doccomparator.document.Formatting;
 /** Properties (w:pPr, w:rPr, w:tblPr, w:tcPr…) into a Formatting, under Word's own names (see Formatting). */
 final class FormattingReader {
 
-    /** Properties that are on or off: "true" and "false" whichever way the document spells them (w:b, w:b w:val="0"…). */
+    /**
+     * Properties that are on or off: "true" and "false" whichever way the document spells them (w:b, w:b w:val="0"…).
+     */
     private static final Set<String> TOGGLES = Set.of(
             "b", "bCs", "i", "iCs", "caps", "smallCaps", "strike", "dstrike", "outline", "shadow", "emboss", "imprint",
             "noProof", "snapToGrid", "vanish", "webHidden", "rtl", "cs", "specVanish", "oMath",
@@ -64,7 +66,8 @@ final class FormattingReader {
         readProperty(xml, xml.localName(), values);
     }
 
-    private static void readProperty(XmlCursor xml, String name, SortedMap<String, String> values) throws DocxException {
+    private static void readProperty(XmlCursor xml, String name, SortedMap<String, String> values)
+            throws DocxException {
         Map<String, String> attributes = xml.wordAttributes();
         for (Map.Entry<String, String> attribute : attributes.entrySet()) {
             if (attribute.getKey().equals("val")) {

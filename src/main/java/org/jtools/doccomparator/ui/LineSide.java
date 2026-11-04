@@ -57,7 +57,9 @@ final class LineSide {
     final TextBlock caption;
     /** Its text; null for a row of a table. */
     final TextBlock text;
-    /** For a row of a table, its cell under each column the comparison has (a side of its own), null where it has none. */
+    /**
+     * For a row of a table, its cell under each column the comparison has (a side of its own), null where it has none.
+     */
     final List<LineSide> columns;
     final TextBlock notes;
     /** The line of its match, for a moved paragraph or table; -1 otherwise. */
@@ -70,7 +72,8 @@ final class LineSide {
     private float[] columnWidth = new float[0];
     private int gridHeight;
 
-    LineSide(Marking marking, Pairing pairing, String marker, TextBlock caption, TextBlock text, List<LineSide> columns, TextBlock notes) {
+    LineSide(Marking marking, Pairing pairing, String marker, TextBlock caption, TextBlock text, List<LineSide> columns,
+             TextBlock notes) {
         this.marking = marking;
         this.pairing = pairing;
         this.marker = marker;

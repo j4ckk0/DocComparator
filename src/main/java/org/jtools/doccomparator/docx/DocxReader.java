@@ -162,7 +162,8 @@ public final class DocxReader {
         }
 
         String named = null;
-        Optional<String> properties = DocxPackage.target(docx.relationships(""), "extended-properties", "extendedProperties");
+        Optional<String> properties = DocxPackage.target(docx.relationships(""), "extended-properties",
+                "extendedProperties");
         if (properties.isPresent() && docx.has(properties.get())) {
             try (XmlCursor xml = docx.open(properties.get())) {
                 xml.root("Properties");

@@ -42,7 +42,9 @@ public record StyleSheet(Map<String, Style> styles, Formatting defaultParagraph,
         this(styles, defaultParagraph, defaultRun, null);
     }
 
-    /** Word's built-in heading styles keep their English name whatever the language: "heading 1" is "Titre 1" on screen. */
+    /**
+     * Word's built-in heading styles keep their English name whatever the language: "heading 1" is "Titre 1" on screen.
+     */
     private static final Pattern HEADING_NAME = Pattern.compile("(?i)heading ([1-9])");
 
     /** How far a chain of "based on" is followed: Word allows no loop, a broken document might have one. */

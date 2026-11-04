@@ -97,7 +97,8 @@ record Unit(Item item, String text, List<Token> tokens, String key, int[] words,
             }
         }
         Unit table = composite(item, all);
-        return new Unit(item, table.text, table.tokens, table.key, table.words, table.bag, table.runEnds, cells, Map.of());
+        return new Unit(item, table.text, table.tokens, table.key, table.words, table.bag, table.runEnds, cells,
+                Map.of());
     }
 
     /** A unit made of others — a table, a row, a column — and standing for this item. */

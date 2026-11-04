@@ -80,7 +80,7 @@ look and the language.
 
 ## Patterns
 
-- **Lines over 120 characters (55, in 25 files)**: most in `ui/Lines.java` (9, some from `Side.LEFT` being longer
+- **Lines over 120 characters (55, in 25 files)** — done: none left, the code and the comments' words unchanged: most in `ui/Lines.java` (9, some from `Side.LEFT` being longer
   than `true`), `OptionControls`, `LinePainter` and `DocumentComparer` (5 each). A formatting matter, not a
   structural one: worth one formatting pass, on its own commit.
 - **A test helper in a class named for something else:** `Paragraphs.said(…)` turns property differences into text,

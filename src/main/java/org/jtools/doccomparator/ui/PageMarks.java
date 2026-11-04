@@ -58,7 +58,9 @@ final class PageMarks {
         this.blanks = blanks;
     }
 
-    /** The marks of a document's body, by paragraph; with the blanks compared or not (empty paragraphs shown or not). */
+    /**
+     * The marks of a document's body, by paragraph; with the blanks compared or not (empty paragraphs shown or not).
+     */
     static Map<Paragraph, List<PageMark>> of(WordDocument document, boolean blanks) {
         PageMarks pages = new PageMarks(document.styles(), blanks);
         pages.walk(document.body().blocks(), true);
@@ -115,7 +117,8 @@ final class PageMarks {
         if (!shown) {
             return;
         }
-        boolean leftOut = !blanks && text.codePoints().allMatch(c -> Character.isWhitespace(c) || Character.isSpaceChar(c));
+        boolean leftOut = !blanks
+                && text.codePoints().allMatch(c -> Character.isWhitespace(c) || Character.isSpaceChar(c));
         if (leftOut) {
             own.forEach(mark -> pending.add(new PageMark(0, mark.label())));
             return;

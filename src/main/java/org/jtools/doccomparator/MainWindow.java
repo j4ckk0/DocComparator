@@ -116,7 +116,8 @@ final class MainWindow extends JFrame {
         List<UIManager.LookAndFeelInfo> installed = new ArrayList<>(List.of(UIManager.getInstalledLookAndFeels()));
         // FlatLaf's first, then the system's, then the others as Java lists them
         installed.sort(Comparator.comparingInt((UIManager.LookAndFeelInfo look) ->
-                look.getClassName().startsWith("com.formdev.flatlaf") ? 0 : look.getClassName().equals(system) ? 1 : 2));
+                look.getClassName().startsWith("com.formdev.flatlaf") ? 0
+                        : look.getClassName().equals(system) ? 1 : 2));
         for (UIManager.LookAndFeelInfo look : installed) {
             JRadioButtonMenuItem item = new JRadioButtonMenuItem(look.getName(), look.getClassName().equals(current));
             if (look.getClassName().equals(system)) {

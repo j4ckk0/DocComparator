@@ -33,7 +33,8 @@ package org.jtools.doccomparator.compare;
  * @param table       for a table, how it compares with its match, row by row and column by column (or how it is laid
  *                    out, alone); null for a paragraph
  */
-public record Pairing(Item left, Item right, Status status, int counterpart, ParagraphDiff diff, TableComparison table) {
+public record Pairing(Item left, Item right, Status status, int counterpart, ParagraphDiff diff,
+                      TableComparison table) {
 
     public enum Status {
         /** The same, as the options compare it. */

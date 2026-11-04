@@ -90,7 +90,8 @@ final class Looks {
 
     /** The same look, dark or light: FlatLaf's counterpart; FlatLaf Dark or Light for a look that has none. */
     static String inMode(String className, boolean dark) {
-        boolean isDark = className.equals(FlatDarkLaf.class.getName()) || className.equals(FlatDarculaLaf.class.getName())
+        boolean isDark = className.equals(FlatDarkLaf.class.getName())
+                || className.equals(FlatDarculaLaf.class.getName())
                 || className.equals(FlatMacDarkLaf.class.getName());
         if (isDark == dark && COUNTERPARTS.containsKey(className)) {
             return className;

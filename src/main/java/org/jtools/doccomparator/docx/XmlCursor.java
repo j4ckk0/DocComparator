@@ -141,8 +141,8 @@ final class XmlCursor implements AutoCloseable {
     }
 
     /**
-     * Markup compatibility's alternatives (mc:AlternateContent): the first choice goes to the reader, the others and the
-     * fallback are skipped — they hold the same content again, for older versions of Word.
+     * Markup compatibility's alternatives (mc:AlternateContent): the first choice goes to the reader, the others and
+     * the fallback are skipped — they hold the same content again, for older versions of Word.
      */
     void firstChoice(ElementReader choiceReader) throws DocxException {
         boolean chosen = false;

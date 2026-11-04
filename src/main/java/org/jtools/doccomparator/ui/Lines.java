@@ -192,18 +192,21 @@ final class Lines {
                 int rightIndex = k < rights.size() ? rights.get(k) : -1;
                 boolean comparable = leftIndex >= 0 && pairings.get(leftIndex).moved()
                         || rightIndex >= 0 && pairings.get(rightIndex).moved();
-                if (shown.onlyComparable()) {   // a moved one alone on its line: its neighbour may be one not comparable
+                // a moved one alone on its line: its neighbour may be one not comparable
+                if (shown.onlyComparable()) {
                     if (leftIndex >= 0 && pairings.get(leftIndex).moved()) {
-                        add(Line.of(side(pairings.get(leftIndex), Side.LEFT), null), true, lineOfPairing, moved, leftIndex);
+                        add(Line.of(side(pairings.get(leftIndex), Side.LEFT), null), true, lineOfPairing, moved,
+                                leftIndex);
                     }
                     if (rightIndex >= 0 && pairings.get(rightIndex).moved()) {
-                        add(Line.of(null, side(pairings.get(rightIndex), Side.RIGHT)), true, lineOfPairing, moved, rightIndex);
+                        add(Line.of(null, side(pairings.get(rightIndex), Side.RIGHT)), true, lineOfPairing, moved,
+                                rightIndex);
                     }
                     continue;
                 }
                 add(Line.of(leftIndex < 0 ? null : side(pairings.get(leftIndex), Side.LEFT),
-                        rightIndex < 0 ? null : side(pairings.get(rightIndex), Side.RIGHT)), comparable, lineOfPairing, moved,
-                        leftIndex, rightIndex);
+                        rightIndex < 0 ? null : side(pairings.get(rightIndex), Side.RIGHT)), comparable, lineOfPairing,
+                        moved, leftIndex, rightIndex);
             }
         }
         moved.forEach((side, line) -> {
@@ -247,18 +250,20 @@ final class Lines {
      * A table: a first line with its columns, lettered on each side as a spreadsheet does, then a line for each row,
      * its cells under its columns. A side that has not got a column shows a narrow empty place for it.
      */
-    private void addTable(Pairing pairing, int index, Map<Integer, Integer> lineOfPairing, Map<LineSide, Integer> moved) {
+    private void addTable(Pairing pairing, int index, Map<Integer, Integer> lineOfPairing,
+                          Map<LineSide, Integer> moved) {
         TableComparison table = pairing.table();
         LineSide.Marking tableMarking = marking(pairing);
         boolean comparable = pairing.left() != null && pairing.right() != null || pairing.moved();
         add(Line.of(pairing.left() == null ? null : tableHeader(pairing, Side.LEFT, tableMarking),
-                pairing.right() == null ? null : tableHeader(pairing, Side.RIGHT, tableMarking)), comparable, lineOfPairing, moved, index);
+                pairing.right() == null ? null : tableHeader(pairing, Side.RIGHT, tableMarking)), comparable,
+                lineOfPairing, moved, index);
         for (int r = 0; r < table.rows().size(); r++) {
             Slot slot = table.rows().get(r);
             boolean rowComparable = comparable && (slot.left() >= 0 && slot.right() >= 0 || slot.moved());
             add(Line.of(slot.left() < 0 || pairing.left() == null ? null : tableRow(pairing, r, Side.LEFT),
-                    slot.right() < 0 || pairing.right() == null ? null : tableRow(pairing, r, Side.RIGHT)), rowComparable,
-                    lineOfPairing, moved, index);
+                    slot.right() < 0 || pairing.right() == null ? null : tableRow(pairing, r, Side.RIGHT)),
+                    rowComparable, lineOfPairing, moved, index);
         }
     }
 
@@ -399,7 +404,8 @@ final class Lines {
             marker = null;
         }
         TextBlock text = new TextBlock(item.text(), heading && laidOut == null ? fonts.heading() : fonts.text(),
-                palette.text, palette, spans, formatting, I18n.text("line.emptyParagraph"), laidOut).withPictures(pictures(item));
+                palette.text, palette, spans, formatting, I18n.text("line.emptyParagraph"), laidOut)
+                .withPictures(pictures(item));
         String location = inTable ? null : ComparisonWords.location(item, false);
         TextBlock caption = location == null ? null : TextBlock.plain(location, fonts.small(), palette.faint, palette);
         String notes = notes(pairing, side, formatting);
@@ -411,7 +417,8 @@ final class Lines {
     private LineSide property(String property, String value) {
         String text = I18n.text("line.property", property, value);
         int named = text.length() - value.length();   // the value last, its name and the colon before it
-        List<Span> spans = List.of(new Span(0, named, Span.Kind.SAME), new Span(named, text.length(), Span.Kind.CHANGED));
+        List<Span> spans = List.of(new Span(0, named, Span.Kind.SAME),
+                new Span(named, text.length(), Span.Kind.CHANGED));
         return new LineSide(LineSide.Marking.CHANGED, null, null, null,
                 new TextBlock(text, fonts.text(), palette.text, palette, spans, List.of(), " "), null, null);
     }

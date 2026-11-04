@@ -92,7 +92,8 @@ final class ComparisonWords {
                     text.arguments().stream().map(a -> a instanceof Phrase inner ? say(inner) : a).toArray());
             case Phrase.Verbatim verbatim -> verbatim.value();
             case Phrase.Property property -> PropertyNames.of(property.wordName());
-            case Phrase.Joined joined -> joined.parts().stream().map(ComparisonWords::say).collect(Collectors.joining());
+            case Phrase.Joined joined ->
+                    joined.parts().stream().map(ComparisonWords::say).collect(Collectors.joining());
         };
     }
 

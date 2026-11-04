@@ -145,7 +145,8 @@ final class TextBlock {
                         attributed.addAttribute(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON, start, end);
                     }
                     if (run.strike()) {
-                        attributed.addAttribute(TextAttribute.STRIKETHROUGH, TextAttribute.STRIKETHROUGH_ON, start, end);
+                        attributed.addAttribute(TextAttribute.STRIKETHROUGH, TextAttribute.STRIKETHROUGH_ON, start,
+                                end);
                     }
                     if (run.color() != null) {
                         attributed.addAttribute(TextAttribute.FOREGROUND, run.color(), start, end);
@@ -260,7 +261,8 @@ final class TextBlock {
 
     private static Font font(DocumentLook.StyledRun run, float pixels) {
         int style = (run.bold() ? Font.BOLD : Font.PLAIN) | (run.italic() ? Font.ITALIC : Font.PLAIN);
-        Font font = new Font(FontFamilies.resolve(run.family()), style, 1).deriveFont(Math.max(4f, run.size() * pixels));
+        Font font = new Font(FontFamilies.resolve(run.family()), style, 1)
+                .deriveFont(Math.max(4f, run.size() * pixels));
         if (run.script() != 0) {
             font = font.deriveFont(Map.of(TextAttribute.SUPERSCRIPT,
                     run.script() > 0 ? TextAttribute.SUPERSCRIPT_SUPER : TextAttribute.SUPERSCRIPT_SUB));

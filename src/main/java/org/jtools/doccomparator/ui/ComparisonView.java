@@ -321,7 +321,8 @@ final class ComparisonView extends JComponent implements Scrollable {
             g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            Rectangle clip = g.getClipBounds() == null ? new Rectangle(0, 0, getWidth(), getHeight()) : g.getClipBounds();
+            Rectangle clip = g.getClipBounds() == null ? new Rectangle(0, 0, getWidth(), getHeight())
+                    : g.getClipBounds();
             g.setColor(palette.background);
             g.fill(clip);
             layoutLines(getWidth());
@@ -407,7 +408,8 @@ final class ComparisonView extends JComponent implements Scrollable {
         }
         int column = columnWidth(getWidth());
         int x = e.getX() - (side == line.left ? 0 : column + GUTTER) - MARGIN;
-        int y = e.getY() - line.top - LineSide.PADDING - (side.caption == null ? 0 : side.caption.height() + LineSide.GAP);
+        int y = e.getY() - line.top - LineSide.PADDING
+                - (side.caption == null ? 0 : side.caption.height() + LineSide.GAP);
         List<PropertyDifference> formatting = side.text.formattingAt(x, y);
         if (!formatting.isEmpty()) {
             return "<html>" + escape(I18n.text("view.formatting.tip")) + "<br>" + formatting.stream()
