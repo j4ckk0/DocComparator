@@ -29,6 +29,6 @@ final class Vocabulary {
     private final Map<String, Integer> codes = new HashMap<>();
 
     int code(String text) {
-        return codes.computeIfAbsent(text, unused -> codes.size() + 1);   // 0 is left for what is not compared
+        return codes.computeIfAbsent(text, _ -> codes.size() + 1);   // 0 is left for what is not compared
     }
 }

@@ -54,7 +54,7 @@ public final class I18n {
     public static String text(String key) {
         try {
             return texts.getString(key);
-        } catch (MissingResourceException e) {
+        } catch (MissingResourceException _) {
             return key;
         }
     }

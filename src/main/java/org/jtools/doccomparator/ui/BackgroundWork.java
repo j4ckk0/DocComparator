@@ -72,7 +72,7 @@ final class BackgroundWork {
                     statusLine.say(I18n.text(failed, cause.getMessage()));
                     JOptionPane.showMessageDialog(panel, cause.getMessage(), I18n.text(title),
                             JOptionPane.ERROR_MESSAGE);
-                } catch (InterruptedException e) {
+                } catch (InterruptedException _) {
                     Thread.currentThread().interrupt();
                 }
             }

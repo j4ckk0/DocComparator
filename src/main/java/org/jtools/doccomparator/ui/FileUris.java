@@ -59,7 +59,7 @@ final class FileUris {
             }
             try {
                 paths.add(Path.of(path));
-            } catch (IllegalArgumentException e) {   // not a path here: InvalidPathException
+            } catch (IllegalArgumentException _) {   // not a path here: InvalidPathException
                 // left out
             }
         }

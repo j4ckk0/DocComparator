@@ -34,7 +34,7 @@ import javax.swing.JList;
  */
 public final class I18nLanguageBox extends JComboBox<I18nLanguage> {
 
-    private Consumer<I18nLanguage> listener = language -> { };
+    private Consumer<I18nLanguage> listener = _ -> { };
     private boolean showing;
 
     /** The languages, the one in use chosen; its tooltip bound with labels. */

@@ -68,7 +68,7 @@ final class DocxPackage implements AutoCloseable {
         String fileName = String.valueOf(file.getFileName());
         try {
             return new DocxPackage(fileName, new ZipFile(file.toFile()));
-        } catch (ZipException e) {
+        } catch (ZipException _) {
             throw new DocxException(I18n.text("error.notZip", fileName));
         }
     }

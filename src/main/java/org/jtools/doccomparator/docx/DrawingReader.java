@@ -99,7 +99,7 @@ final class DrawingReader {
     private static float emus(String value) {
         try {
             return value == null ? 0 : Long.parseLong(value.trim()) / EMUS_PER_POINT;
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _) {
             return 0;
         }
     }
@@ -132,7 +132,7 @@ final class DrawingReader {
                 return Float.parseFloat(length.substring(0, length.length() - 2)) * 0.75f;
             }
             return Float.parseFloat(length);
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _) {
             return 0;
         }
     }

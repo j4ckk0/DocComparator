@@ -114,7 +114,7 @@ final class Numbering {
     static int parseLevel(String level) {
         try {
             return level == null ? 0 : Integer.parseInt(level.trim());
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _) {
             return 0;
         }
     }

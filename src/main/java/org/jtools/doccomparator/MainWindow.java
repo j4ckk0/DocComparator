@@ -129,7 +129,7 @@ final class MainWindow extends JFrame {
                 labels.on(() -> item.setText(I18n.text("menu.look.system", look.getName())));
             }
             item.putClientProperty(LOOK_CLASS, look.getClassName());
-            item.addActionListener(e -> applyLook(look.getClassName()));
+            item.addActionListener(_ -> applyLook(look.getClassName()));
             looks.add(item);
             lookItems.add(item);
             menu.add(item);
@@ -169,7 +169,7 @@ final class MainWindow extends JFrame {
         }
         file.addSeparator();
         JMenuItem exit = labels.menu(new JMenuItem(), "menu.file.exit");
-        exit.addActionListener(e -> dispose());
+        exit.addActionListener(_ -> dispose());
         file.add(exit);
         JMenu go = labels.menu(new JMenu(), "menu.go");
         for (Action action : panel.goActions()) {

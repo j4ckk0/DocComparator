@@ -154,7 +154,7 @@ record DocumentLook(List<StyledRun> runs, Alignment alignment, float left, float
     private static float number(String text) {
         try {
             return Float.parseFloat(text.trim());
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _) {
             return 0;
         }
     }

@@ -46,7 +46,7 @@ final class ListNumbers {
             return bullet(list.levelText());
         }
         int level = Math.clamp(list.level(), 0, LEVELS - 1);
-        int[] numbers = counters.computeIfAbsent(list.listId(), id -> new int[LEVELS]);
+        int[] numbers = counters.computeIfAbsent(list.listId(), _ -> new int[LEVELS]);
         numbers[level]++;
         for (int deeper = level + 1; deeper < numbers.length; deeper++) {
             numbers[deeper] = 0;

@@ -44,9 +44,9 @@ final class ClipboardMenu extends JPopupMenu {
     ClipboardMenu(ComparisonView view, Action paste, I18nLabels labels) {
         this.view = view;
         JMenuItem copyLeft = labels.text(new JMenuItem(), "copy.left");
-        copyLeft.addActionListener(e -> copy(Side.LEFT));
+        copyLeft.addActionListener(_ -> copy(Side.LEFT));
         JMenuItem copyRight = labels.text(new JMenuItem(), "copy.right");
-        copyRight.addActionListener(e -> copy(Side.RIGHT));
+        copyRight.addActionListener(_ -> copy(Side.RIGHT));
         add(copyLeft);
         add(copyRight);
         addSeparator();

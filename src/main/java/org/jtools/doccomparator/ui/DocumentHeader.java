@@ -67,7 +67,7 @@ final class DocumentHeader extends JPanel {
         this.side = side;
         this.opener = opener;
         labels.tip(path, side.of("header.path.left.tip", "header.path.right.tip"));
-        path.addActionListener(e -> typed());
+        path.addActionListener(_ -> typed());
         JButton choose = new JButton(open);
         labels.text(choose, "header.open");
         choose.setFocusable(false);
@@ -124,7 +124,7 @@ final class DocumentHeader extends JPanel {
                 return;
             }
             opener.open(side, typed);
-        } catch (InvalidPathException e) {
+        } catch (InvalidPathException _) {
             opener.refuse(I18n.text("header.notAPath", text));
             Toolkit.getDefaultToolkit().beep();
         }

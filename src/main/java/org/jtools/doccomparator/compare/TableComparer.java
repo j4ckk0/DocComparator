@@ -144,7 +144,7 @@ final class TableComparer {
             cells.add(line);
         }
         return new TableComparison(columns, rows, cells,
-                rows.stream().map(row -> List.<PropertyDifference>of()).toList());
+                rows.stream().map(_ -> List.<PropertyDifference>of()).toList());
     }
 
     /** Two cells: their text as two paragraphs, and their own properties (shading, borders…). */

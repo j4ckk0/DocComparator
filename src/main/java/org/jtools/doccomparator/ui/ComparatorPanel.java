@@ -122,7 +122,7 @@ public final class ComparatorPanel extends JPanel {
     private final Map<Side, SideState> sides = new EnumMap<>(Map.of(Side.LEFT, SideState.EMPTY,
             Side.RIGHT, SideState.EMPTY));
     private Comparison comparison;
-    private Consumer<String> namesListener = names -> { };
+    private Consumer<String> namesListener = _ -> { };
     private File lastDirectory;
 
     public ComparatorPanel() {
@@ -154,8 +154,8 @@ public final class ComparatorPanel extends JPanel {
         add(center, BorderLayout.CENTER);
         add(statusLine, BorderLayout.SOUTH);
 
-        view.addPropertyChangeListener(ComparisonView.CURRENT_LINE, e -> updatePosition());
-        view.addPropertyChangeListener(ComparisonView.CHOSEN_SIDE, e -> showChosenSide());
+        view.addPropertyChangeListener(ComparisonView.CURRENT_LINE, _ -> updatePosition());
+        view.addPropertyChangeListener(ComparisonView.CHOSEN_SIDE, _ -> showChosenSide());
         showChosenSide();
         view.setComponentPopupMenu(new ClipboardMenu(view, pasteHere, labels));
         TransferHandler drop = new DropHandler(opener, this, null);
@@ -257,7 +257,7 @@ public final class ComparatorPanel extends JPanel {
         Transferable held;
         try {
             held = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);
-        } catch (IllegalStateException e) {   // another program has it at that moment
+        } catch (IllegalStateException _) {   // another program has it at that moment
             held = null;
         }
         if (held == null) {

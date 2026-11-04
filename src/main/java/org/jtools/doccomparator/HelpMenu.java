@@ -74,11 +74,11 @@ final class HelpMenu {
         HelpMenu help = new HelpMenu(owner);
         JMenu menu = labels.menu(new JMenu(), "menu.help");
         JMenuItem licence = labels.menu(new JMenuItem(), "menu.help.licence");
-        licence.addActionListener(e -> help.show("licence.title", licenceText(), licenceFile()));
+        licence.addActionListener(_ -> help.show("licence.title", licenceText(), licenceFile()));
         JMenuItem runtime = labels.menu(new JMenuItem(), "menu.help.runtime");
-        runtime.addActionListener(e -> help.show("runtime.title", runtimeText(), runtimeLicence()));
+        runtime.addActionListener(_ -> help.show("runtime.title", runtimeText(), runtimeLicence()));
         JMenuItem about = labels.menu(new JMenuItem(), "menu.help.about");
-        about.addActionListener(e -> help.show("about.title", aboutText(), null));
+        about.addActionListener(_ -> help.show("about.title", aboutText(), null));
         menu.add(licence);
         menu.add(runtime);
         menu.addSeparator();
@@ -114,7 +114,7 @@ final class HelpMenu {
     static String licenceFile() {
         try (InputStream in = HelpMenu.class.getResourceAsStream(LICENCE)) {
             return in == null ? null : new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
+        } catch (IOException _) {
             return null;
         }
     }
@@ -124,7 +124,7 @@ final class HelpMenu {
         Path file = Path.of(System.getProperty(JAVA_HOME), RUNTIME_LICENCE.toArray(String[]::new));
         try {
             return Files.isRegularFile(file) ? Files.readString(file, StandardCharsets.UTF_8) : null;
-        } catch (IOException e) {
+        } catch (IOException _) {
             return null;
         }
     }

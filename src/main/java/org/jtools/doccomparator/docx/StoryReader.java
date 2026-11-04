@@ -337,7 +337,7 @@ final class StoryReader {
     private static String symbol(String code) {
         try {
             return code == null ? "" : new String(Character.toChars(Integer.parseInt(code, 16)));
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException _) {
             return "";
         }
     }

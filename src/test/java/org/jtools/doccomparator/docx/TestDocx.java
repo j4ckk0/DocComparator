@@ -97,7 +97,7 @@ final class TestDocx {
 
     /** A relationship of a part ("" for the package's own); an external target is written as it is given. */
     TestDocx link(String fromPart, String id, String type, String target, boolean external) {
-        links.computeIfAbsent(fromPart, part -> new ArrayList<>()).add(new Link(id, type, target, external));
+        links.computeIfAbsent(fromPart, _ -> new ArrayList<>()).add(new Link(id, type, target, external));
         return this;
     }
 

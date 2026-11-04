@@ -91,12 +91,12 @@ final class OptionControls {
     /** Whether the look is dark, as the ribbon's Dark box and the View menu's Dark item show it. */
     private boolean darkMode;
     private final List<AbstractButton> darkButtons = new ArrayList<>();
-    private Consumer<Boolean> darkModeListener = dark -> { };
+    private Consumer<Boolean> darkModeListener = _ -> { };
     /** While the Dark buttons are set to the look: their changes are not choices. */
     private boolean showingDarkMode;
     /** Whether the ribbon is open, its groups shown; collapsed, its strip says where its options are. */
     private boolean ribbonOpen = true;
-    private Consumer<Boolean> ribbonListener = open -> { };
+    private Consumer<Boolean> ribbonListener = _ -> { };
     private final JPanel ribbonGroups = new JPanel();
     private final JLabel ribbonCollapsed = new FaintLabel(" ", JLabel.LEADING, true);
     private final JButton ribbonToggle = new JButton();
@@ -152,7 +152,7 @@ final class OptionControls {
     private <B extends AbstractButton> B registerDark(B button) {
         darkButtons.add(button);
         button.setSelected(darkMode);
-        button.addItemListener(e -> {
+        button.addItemListener(_ -> {
             if (!showingDarkMode) {
                 showDarkMode(button.isSelected());
                 darkModeListener.accept(darkMode);
@@ -220,13 +220,13 @@ final class OptionControls {
         }
         JCheckBox only = labels.tip(labels.text(new JCheckBox(), "ribbon.show.differences"),
                 "ribbon.show.differences.tip");
-        only.addItemListener(e -> {
+        only.addItemListener(_ -> {
             shown = shown.withOnlyDifferences(only.isSelected());
             shownChanged.accept(false);
         });
         JCheckBox comparable = labels.tip(labels.text(new JCheckBox(), "ribbon.show.comparable"),
                 "ribbon.show.comparable.tip");
-        comparable.addItemListener(e -> {
+        comparable.addItemListener(_ -> {
             shown = shown.withOnlyComparable(comparable.isSelected());
             shownChanged.accept(false);
         });
@@ -244,7 +244,7 @@ final class OptionControls {
         bar.add(ribbonCollapsed, BorderLayout.WEST);
         ribbonToggle.setFocusable(false);
         ribbonToggle.setMargin(new Insets(1, 3, 1, 3));
-        ribbonToggle.addActionListener(e -> openRibbon(!ribbonOpen));
+        ribbonToggle.addActionListener(_ -> openRibbon(!ribbonOpen));
         JPanel corner = new JPanel(new BorderLayout());
         corner.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 2));
         corner.add(ribbonToggle, BorderLayout.NORTH);
@@ -328,7 +328,7 @@ final class OptionControls {
 
     private <B extends AbstractButton> B registerView(B button, boolean document) {
         button.putClientProperty(DOCUMENT_VIEW, document);
-        button.addItemListener(e -> {
+        button.addItemListener(_ -> {
             if (button.isSelected()) {
                 setDocumentView(document);
             }
@@ -378,12 +378,12 @@ final class OptionControls {
         labels.text(button, aspect.labelKey());
         labels.tip(button, aspect.descriptionKey());
         button.setSelected(options.has(aspect));
-        button.addItemListener(e -> {
+        button.addItemListener(_ -> {
             if (!showingOptions) {
                 setOptions(options.with(aspect, button.isSelected()));
             }
         });
-        aspectButtons.computeIfAbsent(aspect, a -> new ArrayList<>()).add(button);
+        aspectButtons.computeIfAbsent(aspect, _ -> new ArrayList<>()).add(button);
         return button;
     }
 
@@ -401,7 +401,7 @@ final class OptionControls {
 
     private JButton preset(String name, CompareOptions preset) {
         JButton button = labels.text(new JButton(), name);
-        button.addActionListener(e -> setOptions(preset));
+        button.addActionListener(_ -> setOptions(preset));
         return button;
     }
 
@@ -424,7 +424,7 @@ final class OptionControls {
                 Map.entry("preset.layout", CompareOptions.LAYOUT_ONLY), Map.entry("preset.all", CompareOptions.ALL),
                 Map.entry("preset.none", CompareOptions.TEXT_ONLY.with(Aspect.TEXT, false)))) {
             JMenuItem item = labels.text(new JMenuItem(), preset.getKey());
-            item.addActionListener(e -> setOptions(preset.getValue()));
+            item.addActionListener(_ -> setOptions(preset.getValue()));
             menu.add(item);
         }
         return menu;

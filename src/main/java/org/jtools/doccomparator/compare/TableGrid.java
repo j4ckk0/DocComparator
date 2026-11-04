@@ -78,7 +78,7 @@ final class TableGrid {
     private static int span(Formatting formatting) {
         try {
             return Math.max(1, Integer.parseInt(formatting.get("gridSpan") == null ? "1" : formatting.get("gridSpan")));
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _) {
             return 1;
         }
     }

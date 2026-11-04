@@ -80,7 +80,7 @@ final class PictureImages {
         if (picture.kind() != Picture.Kind.IMAGE || picture.bytes() == null) {
             return null;
         }
-        return DECODED.computeIfAbsent(picture.digest(), digest -> Optional.ofNullable(decode(picture.bytes())))
+        return DECODED.computeIfAbsent(picture.digest(), _ -> Optional.ofNullable(decode(picture.bytes())))
                 .orElse(null);
     }
 
@@ -145,7 +145,7 @@ final class PictureImages {
             } finally {
                 reader.dispose();
             }
-        } catch (IOException | RuntimeException | OutOfMemoryError e) {
+        } catch (IOException | RuntimeException | OutOfMemoryError _) {
             return null;   // a picture that cannot be read, or not in the memory there is, is shown as such
         }
     }

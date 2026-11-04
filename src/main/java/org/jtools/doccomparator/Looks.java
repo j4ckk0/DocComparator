@@ -77,7 +77,7 @@ final class Looks {
             try {
                 UIManager.setLookAndFeel(look);
                 return;
-            } catch (ReflectiveOperationException | UnsupportedLookAndFeelException | RuntimeException e) {
+            } catch (ReflectiveOperationException | UnsupportedLookAndFeelException | RuntimeException _) {
                 // the next one
             }
         }

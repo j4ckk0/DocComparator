@@ -85,7 +85,7 @@ public final class Launcher {
     private static void exitOnceShown(MainWindow window, boolean comparing) {
         long limit = System.currentTimeMillis() + TRAINING_LIMIT_MS;
         boolean[] ready = {false};
-        new Timer(100, tick -> {
+        new Timer(100, _ -> {
             if (ready[0]) {
                 window.dispose();
                 System.exit(0);

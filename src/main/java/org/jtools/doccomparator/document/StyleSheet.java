@@ -165,7 +165,7 @@ public record StyleSheet(Map<String, Style> styles, Formatting defaultParagraph,
         try {
             int level = Integer.parseInt(outlineLevel.trim());
             return level >= 0 && level < 9 ? level + 1 : 0;
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _) {
             return 0;
         }
     }

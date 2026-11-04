@@ -278,7 +278,7 @@ final class ParagraphComparer {
                 Run runB = b.runAt(startB + k);
                 List<PropertyDifference> differences = runDifferences.computeIfAbsent(
                         new RunPair(runA.styleId(), runA.formatting(), runB.styleId(), runB.formatting()),
-                        p -> runDifferences(runA, runB));
+                        _ -> runDifferences(runA, runB));
                 if (!differences.isEmpty()) {
                     left.addFormatting(startA + k, startA + k + 1, differences);
                     right.addFormatting(startB + k, startB + k + 1, differences);

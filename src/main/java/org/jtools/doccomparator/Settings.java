@@ -50,7 +50,7 @@ final class Settings {
         if (file != null && Files.isRegularFile(file)) {
             try (InputStream in = Files.newInputStream(file)) {
                 values.load(in);
-            } catch (IOException | IllegalArgumentException e) {
+            } catch (IOException | IllegalArgumentException _) {
                 // unreadable: the defaults
             }
         }
@@ -83,7 +83,7 @@ final class Settings {
         }
         try (OutputStream out = Files.newOutputStream(file)) {
             values.store(out, "DocComparator's settings");
-        } catch (IOException e) {
+        } catch (IOException _) {
             // a folder that cannot be written in: the setting holds until the program ends
         }
     }

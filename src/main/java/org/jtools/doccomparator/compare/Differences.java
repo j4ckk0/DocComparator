@@ -61,12 +61,12 @@ final class Differences {
 
     /** The properties two formattings set from there differ in, each under its name. */
     void formatting(Aspects.Source source, Formatting a, Formatting b) {
-        formatting(source, UnaryOperator.identity(), a, b, aspect -> true);
+        formatting(source, UnaryOperator.identity(), a, b, _ -> true);
     }
 
     /** The properties two formattings set from there differ in, each under its name as named says it ("cell {0}"). */
     void formatting(Aspects.Source source, UnaryOperator<Phrase> named, Formatting a, Formatting b) {
-        formatting(source, named, a, b, aspect -> true);
+        formatting(source, named, a, b, _ -> true);
     }
 
     /**
@@ -107,7 +107,7 @@ final class Differences {
                     break;
                 }
             }
-            properties.computeIfAbsent(property, p -> new ArrayList<>()).add(name);
+            properties.computeIfAbsent(property, _ -> new ArrayList<>()).add(name);
         }
         return properties;
     }

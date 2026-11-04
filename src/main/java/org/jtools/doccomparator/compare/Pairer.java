@@ -226,7 +226,7 @@ final class Pairer {
     private static List<Candidate> candidates(List<Unit> left, int l0, int l1, List<Unit> right, int r0, int r1) {
         Map<String, List<Integer>> rightByKey = new HashMap<>();
         for (int j = r0; j < r1; j++) {
-            rightByKey.computeIfAbsent(right.get(j).key(), key -> new ArrayList<>()).add(j);
+            rightByKey.computeIfAbsent(right.get(j).key(), _ -> new ArrayList<>()).add(j);
         }
         Map<String, Integer> leftKeys = countKeys(left.subList(l0, l1));
         // A text found once on each side has its match: no need to look further for it, on either side.

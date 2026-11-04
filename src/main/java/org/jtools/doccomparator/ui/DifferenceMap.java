@@ -49,8 +49,8 @@ final class DifferenceMap extends JComponent {
         this.view = view;
         this.viewport = scroll.getViewport();
         labels.tip(this, "map.tip");
-        viewport.addChangeListener(e -> repaint());
-        view.addPropertyChangeListener(ComparisonView.LINES, e -> repaint());
+        viewport.addChangeListener(_ -> repaint());
+        view.addPropertyChangeListener(ComparisonView.LINES, _ -> repaint());
         MouseAdapter mouse = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
