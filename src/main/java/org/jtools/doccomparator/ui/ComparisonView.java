@@ -55,6 +55,8 @@ final class ComparisonView extends JComponent implements Scrollable {
     private int laidOutWidth = -1;
     private int totalHeight;
     private int current = -1;
+    /** The side last clicked, where text pasted goes: the left until one is. */
+    private boolean leftChosen = true;
 
     ComparisonView() {
         fonts = lookFonts();
@@ -66,6 +68,7 @@ final class ComparisonView extends JComponent implements Scrollable {
             @Override
             public void mousePressed(MouseEvent e) {
                 requestFocusInWindow();
+                leftChosen = e.getX() < getWidth() / 2;
                 clicked(e);
             }
         };
@@ -107,6 +110,11 @@ final class ComparisonView extends JComponent implements Scrollable {
         repaint();
         firePropertyChange(LINES, old, this.lines);
         firePropertyChange(CURRENT_LINE, -2, this.current);
+    }
+
+    /** Whether the side last clicked, left or right-clicked, is the left: the one text pasted goes to. */
+    boolean leftChosen() {
+        return leftChosen;
     }
 
     List<Line> lines() {

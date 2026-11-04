@@ -10,6 +10,7 @@ import com.formdev.flatlaf.FlatDarkLaf;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Font;
+import java.awt.event.MouseEvent;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -214,6 +215,34 @@ class ComparatorPanelTest {
         }
         assertEquals(1, differences[0], "two → 2");
         assertEquals("Pasted text ↔ Pasted text — DocComparator", panel[0].title());
+    }
+
+    /** Text pasted goes to the side last clicked, left or right-clicked: the left until one is. */
+    @Test
+    void pastingGoesToTheSideClicked() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            ComparisonView view = new ComparisonView();
+            view.setSize(1000, 600);
+            assertTrue(view.leftChosen(), "the left at first");
+            press(view, 800, MouseEvent.BUTTON1);
+            assertFalse(view.leftChosen(), "the right, clicked");
+            press(view, 100, MouseEvent.BUTTON3);
+            assertTrue(view.leftChosen(), "the left, right-clicked");
+        });
+        List<String> menu = new ArrayList<>();
+        SwingUtilities.invokeAndWait(() -> {
+            for (Component item : view(new ComparatorPanel()).getComponentPopupMenu().getComponents()) {
+                if (item instanceof AbstractButton button) {
+                    menu.add(button.getText());
+                }
+            }
+        });
+        assertTrue(menu.contains("Paste here"), String.valueOf(menu));
+    }
+
+    private static void press(Component component, int x, int button) {
+        component.dispatchEvent(new MouseEvent(component, MouseEvent.MOUSE_PRESSED, 0, 0, x, 10, 1,
+                button == MouseEvent.BUTTON3, button));
     }
 
     /** No document open: the empty sides dark in a dark look, from the start and once the look turns dark. */

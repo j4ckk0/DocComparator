@@ -128,8 +128,9 @@ dropped on, its head included. Dropping works from Windows' Explorer and from Li
 `file://` URIs, decoded by `FileUris` without the JDK's networking classes). The two sides scroll as one, each
 paragraph beside its match, as high as the taller.
 
-Text can be compared too, without a document: copy it anywhere and paste it on a side (Ctrl+V on the left,
-Ctrl+Shift+V on the right, or the File menu), or drop it there. Each line is a paragraph, without style or
+Text can be compared too, without a document: copy it anywhere, click the side it goes to and paste it (Ctrl+V, or
+*Paste here* in the right-click menu, on the side right-clicked; the left until a side is clicked), or choose the side
+in the File menu (*Paste left*, *Paste right*), or drop it there. Each line is a paragraph, without style or
 formatting, so text pasted against a Word document is best compared with *Text only*: the other switches would show
 the document's styles and template as differences. A pasted side can face another pasted text or a document; a
 document copied in Explorer opens as if dropped.
@@ -339,7 +340,7 @@ holds. Previous versions' archives are removed from `releases/` once the new one
 | `…/text/` | `TextReader` (text pasted into a `WordDocument`, a paragraph a line) |
 | `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `DrawingReader` (a drawing's pictures and text boxes), `StylesReader`, `Numbering`, `FormattingReader`, `Pictures` (a part's pictures, through its relationships, nothing outside fetched) |
 | `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Pairing`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `PropertyNames` |
-| `…/ui/` | `ComparatorPanel` (the documents, read and compared in the background), `OptionControls` (the ribbon and the Compare and View menus, kept in step), `DocumentSource` (what a side compares: a file, or text pasted), `DocumentHeader` and `DropHandler` (a side's head, documents and text dropped or pasted), `StatusLine`, `CopyMenu`, `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `ListNumbers` (list items numbered as Word does), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux) |
+| `…/ui/` | `ComparatorPanel` (the documents, read and compared in the background), `OptionControls` (the ribbon and the Compare and View menus, kept in step), `DocumentSource` (what a side compares: a file, or text pasted), `DocumentHeader` and `DropHandler` (a side's head, documents and text dropped or pasted), `StatusLine`, `ClipboardMenu` (the right-click menu: copy a line, paste on its side), `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `ListNumbers` (list items numbered as Word does), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux) |
 | `…/i18n/` | the languages (see "Languages"): `I18nLanguage`, `I18n`, `I18nLabels`, `I18nLanguageBox` |
 | `src/main/resources/org/jtools/doccomparator/i18n/` | the texts, one file per language |
 | `src/main/resources/META-INF/services/` | what installs `NoNetworkResolver` |

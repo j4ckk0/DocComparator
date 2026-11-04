@@ -55,11 +55,10 @@ public final class ComparatorPanel extends JPanel {
     private final Action openRight = action("action.openRight", "action.openRight.tip",
             KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK),
             () -> choose(false));
-    private final Action pasteLeft = action("action.pasteLeft", "action.pasteLeft.tip",
-            KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK), () -> paste(true));
-    private final Action pasteRight = action("action.pasteRight", "action.pasteRight.tip",
-            KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK),
-            () -> paste(false));
+    private final Action pasteHere = action("action.pasteHere", "action.pasteHere.tip",
+            KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK), () -> paste(view.leftChosen()));
+    private final Action pasteLeft = action("action.pasteLeft", "action.pasteLeft.tip", null, () -> paste(true));
+    private final Action pasteRight = action("action.pasteRight", "action.pasteRight.tip", null, () -> paste(false));
     private final Action swap = action("action.swap", "action.swap.tip", null, this::swap);
     private final Action previous = action("action.previous", "action.previous.tip",
             KeyStroke.getKeyStroke(KeyEvent.VK_F7, InputEvent.SHIFT_DOWN_MASK), () -> goToDifference(false));
@@ -128,11 +127,11 @@ public final class ComparatorPanel extends JPanel {
         add(statusLine, BorderLayout.SOUTH);
 
         view.addPropertyChangeListener(ComparisonView.CURRENT_LINE, e -> updatePosition());
-        view.setComponentPopupMenu(new CopyMenu(view, labels));
+        view.setComponentPopupMenu(new ClipboardMenu(view, pasteHere, labels));
         TransferHandler drop = new DropHandler(opener, this, null);
         view.setTransferHandler(drop);
         setTransferHandler(drop);
-        for (Action action : List.of(openLeft, openRight, pasteLeft, pasteRight, previous, next)) {
+        for (Action action : List.of(openLeft, openRight, pasteHere, previous, next)) {
             KeyStroke key = (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);
             getInputMap(WHEN_IN_FOCUSED_WINDOW).put(key, action);
             getActionMap().put(action, action);
@@ -370,20 +369,19 @@ public final class ComparatorPanel extends JPanel {
 
     /** While a side has no document: what goes there, and how to open it; the side opened, its document's name. */
     private void showEmptySides() {
-        view.setEmptySides(emptySide(left, "empty.left", "Ctrl+O", "Ctrl+V"),
-                emptySide(right, "empty.right", "Ctrl+Shift+O", "Ctrl+Shift+V"));
+        view.setEmptySides(emptySide(left, "empty.left", "Ctrl+O"), emptySide(right, "empty.right", "Ctrl+Shift+O"));
     }
 
     /**
-     * A side without its document: its name (the text of side), then how to open it, or paste a text, their shortcuts
-     * said; or opened.
+     * A side without its document: its name (the text of side), then how to open it, its shortcut said, or paste a
+     * text there; or opened.
      */
-    private static ComparisonView.EmptySide emptySide(DocumentSource source, String side, String open, String paste) {
+    private static ComparisonView.EmptySide emptySide(DocumentSource source, String side, String open) {
         if (source != null) {
             return new ComparisonView.EmptySide(true, source.name(), List.of(I18n.text("empty.opened")));
         }
         return new ComparisonView.EmptySide(false, I18n.text(side), List.of(I18n.text("empty.drop"),
-                I18n.text("empty.choose", open), I18n.text("empty.type"), I18n.text("empty.paste", paste), "",
+                I18n.text("empty.choose", open), I18n.text("empty.type"), I18n.text("empty.paste", "Ctrl+V"), "",
                 I18n.text("empty.two")));
     }
 
