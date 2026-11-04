@@ -31,6 +31,7 @@ import org.jtools.doccomparator.compare.DocumentComparer;
 import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Story;
 import org.junit.jupiter.api.Test;
 
 /** Text pasted, read as a document: a paragraph a line. */
@@ -65,7 +66,7 @@ class TextReaderTest {
         assertTrue(document.notes().isEmpty());
         assertFalse(document.hasTrackedChanges());
         assertEquals("pasted", document.fileName());
-        assertEquals("Body", document.body().label());
+        assertEquals(Story.Name.BODY, document.body().name());
     }
 
     @Test

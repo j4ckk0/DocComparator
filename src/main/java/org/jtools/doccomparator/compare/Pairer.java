@@ -167,7 +167,7 @@ final class Pairer {
 
     /** In the same place: the same story, the same text box, table, row or column, each by its number. */
     private static boolean samePlace(Unit a, Unit b) {
-        return a.item().places().equals(b.item().places()) && a.item().label().equals(b.item().label());
+        return a.item().places().equals(b.item().places()) && a.item().story().equals(b.item().story());
     }
 
     /** The same text in the same place: paired at once at the start and the end, where the documents are alike. */

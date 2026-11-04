@@ -54,7 +54,7 @@ final class Items {
     private void add(List<Block> blocks, List<Item.Place> places) {
         for (Block block : blocks) {
             switch (block) {
-                case Paragraph paragraph -> items.add(new Item(story.kind(), story.label(), places, paragraph, null));
+                case Paragraph paragraph -> items.add(new Item(story.name(), places, paragraph, null));
                 case TextBox textBox -> add(textBox.blocks(), within(places, Item.Place.inTextBox()));
                 case Table table -> {
                     List<Run> runs = new ArrayList<>();
@@ -62,7 +62,7 @@ final class Items {
                         runs.add(new Run((runs.isEmpty() ? "" : "\t") + paragraph.text(), null, Formatting.NONE));
                     }
                     Paragraph text = new Paragraph(null, Formatting.NONE, 0, null, false, runs);
-                    items.add(new Item(story.kind(), story.label(), within(places, Item.Place.inTable(++tables)),
+                    items.add(new Item(story.name(), within(places, Item.Place.inTable(++tables)),
                             text, table));
                 }
             }

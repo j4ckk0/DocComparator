@@ -23,16 +23,42 @@ package org.jtools.doccomparator.document;
 import java.util.List;
 
 /**
- * One flow of text, as Word calls it: the body, a header, a footer, a footnote, an endnote. Its label names it for a
- * reader: "Body", "Header (first page), section 2", "Footnote 3".
+ * One flow of text, as Word calls it: the body, a header, a footer, a footnote, an endnote; named by what tells it from
+ * the others (Name), which the view says in words: "Body", "Header (first page), section 2", "Footnote 3".
  */
-public record Story(Kind kind, String label, List<Block> blocks) {
+public record Story(Name name, List<Block> blocks) {
 
     public enum Kind {
         BODY, HEADER, FOOTER, FOOTNOTE, ENDNOTE
     }
 
+    /**
+     * What tells a story from the others: its kind; for a header or a footer, the pages it is for, as Word writes them
+     * ("default", "first", "even"), and its section, from 1, or 0 when the document has a single one; for a note, its
+     * number, from 1.
+     */
+    public record Name(Kind kind, String pages, int section, int number) {
+
+        public static final Name BODY = new Name(Kind.BODY, null, 0, 0);
+        /** The pages of a header or a footer for the first page of its section only, as Word writes it. */
+        public static final String FIRST_PAGE = "first";
+        /** The pages of a header or a footer for the even pages only, as Word writes it. */
+        public static final String EVEN_PAGES = "even";
+
+        public static Name headerOrFooter(Kind kind, String pages, int section) {
+            return new Name(kind, pages, section, 0);
+        }
+
+        public static Name note(Kind kind, int number) {
+            return new Name(kind, null, 0, number);
+        }
+    }
+
     public Story {
         blocks = List.copyOf(blocks);
+    }
+
+    public Kind kind() {
+        return name.kind();
     }
 }

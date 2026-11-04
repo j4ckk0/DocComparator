@@ -166,7 +166,7 @@ class TableComparerTest {
     }
 
     private static WordDocument document(Block... blocks) {
-        return new WordDocument("test.docx", new Story(Story.Kind.BODY, "Body", List.of(blocks)), List.of(), List.of(),
+        return new WordDocument("test.docx", new Story(Story.Name.BODY, List.of(blocks)), List.of(), List.of(),
                 StyleSheet.NONE, Template.NONE, false);
     }
 

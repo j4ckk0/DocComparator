@@ -223,7 +223,7 @@ final class TableComparer {
     /** The item standing for a row (column 0) or a column (row 0) of a table: where it is, which pairing prefers. */
     private static Item part(Unit table, int row, int column) {
         Item item = table.item();
-        return new Item(item.story(), item.label(), Items.within(item.places(), Item.Place.inCell(0, row, column)),
+        return new Item(item.story(), Items.within(item.places(), Item.Place.inCell(0, row, column)),
                 item.paragraph(), null);
     }
 

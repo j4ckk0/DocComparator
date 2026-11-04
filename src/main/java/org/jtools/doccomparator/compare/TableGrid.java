@@ -55,7 +55,7 @@ final class TableGrid {
                 String merge = cell.formatting().get("vMerge");
                 boolean continued = merge != null && !merge.equals("restart");
                 if (!continued) {
-                    row.add(new Item(table.story(), table.label(),
+                    row.add(new Item(table.story(),
                             Items.within(table.places(), Item.Place.inCell(number, r + 1, row.size() + 1)),
                             paragraph(cell), null, cell.formatting()));
                 } else {

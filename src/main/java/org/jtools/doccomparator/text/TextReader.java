@@ -30,7 +30,6 @@ import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Template;
 import org.jtools.doccomparator.document.WordDocument;
-import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * Reads plain text — pasted, dropped — into a WordDocument, so it compares as a document does: a body alone, a
@@ -50,7 +49,7 @@ public final class TextReader {
             List<Run> runs = lines[i].isEmpty() ? List.of() : List.of(new Run(lines[i], null, Formatting.NONE));
             paragraphs.add(new Paragraph(null, Formatting.NONE, 0, null, false, runs));
         }
-        return new WordDocument(name, new Story(Story.Kind.BODY, I18n.text("story.body"), paragraphs), List.of(),
+        return new WordDocument(name, new Story(Story.Name.BODY, paragraphs), List.of(),
                 List.of(), StyleSheet.NONE, Template.NONE, false);
     }
 }

@@ -147,7 +147,7 @@ class PairerTest {
     }
 
     private Unit cell(String text, Item.Place place) {
-        return Unit.of(new Item(org.jtools.doccomparator.document.Story.Kind.BODY, "Body", List.of(place),
+        return Unit.of(new Item(org.jtools.doccomparator.document.Story.Name.BODY, List.of(place),
                 Paragraphs.paragraph(text), null), false, vocabulary);
     }
 }

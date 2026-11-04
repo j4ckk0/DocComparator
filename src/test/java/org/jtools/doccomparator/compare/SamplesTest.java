@@ -98,7 +98,7 @@ class SamplesTest {
         assertTrue(comparison.documentDifferences().contains(new PropertyDifference(Aspect.TEMPLATE, "template",
                 "Keldar-Procedure.dotx", "Keldar-Procedure-2026.dotx")));
         StoryComparison headersAndFooters = comparison.stories().get(1);
-        assertEquals("Headers and footers", headersAndFooters.title());
+        assertEquals(StoryComparison.Part.HEADERS_AND_FOOTERS, headersAndFooters.part());
         assertEquals(1, headersAndFooters.differences(), "the footer's revision");
         assertEquals(1, comparison.stories().get(2).differences(), "the footnote");
     }
@@ -149,8 +149,8 @@ class SamplesTest {
         assertEquals(Pairing.Status.MOVED, rowOnRight(body, "Wear safety glasses").status());
         assertTrue(rowOnRight(body, "Wear safety glasses").moved(), "but still moved");
         assertEquals(List.of(), comparison.documentDifferences());
-        assertEquals(List.of("Body", "Footnotes and endnotes"),
-                comparison.stories().stream().map(StoryComparison::title).toList());
+        assertEquals(List.of(StoryComparison.Part.BODY, StoryComparison.Part.NOTES),
+                comparison.stories().stream().map(StoryComparison::part).toList());
 
         List<Pairing> withBlanks = DocumentComparer.compare(REVISION_A, REVISION_B, textOnly.with(Aspect.BLANKS, true))
                 .stories().getFirst().pairings();

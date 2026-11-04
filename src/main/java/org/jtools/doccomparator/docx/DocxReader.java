@@ -32,7 +32,6 @@ import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Template;
 import org.jtools.doccomparator.document.WordDocument;
-import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * Reads a Word document (.docx, and .docm, .dotx, .dotm, which are built alike) into a WordDocument. Reads the file
@@ -68,10 +67,10 @@ public final class DocxReader {
             }
             List<Story> headersAndFooters = readHeadersAndFooters(docx, relationships, stories);
             List<Story> notes = new ArrayList<>();
-            notes.addAll(readNotes(docx, relationships, "footnotes", Story.Kind.FOOTNOTE, "story.footnote", stories));
-            notes.addAll(readNotes(docx, relationships, "endnotes", Story.Kind.ENDNOTE, "story.endnote", stories));
+            notes.addAll(readNotes(docx, relationships, "footnotes", Story.Kind.FOOTNOTE, stories));
+            notes.addAll(readNotes(docx, relationships, "endnotes", Story.Kind.ENDNOTE, stories));
 
-            return new WordDocument(String.valueOf(file.getFileName()), new Story(Story.Kind.BODY, I18n.text("story.body"), body),
+            return new WordDocument(String.valueOf(file.getFileName()), new Story(Story.Name.BODY, body),
                     headersAndFooters, notes, styles, readTemplate(docx, relationships), stories.trackedChanges());
         }
     }
@@ -113,26 +112,19 @@ public final class DocxReader {
                 continue;
             }
             boolean header = reference.kind() == Story.Kind.HEADER;
-            String label = I18n.text(header ? "story.header" : "story.footer");
-            label = switch (reference.type()) {
-                case "first" -> I18n.text("story.firstPage", label);
-                case "even" -> I18n.text("story.evenPages", label);
-                default -> label;
-            };
-            if (severalSections) {
-                label = I18n.text("story.section", label, reference.section());
-            }
+            Story.Name name = Story.Name.headerOrFooter(reference.kind(), reference.type(),
+                    severalSections ? reference.section() : 0);
             stories.pictures(new Pictures(docx, docx.relationships(part.get())));   // a header's logo: its own
             try (XmlCursor xml = docx.open(part.get())) {
                 xml.root(header ? "hdr" : "ftr");
-                headersAndFooters.add(new Story(reference.kind(), label, stories.readBlocks(xml)));
+                headersAndFooters.add(new Story(name, stories.readBlocks(xml)));
             }
         }
         return headersAndFooters;
     }
 
     private static List<Story> readNotes(DocxPackage docx, List<Relationship> relationships, String kind,
-                                         Story.Kind storyKind, String label, StoryReader stories) throws DocxException {
+                                         Story.Kind storyKind, StoryReader stories) throws DocxException {
         Optional<String> part = DocxPackage.target(relationships, kind);
         if (part.isEmpty() || !docx.has(part.get())) {
             return List.of();
@@ -140,7 +132,7 @@ public final class DocxReader {
         stories.pictures(new Pictures(docx, docx.relationships(part.get())));
         try (XmlCursor xml = docx.open(part.get())) {
             xml.root(kind);
-            return stories.readNotes(xml, storyKind, label);
+            return stories.readNotes(xml, storyKind);
         }
     }
 

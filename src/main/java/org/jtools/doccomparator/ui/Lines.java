@@ -43,7 +43,6 @@ import org.jtools.doccomparator.document.ListItem;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Picture;
 import org.jtools.doccomparator.document.Run;
-import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.WordDocument;
@@ -162,7 +161,7 @@ final class Lines {
             return;
         }
         int titleLine = lines.size();
-        lines.add(Line.title(story.title()));
+        lines.add(Line.title(ComparisonWords.part(story.part())));
         for (Side side : Side.values()) {
             numbers.put(side, new ListNumbers());
         }
@@ -213,7 +212,7 @@ final class Lines {
             side.linkTo(target, target > line, said ? fonts.small() : null, palette);
         });
         long differences = lines.subList(titleLine, lines.size()).stream().filter(Line::differs).count();
-        lines.set(titleLine, Line.title(story.title() + TITLE_COUNT + count(differences)));
+        lines.set(titleLine, Line.title(ComparisonWords.part(story.part()) + TITLE_COUNT + count(differences)));
     }
 
     /**
@@ -279,7 +278,8 @@ final class Lines {
         }
         Item item = side.of(pairing.left(), pairing.right());
         String notes = notes(pairing, side, List.of());
-        return new LineSide(marking, pairing, null, TextBlock.plain(location(item, true), fonts.small(), palette.faint, palette),
+        return new LineSide(marking, pairing, null,
+                TextBlock.plain(ComparisonWords.location(item, true), fonts.small(), palette.faint, palette),
                 null, columns, notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), palette.faint, palette));
     }
 
@@ -398,7 +398,7 @@ final class Lines {
         }
         TextBlock text = new TextBlock(item.text(), heading && laidOut == null ? fonts.heading() : fonts.text(),
                 palette.text, palette, spans, formatting, I18n.text("line.emptyParagraph"), laidOut).withPictures(pictures(item));
-        String location = inTable ? null : location(item, false);
+        String location = inTable ? null : ComparisonWords.location(item, false);
         TextBlock caption = location == null ? null : TextBlock.plain(location, fonts.small(), palette.faint, palette);
         String notes = notes(pairing, side, formatting);
         return new LineSide(marking, inTable ? null : pairing, marker, caption, text, null,
@@ -427,18 +427,6 @@ final class Lines {
         return pictures;
     }
 
-    /** Where a paragraph or a table is, when the body's flow does not say (or always): "Table 2", "Footer, section 2". */
-    private static String location(Item item, boolean always) {
-        if (item.story() == Story.Kind.BODY && item.places().isEmpty() && !always) {
-            return null;
-        }
-        String location = item.location();
-        if (item.story() == Story.Kind.BODY) {
-            location = location.substring(location.indexOf(Item.BETWEEN_PLACES) + Item.BETWEEN_PLACES.length());
-            location = Character.toUpperCase(location.charAt(0)) + location.substring(1);
-        }
-        return location;
-    }
 
     /** What else differs, this side's values: "heading: heading 2 · formatting (dotted): bold: true → (none)". */
     private static String notes(Pairing pairing, Side side, List<FormatSpan> formatting) {

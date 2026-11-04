@@ -356,8 +356,8 @@ final class ParagraphComparer {
      */
     private List<PropertyDifference> properties(Paragraph a, Paragraph b, Item itemA, Item itemB) {
         Differences differences = new Differences(options);
-        differences.add(Aspect.SECTIONS, I18n.text("compared.story"), I18n.text("value.story." + itemA.story().name()),
-                I18n.text("value.story." + itemB.story().name()));
+        differences.add(Aspect.SECTIONS, I18n.text("compared.story"), I18n.text("value.story." + itemA.story().kind().name()),
+                I18n.text("value.story." + itemB.story().kind().name()));
         differences.add(Aspect.HEADINGS, I18n.text("compared.heading"), heading(a.headingLevel()),
                 heading(b.headingLevel()));
         differences.add(Aspect.LISTS, I18n.text("compared.list"), list(a.listItem()), list(b.listItem()));

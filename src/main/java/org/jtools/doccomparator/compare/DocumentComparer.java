@@ -63,19 +63,19 @@ public final class DocumentComparer {
 
     private Comparison compare() {
         List<StoryComparison> stories = new ArrayList<>();
-        stories.add(compare(I18n.text("part.body"), List.of(left.body()), List.of(right.body())));
+        stories.add(compare(StoryComparison.Part.BODY, List.of(left.body()), List.of(right.body())));
         if (options.has(Aspect.HEADERS_AND_FOOTERS)) {
-            stories.add(compare(I18n.text("part.headersAndFooters"), left.headersAndFooters(),
+            stories.add(compare(StoryComparison.Part.HEADERS_AND_FOOTERS, left.headersAndFooters(),
                     right.headersAndFooters()));
         }
-        stories.add(compare(I18n.text("part.notes"), left.notes(), right.notes()));
+        stories.add(compare(StoryComparison.Part.NOTES, left.notes(), right.notes()));
         return new Comparison(left, right, options, stories, documentDifferences());
     }
 
     // -----------------------------------------------------------------------------------------------------------------
     // The stories
 
-    private StoryComparison compare(String title, List<Story> leftStories, List<Story> rightStories) {
+    private StoryComparison compare(StoryComparison.Part part, List<Story> leftStories, List<Story> rightStories) {
         List<Unit> l = units(leftStories);
         List<Unit> r = units(rightStories);
         List<Slot> slots = Slot.align(l.size(), r.size(), Pairer.pair(l, r));
@@ -105,7 +105,7 @@ public final class DocumentComparer {
                 }
             }
         }
-        return new StoryComparison(title, pairings);
+        return new StoryComparison(part, pairings);
     }
 
     /** A paragraph or table alone counts as text: added, or removed. */

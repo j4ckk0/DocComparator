@@ -32,25 +32,20 @@ import org.jtools.doccomparator.i18n.I18n;
  * (TableComparer). Text boxes are opened into their paragraphs and tables, each knowing where it was. A cell of a table
  * is an item too, its paragraphs one text, its paragraph the first's properties.
  *
- * @param story     the kind of story it is in
- * @param label     the story's label ("Body", "Footnote 2")
+ * @param story     the story it is in
  * @param places    the text boxes, the table and the cell it is in, the outermost first; empty in the flow of the story
  * @param paragraph the paragraph; for a table, its text alone, cell after cell
  * @param table     the table, null for a paragraph or a cell
  * @param cell      a cell's own properties (w:tcPr); none for a paragraph or a table
  */
-public record Item(Story.Kind story, String label, List<Place> places, Paragraph paragraph, Table table,
-                   Formatting cell) {
+public record Item(Story.Name story, List<Place> places, Paragraph paragraph, Table table, Formatting cell) {
 
     public Item {
         places = List.copyOf(places);
     }
 
-    /** Between the places of a location: the view takes the body's label off by it ("Body, table 2" → "Table 2"). */
-    public static final String BETWEEN_PLACES = ", ";
-
-    public Item(Story.Kind story, String label, List<Place> places, Paragraph paragraph, Table table) {
-        this(story, label, places, paragraph, table, Formatting.NONE);
+    public Item(Story.Name story, List<Place> places, Paragraph paragraph, Table table) {
+        this(story, places, paragraph, table, Formatting.NONE);
     }
 
     /**
@@ -71,7 +66,7 @@ public record Item(Story.Kind story, String label, List<Place> places, Paragraph
             return new Place(false, table, row, column);
         }
 
-        boolean isTable() {
+        public boolean isTable() {
             return !textBox && row == 0;
         }
     }
@@ -82,17 +77,6 @@ public record Item(Story.Kind story, String label, List<Place> places, Paragraph
 
     public String text() {
         return paragraph.text();
-    }
-
-    /** Where it is, for a reader: "Body, table 2", "Body, text box, table 1, row 3, column 1". */
-    public String location() {
-        StringBuilder location = new StringBuilder(label);
-        for (Place place : places) {
-            location.append(BETWEEN_PLACES).append(place.textBox() ? I18n.text("location.textBox")
-                    : place.isTable() ? I18n.text("location.table", place.table())
-                    : I18n.text("location.cell", place.row(), place.column()));
-        }
-        return location.toString();
     }
 
     /**

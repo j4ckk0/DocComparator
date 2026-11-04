@@ -22,8 +22,13 @@ package org.jtools.doccomparator.compare;
 
 import java.util.List;
 
-/** The pairings of one kind of story compared — "Body", "Headers and footers", "Footnotes and endnotes". */
-public record StoryComparison(String title, List<Pairing> pairings) {
+/** The pairings of one part of the documents compared: the body, the headers and footers, the notes. */
+public record StoryComparison(Part part, List<Pairing> pairings) {
+
+    /** A part of the documents, compared on its own: its stories paired with the other document's. */
+    public enum Part {
+        BODY, HEADERS_AND_FOOTERS, NOTES
+    }
 
     public StoryComparison {
         pairings = List.copyOf(pairings);

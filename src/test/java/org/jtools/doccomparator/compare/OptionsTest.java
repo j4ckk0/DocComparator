@@ -45,7 +45,7 @@ class OptionsTest {
         List<PropertyDifference> all = everyDifference(CompareOptions.DEFAULT);
         assertEquals(List.of(), all, "no layout by default");
         Comparison comparison = DocumentComparer.compare(REVISION_A, REVISION_B, CompareOptions.DEFAULT);
-        assertEquals("Headers and footers", comparison.stories().get(1).title());
+        assertEquals(StoryComparison.Part.HEADERS_AND_FOOTERS, comparison.stories().get(1).part());
         assertEquals(Pairing.Status.SAME, pairing(comparison, "Records").status(), "a heading's level is layout");
     }
 
@@ -170,7 +170,7 @@ class OptionsTest {
 
     private static WordDocument document(org.jtools.doccomparator.document.Table table) {
         return new WordDocument("test.docx", new org.jtools.doccomparator.document.Story(
-                org.jtools.doccomparator.document.Story.Kind.BODY, "Body", List.of(table)), List.of(), List.of(),
+                org.jtools.doccomparator.document.Story.Name.BODY, List.of(table)), List.of(), List.of(),
                 org.jtools.doccomparator.document.StyleSheet.NONE, org.jtools.doccomparator.document.Template.NONE,
                 false);
     }

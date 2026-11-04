@@ -434,8 +434,10 @@ class DocxReaderTest {
                 .wordPart("rIdH2", "header", "header2.xml", "w:hdr", "<w:p><w:r><w:t>The first page's</w:t></w:r></w:p>")
                 .wordPart("rIdF1", "footer", "footer1.xml", "w:ftr", "<w:p><w:r><w:t>The footer</w:t></w:r></w:p>"));
 
-        assertEquals(List.of("Header, section 1", "Header (first page), section 2", "Footer, section 2"),
-                document.headersAndFooters().stream().map(Story::label).toList());
+        assertEquals(List.of(Story.Name.headerOrFooter(Story.Kind.HEADER, "default", 1),
+                Story.Name.headerOrFooter(Story.Kind.HEADER, Story.Name.FIRST_PAGE, 2),
+                Story.Name.headerOrFooter(Story.Kind.FOOTER, "default", 2)),
+                document.headersAndFooters().stream().map(Story::name).toList());
         assertEquals(List.of(Story.Kind.HEADER, Story.Kind.HEADER, Story.Kind.FOOTER),
                 document.headersAndFooters().stream().map(Story::kind).toList());
         assertEquals(List.of("The first page's"), texts(paragraphs(document.headersAndFooters().get(1))));
@@ -457,7 +459,7 @@ class DocxReaderTest {
         assertEquals(1, document.notes().size());
         Story note = document.notes().getFirst();
         assertEquals(Story.Kind.FOOTNOTE, note.kind());
-        assertEquals("Footnote 1", note.label());
+        assertEquals(Story.Name.note(Story.Kind.FOOTNOTE, 1), note.name());
         assertEquals(List.of(" A note."), texts(paragraphs(note)));
         assertEquals("noted", paragraphs(document.body()).getFirst().text());
     }
