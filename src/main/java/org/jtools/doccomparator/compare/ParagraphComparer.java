@@ -370,7 +370,7 @@ final class ParagraphComparer {
 
     /** A paragraph without a style is in the default one, which Word names "Normal". */
     private static String paragraphStyleName(StyleSheet styles, String id) {
-        return Objects.requireNonNullElse(styleName(styles, id), "Normal");
+        return Objects.requireNonNullElse(styleName(styles, styles.paragraphStyle(id)), "Normal");
     }
 
     private static String heading(int level) {

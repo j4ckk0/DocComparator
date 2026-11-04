@@ -17,6 +17,7 @@ final class StylesReader {
         Map<String, Style> styles = new LinkedHashMap<>();
         Formatting defaultParagraph = Formatting.NONE;
         Formatting defaultRun = Formatting.NONE;
+        String defaultParagraphStyle = null;
         while (xml.nextChild()) {
             if (xml.isWord("docDefaults")) {
                 while (xml.nextChild()) {
@@ -29,15 +30,20 @@ final class StylesReader {
                     }
                 }
             } else if (xml.isWord("style")) {
+                String isDefault = xml.wordAttribute("default");
                 Style style = readStyle(xml);
                 if (style.id() != null) {
                     styles.put(style.id(), style);
+                    if (("1".equals(isDefault) || "true".equals(isDefault)) && "paragraph".equals(style.type())
+                            && defaultParagraphStyle == null) {
+                        defaultParagraphStyle = style.id();
+                    }
                 }
             } else {
                 xml.skip();   // w:latentStyles: how Word offers the built-in styles not used
             }
         }
-        return new StyleSheet(styles, defaultParagraph, defaultRun);
+        return new StyleSheet(styles, defaultParagraph, defaultRun, defaultParagraphStyle);
     }
 
     private static Style readStyle(XmlCursor xml) throws DocxException {

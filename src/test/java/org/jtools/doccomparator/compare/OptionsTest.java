@@ -35,6 +35,7 @@ class OptionsTest {
         assertFound(Aspect.STYLES, "paragraph style");
         assertFound(Aspect.CHARACTERS, "italic");
         assertFound(Aspect.INDENTATION, "indent left");
+        assertFound(Aspect.SPACING, "spacing after");
         assertFound(Aspect.TABLE_LAYOUT, "rows");
         assertFound(Aspect.TABLE_LAYOUT, "row height");
         assertFound(Aspect.CELLS, "cell shading");

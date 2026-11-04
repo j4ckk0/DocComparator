@@ -99,12 +99,12 @@ final class Differences {
 
     /**
      * A paragraph's formatting as it applies: the document's default, then the styles its style is based on, the
-     * farthest first, then its style, then its own — the nearest wins. Two documents on different templates may lay
+     * farthest first, then its style (the default paragraph style if it names none), then its own — the nearest wins. Two documents on different templates may lay
      * out alike paragraphs that set nothing themselves.
      */
     static Formatting effective(StyleSheet styles, String styleId, Formatting own) {
         List<Style> chain = new ArrayList<>();
-        Style style = styles.style(styleId);
+        Style style = styles.style(styles.paragraphStyle(styleId));   // no style named: the default one, "Normal"
         for (int depth = 0; style != null && depth < LONGEST_CHAIN; depth++) {
             chain.add(style);
             style = styles.style(style.basedOn());

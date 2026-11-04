@@ -6,10 +6,18 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** The styles of a document by id, and its defaults: what a paragraph and a run are when nothing else says. */
-public record StyleSheet(Map<String, Style> styles, Formatting defaultParagraph, Formatting defaultRun) {
+/**
+ * The styles of a document by id, and its defaults: what a paragraph and a run are when nothing else says, and the
+ * style of a paragraph that names none (Word's "Normal", the paragraph style marked w:default; null when none is).
+ */
+public record StyleSheet(Map<String, Style> styles, Formatting defaultParagraph, Formatting defaultRun,
+                         String defaultParagraphStyle) {
 
     public static final StyleSheet NONE = new StyleSheet(Map.of(), Formatting.NONE, Formatting.NONE);
+
+    public StyleSheet(Map<String, Style> styles, Formatting defaultParagraph, Formatting defaultRun) {
+        this(styles, defaultParagraph, defaultRun, null);
+    }
 
     /** Word's built-in heading styles keep their English name whatever the language: "heading 1" is "Titre 1" on screen. */
     private static final Pattern HEADING_NAME = Pattern.compile("(?i)heading ([1-9])");
@@ -19,6 +27,11 @@ public record StyleSheet(Map<String, Style> styles, Formatting defaultParagraph,
 
     public StyleSheet {
         styles = Collections.unmodifiableMap(new LinkedHashMap<>(styles));
+    }
+
+    /** The style of a paragraph: the one it names, else the default paragraph style; null for none. */
+    public String paragraphStyle(String id) {
+        return id != null ? id : defaultParagraphStyle;
     }
 
     /** The style of this id; null for none, or one the document does not define. */

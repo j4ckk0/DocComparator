@@ -314,7 +314,14 @@ final class StoryReader {
                     readCells(child, cells);
                 }
             });
-            rows.add(new Table.Row(properties[0], cells));
+            // a row inserted or deleted with track changes: read as accepted, as all tracked changes are
+            Formatting row = properties[0];
+            if (sets(row, "ins") || sets(row, "del")) {
+                trackedChanges = true;
+            }
+            if (!sets(row, "del")) {
+                rows.add(new Table.Row(row.without("ins", "del"), cells));
+            }
         } else if (xml.isWord("sdt")) {
             xml.sdtContent(content -> content.forChildren(child -> readRows(child, rows)));
         } else if (xml.isWord("customXml")) {
@@ -322,6 +329,11 @@ final class StoryReader {
         } else {
             xml.skip();   // w:tblGrid: the columns' widths
         }
+    }
+
+    /** Whether a formatting sets this property: its value, or one of its attributes (w:ins w:author="…"). */
+    private static boolean sets(Formatting formatting, String name) {
+        return formatting.values().keySet().stream().anyMatch(key -> key.equals(name) || key.startsWith(name + "."));
     }
 
     private void readCells(XmlCursor xml, List<Table.Cell> cells) throws DocxException {
@@ -335,7 +347,13 @@ final class StoryReader {
                     readBlock(xml, blocks);
                 }
             }
-            cells.add(new Table.Cell(properties, blocks));
+            // a cell inserted, deleted or merged with track changes: read as accepted
+            if (sets(properties, "cellIns") || sets(properties, "cellDel") || sets(properties, "cellMerge")) {
+                trackedChanges = true;
+            }
+            if (!sets(properties, "cellDel")) {
+                cells.add(new Table.Cell(properties.without("cellIns", "cellDel", "cellMerge"), blocks));
+            }
         } else if (xml.isWord("sdt")) {
             xml.sdtContent(content -> content.forChildren(child -> readCells(child, cells)));
         } else if (xml.isWord("customXml")) {

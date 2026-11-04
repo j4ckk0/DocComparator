@@ -159,6 +159,35 @@ class DocxReaderTest {
         assertEquals(List.of("within"), texts(paragraphs(within.rows().getFirst().cells().getFirst().blocks())));
     }
 
+    @Test
+    void rowsAndCellsChangedWithTrackChangesAreReadAsAccepted() throws IOException {
+        WordDocument document = read(TestDocx.body("""
+                <w:tbl>
+                  <w:tr><w:trPr><w:trHeight w:val="400"/><w:tblHeader/></w:trPr>
+                    <w:tc><w:p><w:r><w:t>kept</w:t></w:r></w:p></w:tc></w:tr>
+                  <w:tr><w:trPr><w:ins w:id="1" w:author="M. Laurent" w:date="2026-10-20T09:30:00Z"/></w:trPr>
+                    <w:tc><w:p><w:r><w:t>inserted</w:t></w:r></w:p></w:tc></w:tr>
+                  <w:tr><w:trPr><w:del w:id="2" w:author="M. Laurent" w:date="2026-10-20T09:31:00Z"/></w:trPr>
+                    <w:tc><w:p><w:r><w:delText>deleted</w:delText></w:r></w:p></w:tc></w:tr>
+                  <w:tr>
+                    <w:tc><w:p><w:r><w:t>a</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:tcPr><w:cellDel w:id="3" w:author="M. Laurent"/></w:tcPr><w:p/></w:tc>
+                    <w:tc><w:tcPr><w:cellIns w:id="4" w:author="M. Laurent"/><w:shd w:fill="FFFF00"/></w:tcPr>
+                      <w:p><w:r><w:t>b</w:t></w:r></w:p></w:tc>
+                  </w:tr>
+                </w:tbl>
+                """));
+
+        Table table = assertInstanceOf(Table.class, document.body().blocks().getFirst());
+        assertEquals(3, table.rows().size(), "the row deleted is no more");
+        assertEquals(Map.of("trHeight", "400", "tblHeader", "true"), table.rows().getFirst().formatting().values());
+        assertEquals(Map.of(), table.rows().get(1).formatting().values(), "inserted: an ordinary row now");
+        List<Table.Cell> cells = table.rows().get(2).cells();
+        assertEquals(2, cells.size(), "the cell deleted is no more");
+        assertEquals(Map.of("shd.fill", "FFFF00"), cells.get(1).formatting().values());
+        assertTrue(document.hasTrackedChanges());
+    }
+
     /** Word writes a text box twice — for itself, and in VML for older versions — and it is read once. */
     @Test
     void aTextBoxFollowsItsParagraphOnce() throws IOException {

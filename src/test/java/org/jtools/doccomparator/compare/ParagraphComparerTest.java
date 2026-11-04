@@ -92,6 +92,22 @@ class ParagraphComparerTest {
     }
 
     @Test
+    void aParagraphWithoutAStyleIsLaidOutByTheDefaultOne() {
+        StyleSheet tight = normal(Map.of("spacing.after", "0"));
+        StyleSheet airy = normal(Map.of("spacing.after", "240"));
+        Vocabulary vocabulary = new Vocabulary();
+        ParagraphDiff diff = new ParagraphComparer(CompareOptions.TEXT_ONLY.with(Aspect.SPACING, true), vocabulary,
+                tight, airy).compare(Paragraphs.unit(paragraph("Plain text."), false, vocabulary),
+                Paragraphs.unit(paragraph("Plain text."), false, vocabulary));
+        assertEquals(List.of(new PropertyDifference(Aspect.SPACING, "spacing after", "0", "240")), diff.properties());
+    }
+
+    private static StyleSheet normal(Map<String, String> paragraph) {
+        return new StyleSheet(Map.of("Normal", new Style("Normal", "Normal", "paragraph", null,
+                new Formatting(paragraph), Formatting.NONE)), Formatting.NONE, Formatting.NONE, "Normal");
+    }
+
+    @Test
     void theStructureIsCompared() {
         Paragraph heading = paragraph(null, 1, null, run("Records"));
         Paragraph item = paragraph(null, 0, new ListItem("4", 0, "decimal", "%1."), run("Records"));
