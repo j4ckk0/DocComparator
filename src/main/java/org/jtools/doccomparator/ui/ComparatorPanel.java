@@ -76,8 +76,6 @@ public final class ComparatorPanel extends JPanel {
 
     private final ComparisonView view = new ComparisonView();
     private final JScrollPane scroll = new JScrollPane(view);
-    private final DocumentHeader leftHeader = new DocumentHeader(true);
-    private final DocumentHeader rightHeader = new DocumentHeader(false);
     private final JLabel status = new JLabel(" ");
     private final JLabel position = new JLabel(" ");
     private final Action openLeft = action("Open left…", "Open the left document",
@@ -91,6 +89,9 @@ public final class ComparatorPanel extends JPanel {
             KeyStroke.getKeyStroke(KeyEvent.VK_F7, InputEvent.SHIFT_DOWN_MASK), () -> goToDifference(false));
     private final Action next = action("Next ▼", "Go to the next difference (F7)",
             KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0), () -> goToDifference(true));
+    // after the actions: their Open… buttons are made of them (fields are made in the order they are written)
+    private final DocumentHeader leftHeader = new DocumentHeader(true);
+    private final DocumentHeader rightHeader = new DocumentHeader(false);
 
     private Path leftPath;
     private Path rightPath;
