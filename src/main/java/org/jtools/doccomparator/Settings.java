@@ -29,9 +29,10 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 /**
- * The program's settings — its look, its language —, kept in doccomparator.properties, beside the program (doccomparator.jar): in
- * its folder, as a portable program keeps them, never in the registry or the user's folder. Written only when a
- * setting changes; a folder that cannot be written in keeps nothing, and the program goes on.
+ * The program's settings — its look, its language, the ribbon open or collapsed —, kept in doccomparator.properties,
+ * beside the program (doccomparator.jar): in its folder, as a portable program keeps them, never in the registry or
+ * the user's folder. Written only when a setting changes; a folder that cannot be written in keeps nothing, and the
+ * program goes on.
  */
 final class Settings {
 

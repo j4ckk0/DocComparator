@@ -172,7 +172,8 @@ final class OptionControls {
     /**
      * The ribbon, as Word has it: groups side by side, each its name under its buttons, set in columns — going
      * through the differences (these actions), then the view, what is compared (the text, then the layout by group),
-     * then what is shown; in its top right corner, the button collapsing it to a strip, and opening it again.
+     * what is shown, then the presets; in its top right corner, the button collapsing it to a strip, and opening it
+     * again.
      */
     JPanel ribbon(Action... go) {
         JPanel ribbon = ribbonGroups;
