@@ -221,7 +221,7 @@ class ComparatorPanelTest {
         return texts;
     }
 
-    /** Text pasted on each side: compared as two documents are, a paragraph a line; the title saying so. */
+    /** Text pasted on each side: compared as two documents are, a paragraph a line; their names saying so. */
     @Test
     void pastedTextsAreCompared() throws Exception {
         ComparatorPanel[] panel = new ComparatorPanel[1];
@@ -236,7 +236,7 @@ class ComparatorPanelTest {
             SwingUtilities.invokeAndWait(() -> differences[0] = view(panel[0]).differenceCount()[0]);
         }
         assertEquals(1, differences[0], "two → 2");
-        assertEquals("Pasted text ↔ Pasted text — DocComparator", panel[0].title());
+        assertEquals("Pasted text ↔ Pasted text", panel[0].documentNames());
     }
 
     /**

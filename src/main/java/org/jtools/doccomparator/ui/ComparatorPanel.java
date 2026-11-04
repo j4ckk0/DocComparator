@@ -70,6 +70,11 @@ import org.jtools.doccomparator.i18n.I18nLabels;
  */
 public final class ComparatorPanel extends JPanel {
 
+    /** Between the two documents' names, in the window's title. */
+    private static final String BETWEEN_NAMES = " ↔ ";
+    /** The name of a side without its document yet. */
+    private static final String NO_NAME = "…";
+
     private final ComparisonView view = new ComparisonView();
     private final JScrollPane scroll = new JScrollPane(view);
     /** The labels of the panel and of its parts, which it gives them: set again together when the language changes. */
@@ -125,7 +130,7 @@ public final class ComparatorPanel extends JPanel {
     private WordDocument rightDocument;
     private Comparison comparison;
     private SwingWorker<?, ?> running;
-    private Consumer<String> titleListener = title -> { };
+    private Consumer<String> namesListener = names -> { };
     private File lastDirectory;
 
     public ComparatorPanel() {
@@ -184,10 +189,10 @@ public final class ComparatorPanel extends JPanel {
         compare();
     }
 
-    /** Told the window's title each time the documents change. */
-    public void onTitle(Consumer<String> listener) {
-        titleListener = listener;
-        listener.accept(title());
+    /** Told the documents' names each time they change (documentNames()), for the window's title. */
+    public void onDocumentNames(Consumer<String> listener) {
+        namesListener = listener;
+        listener.accept(documentNames());
     }
 
     /** Told when the Dark box of the ribbon is ticked or not: the window changes its look. */
@@ -303,7 +308,7 @@ public final class ComparatorPanel extends JPanel {
     private void compare() {
         leftHeader.show(left, null);
         rightHeader.show(right, null);
-        titleListener.accept(title());
+        namesListener.accept(documentNames());
         updateActions();
         if (running != null) {
             running.cancel(false);
@@ -461,16 +466,16 @@ public final class ComparatorPanel extends JPanel {
         }
     }
 
-    String title() {
-        String app = "DocComparator";
+    /** The documents' names, left then right: "a.docx ↔ b.docx", "a.docx ↔ …"; empty when none is open. */
+    String documentNames() {
         if (left == null && right == null) {
-            return app;
+            return "";
         }
-        return name(left) + " ↔ " + name(right) + " — " + app;
+        return name(left) + BETWEEN_NAMES + name(right);
     }
 
     private static String name(DocumentSource source) {
-        return source == null ? "…" : source.name();
+        return source == null ? NO_NAME : source.name();
     }
 
     // -----------------------------------------------------------------------------------------------------------------

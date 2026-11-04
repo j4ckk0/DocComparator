@@ -77,7 +77,7 @@ fields, indexed by `Side` (finding 1); `swap()` exchanges the two instances. The
 **Effort / risk:** small to medium, after finding 1. `ComparatorPanelTest` covers paste, swap, the chosen side and
 the waiting side.
 
-### 3. The window's title is passed through a string replace
+### 3. The window's title is passed through a string replace — done
 
 **Where:**
 - `ComparatorPanel.title()` builds `"a.docx ↔ b.docx — DocComparator"` with the name written as a literal.

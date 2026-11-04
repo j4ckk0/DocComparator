@@ -47,7 +47,9 @@ import org.jtools.doccomparator.ui.ComparatorPanel;
 /** The program's only window: the comparison and its menus. Closing it, or File ▸ Exit, ends the program. */
 final class MainWindow extends JFrame {
 
-    static final String APP_NAME = "DocComparator";
+    private static final String APP_NAME = "DocComparator";
+    /** Between the documents' names and the program's, in the title. */
+    private static final String TITLE_SEPARATOR = " — ";
     private final ComparatorPanel panel = new ComparatorPanel();
     private final Settings settings;
     /** The menus' own labels; the panel's are its own. */
@@ -58,15 +60,14 @@ final class MainWindow extends JFrame {
     private final List<JRadioButtonMenuItem> lookItems = new ArrayList<>();
 
     MainWindow(Settings settings) {
-        super(title());
+        super(title(""));
         this.settings = settings;
         // the JVM ends with its last window: nothing else keeps it running
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         useSwingLocale();
         setJMenuBar(menuBar());
         add(panel, BorderLayout.CENTER);
-        String version = title();
-        panel.onTitle(title -> setTitle(title.replace(APP_NAME, version)));
+        panel.onDocumentNames(names -> setTitle(title(names)));
         panel.onDarkMode(dark -> applyLook(Looks.inMode(currentLook(), dark)));
         panel.showDarkMode(Looks.isDark());
         panel.showRibbon(Boolean.parseBoolean(settings.get(Settings.RIBBON, "true")));
@@ -147,10 +148,14 @@ final class MainWindow extends JFrame {
         }
     }
 
-    /** The name and the version, which the jar's manifest holds; the name alone when run from the classes. */
-    static String title() {
+    /**
+     * The window's title: the documents' names, if any are open, then the program's name and its version, which the
+     * jar's manifest holds (the name alone when run from the classes).
+     */
+    static String title(String documentNames) {
         String version = MainWindow.class.getPackage().getImplementationVersion();
-        return version == null ? APP_NAME : APP_NAME + " " + version;
+        String program = version == null ? APP_NAME : APP_NAME + " " + version;
+        return documentNames.isEmpty() ? program : documentNames + TITLE_SEPARATOR + program;
     }
 
     private JMenuBar menuBar() {
