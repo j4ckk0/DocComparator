@@ -112,8 +112,8 @@ public final class ComparatorPanel extends JPanel {
         }
 
         @Override
-        public boolean leftOpened() {
-            return left != null;
+        public boolean leftChosen() {
+            return view.leftChosen();
         }
 
         @Override

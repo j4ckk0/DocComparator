@@ -134,7 +134,7 @@ final class DropHandler extends TransferHandler {
 
     private boolean leftHalf(TransferSupport support) {
         if (!support.isDrop()) {
-            return !opener.leftOpened();   // pasted: the side not open yet, the left first
+            return opener.leftChosen();   // pasted: on the side chosen, as every paste
         }
         Point at = SwingUtilities.convertPoint(support.getComponent(), support.getDropLocation().getDropPoint(), area);
         return at.x < area.getWidth() / 2;

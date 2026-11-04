@@ -34,8 +34,8 @@ interface DocumentOpener {
     /** Compares this text on its side, as a document of a paragraph a line, the other side kept. */
     void paste(boolean onLeft, String text);
 
-    /** Whether the left side has its document. */
-    boolean leftOpened();
+    /** Whether the side chosen, where text pasted goes, is the left: the side last clicked. */
+    boolean leftChosen();
 
     /** Says, in the status line, why what was asked was not done. */
     void refuse(String why);

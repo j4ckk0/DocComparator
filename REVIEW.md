@@ -130,7 +130,7 @@ the mouse and the scrolling, at around 380 lines.
 **Effort / risk:** medium. Painting has no assertion beyond "draws without a screen" (`LinesTest`), so check it by
 eye on the samples, light and dark, in both views.
 
-### 6. A second rule for where pasted text goes, which no code path of the program reaches
+### 6. A second rule for where pasted text goes, which no code path of the program reaches — done
 
 **Where:**
 - `DropHandler.leftHalf`: when pasted, not dropped, and no side was given, the text goes to "the side not open yet,

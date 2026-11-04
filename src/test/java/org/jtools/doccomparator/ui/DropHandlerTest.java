@@ -38,7 +38,7 @@ class DropHandlerTest {
 
     /** What was asked of the comparison, said: "paste left: …", "refused: …". */
     private final List<String> asked = new ArrayList<>();
-    private boolean leftOpened;
+    private boolean leftChosen = true;
     private final DocumentOpener opener = new DocumentOpener() {
         @Override
         public void open(boolean onLeft, Path path) {
@@ -56,8 +56,8 @@ class DropHandlerTest {
         }
 
         @Override
-        public boolean leftOpened() {
-            return leftOpened;
+        public boolean leftChosen() {
+            return leftChosen;
         }
 
         @Override
@@ -74,11 +74,11 @@ class DropHandlerTest {
     }
 
     @Test
-    void textPastedWithoutASideGoesWhereNothingIsYet() {
+    void textPastedWithoutASideGoesToTheSideChosen() {
         JPanel area = new JPanel();
         DropHandler handler = new DropHandler(opener, area, null);
         handler.importData(new TransferSupport(area, new StringSelection("first")));
-        leftOpened = true;
+        leftChosen = false;
         handler.importData(new TransferSupport(area, new StringSelection("second")));
         assertEquals(List.of("paste left: first", "paste right: second"), asked);
     }
