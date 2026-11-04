@@ -1,4 +1,4 @@
-# Publishing DocComparator on Maven Central
+# Publishing DocComparator: its licence, Maven Central, GitHub's releases
 
 The licence the program is published under, and how it reaches Maven Central as `org.jtools:doccomparator`, the
 same way as the other jtools projects (XsdViewer). Checked against the tree at version 1.5 (4 November 2026).
@@ -63,3 +63,27 @@ Learnt with XsdViewer (5 September 2026), true here too:
   `deploymentState: VALIDATED` means it is staged and waiting for **Publish**.
 
 These builds use the network (plugins, the upload): the program does not.
+
+## 3. A release on GitHub
+
+What a user downloads: the two self-contained distributions of `scripts/package.sh`, each with its Java runtime, on
+the repository's Releases page, with the version's notes from `CHANGELOG.md` and the archives' SHA-256. A release is
+public as soon as it is made: it is made when asked for, never as a side effect of a push.
+
+1. Bump the version in `pom.xml`: `<revision>` (`1.6`) and `<windowsVersion>` (`1.6.0.0`, the four parts launch4j
+   wants).
+2. Give `CHANGELOG.md` its section, `## 1.6 — <date>`: what the version brings, a bullet list, for a user.
+3. Commit, tag and push the tag:
+
+       git tag -a v1.6 -m "1.6"
+       git push origin main v1.6
+
+The tag starts `.github/workflows/release.yml` on GitHub: it checks that the tag, the pom and the changelog agree,
+deploys the externals (`scripts/setup.sh`), builds and tests the distributions (`scripts/package.sh`), and creates
+the release with the two archives (`gh release create`, with the workflow's own token: no personal token is
+involved). Every push of `main` also runs `.github/workflows/build.yml`: the build and the tests, without a screen.
+
+By hand, should the workflow be unavailable: `scripts/package.sh`, then `scripts/release.sh 1.6`, which creates the
+release from the pushed tag and uploads the archives — with a fine-grained token for this repository only (*Contents:
+read and write*), in `$GITHUB_TOKEN` or `~/.config/github/doccomparator-release-token`. `scripts/release.sh --dry-run
+1.6` prints the notes and calls nothing.

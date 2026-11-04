@@ -1,0 +1,46 @@
+# A pushed tag vX.Y publishes the release: the two self-contained distributions (scripts/package.sh, each with its
+# Temurin JRE), the notes from CHANGELOG.md's "## X.Y" section, the checksums. The by-hand way is scripts/package.sh
+# then scripts/release.sh (see PUBLISHING.md, section 3).
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check that the tag matches the pom and the changelog
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          grep -q "<revision>$version</revision>" pom.xml || { echo "pom.xml is not at version $version"; exit 1; }
+          scripts/changelog-section.py "$version" > /dev/null
+
+      - name: Keep the externals' downloads from one release to the next
+        uses: actions/cache@v4
+        with:
+          path: external/downloads
+          key: externals-${{ hashFiles('externals.conf') }}
+
+      - name: Deploy the externals (JDK, Maven, the JREs bundled)
+        run: scripts/setup.sh
+
+      - name: Build and test, then package
+        run: scripts/package.sh
+
+      - name: Release notes
+        run: scripts/release.sh --body "${GITHUB_REF_NAME#v}" > body.md && cat body.md
+
+      - name: Create the release with the archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" --title "DocComparator $version" --notes-file body.md \
+            "releases/doccomparator-$version-windows.zip" "releases/doccomparator-$version-linux.tar.gz"

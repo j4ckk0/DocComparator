@@ -1,5 +1,6 @@
 # DocComparator
 
+[![build](https://github.com/j4ckk0/DocComparator/actions/workflows/build.yml/badge.svg)](https://github.com/j4ckk0/DocComparator/actions/workflows/build.yml)
 [![Licence: Apache 2.0](https://img.shields.io/badge/licence-Apache%202.0-blue)](LICENSE)
 ![Java 21](https://img.shields.io/badge/Java-21-orange)
 ![Windows | Linux](https://img.shields.io/badge/runs%20on-Windows%20%7C%20Linux-lightgrey)
@@ -349,6 +350,7 @@ scripts\setup.bat, scripts\run.bat    # same, on Windows
 | `scripts/run.sh` / `.bat` | builds the jar if a source is newer, then runs it; `--rebuild` forces the build, the other arguments go to the program |
 | `scripts/package.sh` / `.bat` | builds the distributions into `releases/` (see "Packaging") |
 | `scripts/ci.sh` | a clean build with every test, run by `.githooks/pre-push` |
+| `scripts/release.sh` | by hand, the GitHub release of a pushed tag (the release workflow does it on its own, see PUBLISHING.md); `scripts/changelog-section.py` gives it the version's notes |
 
 On Linux, the scripts run one build at a time: `run.sh`, `build.sh`, `ci.sh`, `package.sh` and a push wait for a build in
 progress and say so, as each starts by deleting what the other is using. A running program holds nothing up.
@@ -382,7 +384,7 @@ of FlatLaf, whose classes `doccomparator.jar` holds. Previous versions' archives
 
 ## Publishing
 
-The licence, and how the program reaches Maven Central (`org.jtools:doccomparator`): [PUBLISHING.md](PUBLISHING.md).
+The licence, how the program reaches Maven Central (`org.jtools:doccomparator`), and how a version becomes a release on GitHub (a pushed tag `vX.Y`): [PUBLISHING.md](PUBLISHING.md); what each version brought: [CHANGELOG.md](CHANGELOG.md).
 In short, `mvn -Ppublish deploy` uploads the
 program's own jar (FlatLaf a dependency of it), its sources and javadoc, signed, to the Central Portal, where it waits
 to be published; the distributions, with their JREs, are never uploaded there.
@@ -404,6 +406,7 @@ to be published; the distributions, with their JREs, are never uploaded there.
 | `samples/` | the sample documents, and the script that writes them (see "Samples") |
 | `src/dist/`, `src/assembly/` | the launchers of the distributions, FlatLaf's licence, and what goes in them |
 | `scripts/` | the scripts above |
+| `.github/workflows/` | `build.yml`, the build and the tests on every push; `release.yml`, the release on a tag `vX.Y` |
 
 ## Licence
 
