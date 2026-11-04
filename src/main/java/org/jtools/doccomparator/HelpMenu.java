@@ -129,7 +129,7 @@ final class HelpMenu {
         }
     }
 
-    /** A dialog: its text, to read and to select; under it, a full licence when there is one (null: none). */
+    /** The dialog over the window, under the title of titleKey. */
     private void show(String titleKey, String text, String fullText) {
         JOptionPane.showMessageDialog(owner, content(text, fullText), I18n.text(titleKey),
                 JOptionPane.INFORMATION_MESSAGE);
