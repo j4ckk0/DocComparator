@@ -93,7 +93,7 @@ final class Palette {
         return new Color(color.getRed(), color.getGreen(), color.getBlue(), 150);
     }
 
-    Color line(Cell.Look look) {
+    Color line(LineSide.Look look) {
         return switch (look) {
             case SAME -> background;
             case CHANGED -> changedLine;
@@ -103,7 +103,7 @@ final class Palette {
         };
     }
 
-    Color mark(Cell.Look look) {
+    Color mark(LineSide.Look look) {
         return switch (look) {
             case SAME -> background;
             case CHANGED -> CHANGED_MARK;

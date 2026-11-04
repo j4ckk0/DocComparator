@@ -42,19 +42,19 @@ final class CopyMenu extends JPopupMenu {
             return;
         }
         Line line = view.lines().get(current);
-        Cell cell = left ? line.left : line.right;
-        if (cell == null) {
+        LineSide side = left ? line.left : line.right;
+        if (side == null) {
             return;
         }
         StringBuilder text = new StringBuilder();
-        if (cell.columns != null) {
-            for (Cell column : cell.columns) {
+        if (side.columns != null) {
+            for (LineSide column : side.columns) {
                 if (column != null && column.text != null) {
                     text.append(text.isEmpty() ? "" : "\t").append(column.text.text());
                 }
             }
         } else {
-            text.append(cell.text.text());
+            text.append(side.text.text());
         }
         String copied = text.toString().replace(String.valueOf(Picture.IN_TEXT), "[picture]");
         Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(copied), null);

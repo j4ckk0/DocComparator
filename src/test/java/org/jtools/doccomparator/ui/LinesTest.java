@@ -42,12 +42,12 @@ class LinesTest {
     void aMovedParagraphLinksToItsMatchBothWays() throws IOException {
         List<Line> lines = Lines.of(compare("procedure-revB.docx"), Shown.ALL, FONTS, Palette.LIGHT);
         int left = lineWith(lines, "Wear safety glasses", true);
-        Cell cell = lines.get(left).left;
-        assertTrue(cell.moved());
-        Line match = lines.get(cell.counterpartLine);
+        LineSide side = lines.get(left).left;
+        assertTrue(side.moved());
+        Line match = lines.get(side.counterpartLine);
         assertNull(match.left);
         assertEquals(left, match.right.counterpartLine);
-        assertNotNull(cell.link(), "said");
+        assertNotNull(side.link(), "said");
     }
 
     @Test
@@ -56,7 +56,7 @@ class LinesTest {
         int line = lineWith(lines, "Document KP-MP-012", true);
         assertEquals("Trainer: J. Petit. Duration: half a day, on the bench, in groups of four.",
                 lines.get(line).right.text.text());
-        assertEquals(Cell.Look.ORPHAN, lines.get(line).look());
+        assertEquals(LineSide.Look.ORPHAN, lines.get(line).look());
     }
 
     @Test
@@ -107,7 +107,7 @@ class LinesTest {
         assertThrows(AssertionError.class, () -> lineWith(comparable, "Why must you wait", false), "the quiz");
         assertThrows(AssertionError.class, () -> lineWith(comparable, "Scope", true));
         int left = lineWith(comparable, "Wear safety glasses", true);
-        Cell moved = comparable.get(left).left;
+        LineSide moved = comparable.get(left).left;
         assertEquals(left, comparable.get(moved.counterpartLine).right.counterpartLine, "links still right");
         long tableRows = comparable.stream().filter(l -> l.left != null && l.left.columns != null).count();
         assertEquals(4, tableRows, "the columns' line and the three rows both tables have; not the oil's");
@@ -124,7 +124,7 @@ class LinesTest {
         assertEquals(List.of("Body", "Headers and footers", "Footnotes and endnotes"),
                 lines.stream().filter(Line::isTitle).map(line -> line.title).toList(), "no difference counted");
         assertTrue(lines.stream().filter(line -> !line.isTitle())
-                .allMatch(line -> line.left == null && line.right != null && line.look() == Cell.Look.SAME));
+                .allMatch(line -> line.left == null && line.right != null && line.look() == LineSide.Look.SAME));
         assertEquals("Maintenance Procedure \u2014 KP-40 Hydraulic Pump", lines.get(1).right.text.text());
         assertTrue(lines.stream().anyMatch(line -> line.right != null && line.right.columns != null), "its table");
     }
@@ -138,11 +138,11 @@ class LinesTest {
         assertTrue(comparison.same());
         for (Line line : Lines.of(comparison, Shown.ALL, FONTS, Palette.LIGHT)) {
             assertFalse(line.differs(), String.valueOf(line.title));
-            for (Cell cell : new Cell[] {line.left, line.right}) {
-                if (cell != null && cell.text != null) {
-                    assertNull(cell.link(), "no move said: " + cell.text.text());
-                    assertTrue(cell.pairing == null || (cell.pairing.left() == null ? List.<Span>of() : cell.pairing.diff().left())
-                            .stream().noneMatch(Span::differs), cell.text.text());
+            for (LineSide side : new LineSide[] {line.left, line.right}) {
+                if (side != null && side.text != null) {
+                    assertNull(side.link(), "no move said: " + side.text.text());
+                    assertTrue(side.pairing == null || (side.pairing.left() == null ? List.<Span>of() : side.pairing.diff().left())
+                            .stream().noneMatch(Span::differs), side.text.text());
                 }
             }
         }
@@ -161,10 +161,10 @@ class LinesTest {
         Graphics2D g = image.createGraphics();
         view.paint(g);
         g.dispose();
-        Cell title = lines.get(lineWith(lines, "Maintenance Procedure", true)).left;
-        Cell body = lines.get(lineWith(lines, "Document KP-MP-012", true)).left;
+        LineSide title = lines.get(lineWith(lines, "Maintenance Procedure", true)).left;
+        LineSide body = lines.get(lineWith(lines, "Document KP-MP-012", true)).left;
         assertTrue(title.height() > body.height(), "the title's style is larger than Normal");
-        Cell indented = lines.get(lineWith(lines, "The parts needed", false)).right;
+        LineSide indented = lines.get(lineWith(lines, "The parts needed", false)).right;
         assertNotNull(indented.text, "laid out");
     }
 
@@ -222,12 +222,12 @@ class LinesTest {
     void theDocumentViewShowsListNumbersInTheText() throws IOException {
         List<Line> document = Lines.of(compare("procedure-revB.docx"), Shown.ALL.withDocumentView(true), FONTS,
                 Palette.LIGHT);
-        Cell step = document.get(lineWith(document, "Unscrew the filter cover", false)).right;
+        LineSide step = document.get(lineWith(document, "Unscrew the filter cover", false)).right;
         assertEquals("4.", step.text.number());
         assertNull(step.marker, "not in the margin as well");
         assertEquals("\u2022", document.get(lineWith(document, "Replacement of the suction", true)).left.text.number());
         List<Line> diff = Lines.of(compare("procedure-revB.docx"), Shown.ALL, FONTS, Palette.LIGHT);
-        Cell plain = diff.get(lineWith(diff, "Unscrew the filter cover", false)).right;
+        LineSide plain = diff.get(lineWith(diff, "Unscrew the filter cover", false)).right;
         assertEquals("4.", plain.marker);
         assertNull(plain.text.number());
     }
@@ -260,14 +260,14 @@ class LinesTest {
     /** The differences marked in the left text of the line starting so: none, "". */
     private static String lines(List<Line> lines, String start) {
         Line line = lines.get(lineWith(lines, start, true));
-        assertEquals(Cell.Look.SAME, line.look());
+        assertEquals(LineSide.Look.SAME, line.look());
         return line.left.text.text().equals(line.right.text.text()) ? "" : "differs";
     }
 
     private static int lineWith(List<Line> lines, String start, boolean onLeft) {
         for (int i = 0; i < lines.size(); i++) {
-            Cell cell = onLeft ? lines.get(i).left : lines.get(i).right;
-            if (cell != null && cell.text != null && cell.text.text().startsWith(start)) {
+            LineSide side = onLeft ? lines.get(i).left : lines.get(i).right;
+            if (side != null && side.text != null && side.text.text().startsWith(start)) {
                 return i;
             }
         }

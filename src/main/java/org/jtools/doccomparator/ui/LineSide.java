@@ -11,7 +11,7 @@ import org.jtools.doccomparator.compare.Pairing;
  * Laid out top to bottom: where it is (a table, a header…) when that is worth saying; its text, or for a row of a table
  * its cells side by side; what else differs about it; for a moved paragraph or table, the way to its match.
  */
-final class Cell {
+final class LineSide {
 
     /** How the paragraph compares, the colour it is shown in. */
     enum Look {
@@ -36,8 +36,8 @@ final class Cell {
     final TextBlock caption;
     /** Its text; null for a row of a table. */
     final TextBlock text;
-    /** For a row of a table, a cell for each column the comparison has, null where this side has none. */
-    final List<Cell> columns;
+    /** For a row of a table, its cell under each column the comparison has (a side of its own), null where it has none. */
+    final List<LineSide> columns;
     final TextBlock notes;
     /** The line of its match, for a moved paragraph or table; -1 otherwise. */
     int counterpartLine = -1;
@@ -49,7 +49,7 @@ final class Cell {
     private float[] columnWidth = new float[0];
     private int gridHeight;
 
-    Cell(Look look, Pairing pairing, String marker, TextBlock caption, TextBlock text, List<Cell> columns, TextBlock notes) {
+    LineSide(Look look, Pairing pairing, String marker, TextBlock caption, TextBlock text, List<LineSide> columns, TextBlock notes) {
         this.look = look;
         this.pairing = pairing;
         this.marker = marker;
@@ -76,7 +76,7 @@ final class Cell {
         }
     }
 
-    /** Lays the cell out to this width, the document's points at this scale (the document view): its height. */
+    /** Lays the side out to this width, the document's points at this scale (the document view): its height. */
     int layout(FontRenderContext context, float width, float scale) {
         int h = PADDING;
         if (caption != null) {
@@ -101,13 +101,13 @@ final class Cell {
         columnX = new float[n];
         columnWidth = new float[n];
         float weights = 0;
-        for (Cell column : columns) {
+        for (LineSide column : columns) {
             weights += column == null ? MISSING_COLUMN : 1;
         }
         float x = 0;
         gridHeight = 18;
         for (int c = 0; c < n; c++) {
-            Cell column = columns.get(c);
+            LineSide column = columns.get(c);
             columnX[c] = x;
             columnWidth[c] = width * (column == null ? MISSING_COLUMN : 1) / Math.max(weights, 1);
             x += columnWidth[c];

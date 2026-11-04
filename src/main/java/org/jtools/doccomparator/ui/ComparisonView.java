@@ -255,8 +255,8 @@ final class ComparisonView extends JComponent implements Scrollable {
         return -1;
     }
 
-    /** The cell at this point of a line, null for none: the left side, the right side, not the gutter. */
-    private Cell cellAt(Line line, int x) {
+    /** The side at this point of a line, null for none: the left side, the right side, not the gutter. */
+    private LineSide sideAt(Line line, int x) {
         int column = columnWidth(getWidth());
         if (x < column) {
             return line.left;
@@ -350,8 +350,8 @@ final class ComparisonView extends JComponent implements Scrollable {
             title.draw(g, 10, line.top + (line.height + title.getAscent() - title.getDescent()) / 2f);
         } else {
             int column = columnWidth(width);
-            paintCell(g, line.left, 0, line.top, column, line.height - 1);
-            paintCell(g, line.right, column + GUTTER, line.top, width - column - GUTTER, line.height - 1);
+            paintLineSide(g, line.left, 0, line.top, column, line.height - 1);
+            paintLineSide(g, line.right, column + GUTTER, line.top, width - column - GUTTER, line.height - 1);
             paintGutter(g, line, column, line.top, line.height - 1);
             g.setColor(palette.separator);
             g.drawLine(0, line.top + line.height - 1, width, line.top + line.height - 1);
@@ -364,41 +364,41 @@ final class ComparisonView extends JComponent implements Scrollable {
         }
     }
 
-    private void paintCell(Graphics2D g, Cell cell, int x, int y, int width, int height) {
-        if (cell == null) {
+    private void paintLineSide(Graphics2D g, LineSide side, int x, int y, int width, int height) {
+        if (side == null) {
             hatch(g, x, y, width, height);
             return;
         }
-        g.setColor(palette.line(cell.look));
+        g.setColor(palette.line(side.look));
         g.fillRect(x, y, width, height);
-        if (cell.marker != null) {
+        if (side.marker != null) {
             g.setColor(palette.faint);
             g.setFont(fonts.small());
             // on the first line of the text: below the space a paragraph keeps before it (the document view)
-            float baseline = cell.text != null ? cell.text.firstBaseline() : g.getFontMetrics().getAscent() + 1;
-            g.drawString(cell.marker, x + 6, y + Cell.PADDING
-                    + (cell.caption == null ? 0 : cell.caption.height() + Cell.GAP) + baseline);
+            float baseline = side.text != null ? side.text.firstBaseline() : g.getFontMetrics().getAscent() + 1;
+            g.drawString(side.marker, x + 6, y + LineSide.PADDING
+                    + (side.caption == null ? 0 : side.caption.height() + LineSide.GAP) + baseline);
         }
-        paintContent(g, cell, x + MARGIN, y);
+        paintContent(g, side, x + MARGIN, y);
     }
 
-    /** What a cell holds, top to bottom, from its top: its caption, its text or its grid, its notes, its link. */
-    private void paintContent(Graphics2D g, Cell cell, int x, int y) {
-        int top = y + Cell.PADDING;
-        if (cell.caption != null) {
-            cell.caption.paint(g, x, top);
-            top += cell.caption.height() + Cell.GAP;
+    /** What a side holds, top to bottom, from its top: its caption, its text or its grid, its notes, its link. */
+    private void paintContent(Graphics2D g, LineSide side, int x, int y) {
+        int top = y + LineSide.PADDING;
+        if (side.caption != null) {
+            side.caption.paint(g, x, top);
+            top += side.caption.height() + LineSide.GAP;
         }
-        if (cell.columns != null) {
-            paintGrid(g, cell, x, top);
-            top += cell.gridHeight();
+        if (side.columns != null) {
+            paintGrid(g, side, x, top);
+            top += side.gridHeight();
         } else {
-            cell.text.paint(g, x, top);
-            top += cell.text.height();
+            side.text.paint(g, x, top);
+            top += side.text.height();
         }
-        for (TextBlock block : new TextBlock[] {cell.notes, cell.link()}) {
+        for (TextBlock block : new TextBlock[] {side.notes, side.link()}) {
             if (block != null) {
-                top += Cell.GAP;
+                top += LineSide.GAP;
                 block.paint(g, x, top);
                 top += block.height();
             }
@@ -406,19 +406,19 @@ final class ComparisonView extends JComponent implements Scrollable {
     }
 
     /** The cells of a table's row under their columns; a narrow empty place for a column this side has not got. */
-    private void paintGrid(Graphics2D g, Cell cell, int x, int top) {
-        int height = cell.gridHeight();
-        for (int c = 0; c < cell.columns.size(); c++) {
-            Cell column = cell.columns.get(c);
-            int left = Math.round(x + cell.columnX(c));
-            int right = Math.round(x + cell.columnX(c) + cell.columnWidth(c));
+    private void paintGrid(Graphics2D g, LineSide side, int x, int top) {
+        int height = side.gridHeight();
+        for (int c = 0; c < side.columns.size(); c++) {
+            LineSide column = side.columns.get(c);
+            int left = Math.round(x + side.columnX(c));
+            int right = Math.round(x + side.columnX(c) + side.columnWidth(c));
             if (column == null) {
                 hatch(g, left, top, right - left, height);
             } else {
-                g.setColor(column.look == Cell.Look.SAME && column.shading != null ? column.shading
+                g.setColor(column.look == LineSide.Look.SAME && column.shading != null ? column.shading
                         : palette.line(column.look));
                 g.fillRect(left, top, right - left, height);
-                paintContent(g, column, left + Cell.PADDING, top);
+                paintContent(g, column, left + LineSide.PADDING, top);
             }
             g.setColor(palette.grid);
             g.drawRect(left, top, right - left - 1, height - 1);
@@ -438,8 +438,8 @@ final class ComparisonView extends JComponent implements Scrollable {
 
     /** Between the sides, a sign of how the line compares: ≠ changed, ≈ the same text otherwise, arrows for the rest. */
     private void paintGutter(Graphics2D g, Line line, int x, int y, int height) {
-        Cell.Look look = line.look();
-        if (look == Cell.Look.SAME) {
+        LineSide.Look look = line.look();
+        if (look == LineSide.Look.SAME) {
             g.setColor(palette.background);
             g.fillRect(x, y, GUTTER, height);
             return;
@@ -455,19 +455,19 @@ final class ComparisonView extends JComponent implements Scrollable {
         switch (look) {
             case CHANGED, OTHERWISE -> {
                 g.setFont(fonts.heading());
-                String sign = look == Cell.Look.CHANGED ? "≠" : "≈";
+                String sign = look == LineSide.Look.CHANGED ? "≠" : "≈";
                 g.drawString(sign, cx - g.getFontMetrics().stringWidth(sign) / 2, cy + g.getFontMetrics().getAscent() / 2 - 1);
             }
             case MOVED -> {
-                Cell moved = line.left != null && line.left.moved() ? line.left : line.right;
+                LineSide moved = line.left != null && line.left.moved() ? line.left : line.right;
                 boolean down = moved != null && moved.counterpartLine > lines.indexOf(line);
                 g.fill(arrow(cx, cy, down ? 1 : -1, true));
             }
             case ORPHAN -> {
-                if (line.left != null && line.left.look == Cell.Look.ORPHAN) {
+                if (line.left != null && line.left.look == LineSide.Look.ORPHAN) {
                     g.fill(arrow(cx - 3, cy, -1, false));
                 }
-                if (line.right != null && line.right.look == Cell.Look.ORPHAN) {
+                if (line.right != null && line.right.look == LineSide.Look.ORPHAN) {
                     g.fill(arrow(cx + 3, cy, 1, false));
                 }
             }
@@ -492,9 +492,9 @@ final class ComparisonView extends JComponent implements Scrollable {
         if (index < 0) {
             return;
         }
-        Cell cell = cellAt(lines.get(index), e.getX());
-        if (cell != null && cell.moved() && !e.isPopupTrigger() && e.getButton() == MouseEvent.BUTTON1) {
-            setCurrent(cell.counterpartLine, true);
+        LineSide side = sideAt(lines.get(index), e.getX());
+        if (side != null && side.moved() && !e.isPopupTrigger() && e.getButton() == MouseEvent.BUTTON1) {
+            setCurrent(side.counterpartLine, true);
         } else {
             setCurrent(index, false);
         }
@@ -507,25 +507,25 @@ final class ComparisonView extends JComponent implements Scrollable {
             return null;
         }
         Line line = lines.get(index);
-        Cell cell = cellAt(line, e.getX());
-        if (cell == null) {
+        LineSide side = sideAt(line, e.getX());
+        if (side == null) {
             return line.left == null && line.right == null ? null : describe(line.look());
         }
-        if (cell.columns != null) {
-            return cell.moved() ? "Moved: click to go to its match" : describe(cell.look);
+        if (side.columns != null) {
+            return side.moved() ? "Moved: click to go to its match" : describe(side.look);
         }
         int column = columnWidth(getWidth());
-        int x = e.getX() - (cell == line.left ? 0 : column + GUTTER) - MARGIN;
-        int y = e.getY() - line.top - Cell.PADDING - (cell.caption == null ? 0 : cell.caption.height() + Cell.GAP);
-        List<PropertyDifference> formatting = cell.text.formattingAt(x, y);
+        int x = e.getX() - (side == line.left ? 0 : column + GUTTER) - MARGIN;
+        int y = e.getY() - line.top - LineSide.PADDING - (side.caption == null ? 0 : side.caption.height() + LineSide.GAP);
+        List<PropertyDifference> formatting = side.text.formattingAt(x, y);
         if (!formatting.isEmpty()) {
             return "<html>Formatted otherwise:<br>" + formatting.stream().map(d -> escape(d.toString()))
                     .collect(Collectors.joining("<br>")) + "</html>";
         }
-        return cell.moved() ? "Moved: click to go to its match" : describe(cell.look);
+        return side.moved() ? "Moved: click to go to its match" : describe(side.look);
     }
 
-    private static String describe(Cell.Look look) {
+    private static String describe(LineSide.Look look) {
         return switch (look) {
             case SAME -> null;
             case CHANGED -> "The text differs";
