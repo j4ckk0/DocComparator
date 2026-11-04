@@ -1,14 +1,24 @@
 package org.jtools.doccomparator.ui;
 
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.RenderingHints;
+import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import javax.swing.AbstractAction;
 import javax.swing.AbstractButton;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
@@ -19,20 +29,23 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
+import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JRadioButtonMenuItem;
+import javax.swing.KeyStroke;
 import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.CompareOptions.Aspect;
+import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.i18n.I18nLabels;
 
 /**
  * What is compared and what is shown, chosen in the ribbon or in the Compare and View menus: the options, the lines
  * shown, the view, the dark mode. Every check box and button showing the same choice is kept in step with it; a
- * choice made is told to the comparison.
+ * choice made is told to the comparison. The ribbon collapses to a strip, and opens again (View ▸ Ribbon, Ctrl+F1).
  */
 final class OptionControls {
 
@@ -57,6 +70,14 @@ final class OptionControls {
     private final JCheckBox darkBox = new JCheckBox();
     private Consumer<Boolean> darkModeListener = dark -> { };
     private boolean showingDarkMode;
+    /** Whether the ribbon is open, its groups shown; collapsed, its strip says where its options are. */
+    private boolean ribbonOpen = true;
+    private Consumer<Boolean> ribbonListener = open -> { };
+    private final JPanel ribbonGroups = new JPanel();
+    private final JLabel ribbonCollapsed = new FaintLabel(" ", JLabel.LEADING, true);
+    private final JButton ribbonToggle = new JButton();
+    /** View ▸ Ribbon, ticked while the ribbon is open; Ctrl+F1 as in Word. */
+    private final Action ribbonAction;
 
     /**
      * Controls telling optionsChanged when the options change, and shownChanged when the lines shown do (true when it
@@ -66,6 +87,14 @@ final class OptionControls {
         this.labels = labels;
         this.optionsChanged = optionsChanged;
         this.shownChanged = shownChanged;
+        ribbonAction = labels.action(new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {   // the menu item ticked or not; Ctrl+F1, the other way
+                openRibbon(e.getSource() instanceof AbstractButton item ? item.isSelected() : !ribbonOpen);
+            }
+        }, "menu.view.ribbon", null);
+        ribbonAction.putValue(Action.SELECTED_KEY, true);
+        ribbonAction.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_F1, InputEvent.CTRL_DOWN_MASK));
     }
 
     CompareOptions options() {
@@ -91,19 +120,44 @@ final class OptionControls {
         }
     }
 
+    /** Told when the ribbon is opened (true) or collapsed. */
+    void onRibbon(Consumer<Boolean> listener) {
+        ribbonListener = listener;
+    }
+
+    /** The action opening and collapsing the ribbon, for its shortcut. */
+    Action ribbonAction() {
+        return ribbonAction;
+    }
+
+    /** Opens the ribbon, or collapses it to its strip, telling no one. */
+    void showRibbon(boolean open) {
+        ribbonOpen = open;
+        ribbonGroups.setVisible(open);
+        ribbonCollapsed.setVisible(!open);
+        ribbonToggle.setIcon(new Chevron(open));
+        ribbonToggle.setToolTipText(I18n.text(open ? "ribbon.collapse.tip" : "ribbon.open.tip"));
+        ribbonAction.putValue(Action.SELECTED_KEY, open);
+        ribbonToggle.revalidate();
+    }
+
+    private void openRibbon(boolean open) {
+        showRibbon(open);
+        ribbonListener.accept(open);
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // The ribbon
 
     /**
      * The ribbon, as Word has it: groups side by side, each its name under its buttons, set in columns — going
      * through the differences (these actions), then the view, what is compared (the text, then the layout by group),
-     * then what is shown.
+     * then what is shown; in its top right corner, the button collapsing it to a strip, and opening it again.
      */
     JPanel ribbon(Action... go) {
-        JPanel ribbon = new JPanel();
+        JPanel ribbon = ribbonGroups;
         ribbon.setLayout(new BoxLayout(ribbon, BoxLayout.X_AXIS));
-        ribbon.setBorder(BorderFactory.createCompoundBorder(new LookLine(0, 0, 1, 0),
-                BorderFactory.createEmptyBorder(4, 4, 2, 4)));
+        ribbon.setBorder(BorderFactory.createEmptyBorder(4, 4, 2, 0));
         List<JComponent> goButtons = new ArrayList<>();
         for (Action action : go) {
             goButtons.add(new JButton(action));
@@ -143,7 +197,51 @@ final class OptionControls {
         ribbon.add(group("ribbon.group.presets", 3, preset("preset.text", CompareOptions.TEXT_ONLY),
                 preset("preset.layout", CompareOptions.LAYOUT_ONLY), preset("preset.all", CompareOptions.ALL)));
         ribbon.add(Box.createHorizontalGlue());
-        return ribbon;
+
+        JPanel bar = new JPanel(new BorderLayout());
+        bar.setBorder(BorderFactory.createCompoundBorder(new RibbonEdge(), BorderFactory.createEmptyBorder(0, 0, 1, 0)));
+        bar.add(ribbon, BorderLayout.CENTER);
+        labels.text(ribbonCollapsed, "ribbon.collapsed");
+        ribbonCollapsed.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
+        bar.add(ribbonCollapsed, BorderLayout.WEST);
+        ribbonToggle.setFocusable(false);
+        ribbonToggle.setMargin(new Insets(1, 3, 1, 3));
+        ribbonToggle.addActionListener(e -> openRibbon(!ribbonOpen));
+        JPanel corner = new JPanel(new BorderLayout());
+        corner.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 2));
+        corner.add(ribbonToggle, BorderLayout.NORTH);
+        bar.add(corner, BorderLayout.EAST);
+        labels.on(() -> showRibbon(ribbonOpen));   // the toggle's tooltip, in the language of the time
+        return bar;
+    }
+
+    /** A chevron pointing up (the ribbon collapses) or down (it opens), in the look's text colour of the time. */
+    private record Chevron(boolean up) implements Icon {
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(c.isEnabled() ? c.getForeground() : Color.GRAY);
+                g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int top = up ? y + 7 : y + 4;
+                int bottom = up ? y + 4 : y + 7;
+                g2.drawPolyline(new int[] {x + 2, x + 6, x + 10}, new int[] {top, bottom, top}, 3);
+            } finally {
+                g2.dispose();
+            }
+        }
+
+        @Override
+        public int getIconWidth() {
+            return 12;
+        }
+
+        @Override
+        public int getIconHeight() {
+            return 11;
+        }
     }
 
     /** A group of the ribbon: its items in columns of so many, top to bottom, then left to right; its name under them. */
@@ -221,6 +319,8 @@ final class OptionControls {
             group.add(item);
             menu.add(item);
         }
+        menu.addSeparator();
+        menu.add(new JCheckBoxMenuItem(ribbonAction));
         return menu;
     }
 

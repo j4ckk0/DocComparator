@@ -131,7 +131,7 @@ public final class ComparatorPanel extends JPanel {
         TransferHandler drop = new DropHandler(opener, this, null);
         view.setTransferHandler(drop);
         setTransferHandler(drop);
-        for (Action action : List.of(openLeft, openRight, pasteHere, previous, next)) {
+        for (Action action : List.of(openLeft, openRight, pasteHere, previous, next, controls.ribbonAction())) {
             KeyStroke key = (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);
             getInputMap(WHEN_IN_FOCUSED_WINDOW).put(key, action);
             getActionMap().put(action, action);
@@ -165,6 +165,16 @@ public final class ComparatorPanel extends JPanel {
     /** Shows whether the look is dark in the ribbon's Dark box, telling no one. */
     public void showDarkMode(boolean dark) {
         controls.showDarkMode(dark);
+    }
+
+    /** Told when the ribbon is opened (true) or collapsed. */
+    public void onRibbon(Consumer<Boolean> listener) {
+        controls.onRibbon(listener);
+    }
+
+    /** Opens the ribbon, or collapses it to its strip, telling no one. */
+    public void showRibbon(boolean open) {
+        controls.showRibbon(open);
     }
 
     public List<Action> fileActions() {

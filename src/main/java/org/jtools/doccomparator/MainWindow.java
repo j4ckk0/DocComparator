@@ -49,6 +49,8 @@ final class MainWindow extends JFrame {
         panel.onTitle(title -> setTitle(title.replace(APP_NAME, version)));
         panel.onDarkMode(dark -> applyLook(Looks.inMode(currentLook(), dark)));
         panel.showDarkMode(Looks.isDark());
+        panel.showRibbon(Boolean.parseBoolean(settings.get(Settings.RIBBON, "true")));
+        panel.onRibbon(open -> settings.set(Settings.RIBBON, String.valueOf(open)));
         pack();
         setLocationRelativeTo(null);
     }

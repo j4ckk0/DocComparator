@@ -69,7 +69,7 @@ What stays outside these checks:
     fonts (a document in a script they lack would show empty boxes): not done;
   - the C library asking the local name service cache (`/var/run/nscd/socket`) for the user's name.
 
-  The program's own settings — its look — are kept beside it, in its folder (`doccomparator.properties`), when they are
+  The program's own settings — its look, its language, its ribbon — are kept beside it, in its folder (`doccomparator.properties`), when they are
   changed, and nowhere else.
 
   The JVM's performance counters are kept in memory (`-XX:-UsePerfData` in every launcher), not in a file of `/tmp` or
@@ -168,14 +168,17 @@ document copied in Explorer opens as if dropped.
   diff view is dark too; the document view keeps its white page, as a document printed. The one chosen is kept for the
   next time in
   `doccomparator.properties`, beside the program: in its folder, never in the registry or the user's folder; written
-  only when the look or the language is changed, and not at all where the folder cannot be written in.
+  only when the look, the language or the ribbon is changed, and not at all where the folder cannot be written in.
 - **The language**, in the drop list on the right of the menus: *Français*, the default, or *English*. The whole window
   takes it at once — menus, ribbon, tooltips, messages — and so does what the comparison says: the parts' names, the
   properties' ("trame", "shading"), where a paragraph is; the documents are read again for it. Swing's own dialogs
   (the file chooser's buttons) follow. The language chosen is kept for the next time, as the look is. What the
   documents say stays as they say it: their text, their styles' names, Word's own values ("clear", "fill D9E2F3").
 - **The ribbon**, as Word has it: groups side by side, each its name under its buttons — *Go*, *Text*, *Structure*,
-  *Formatting*, *Document*, *Show*, *Presets* (named here as in English).
+  *Formatting*, *Document*, *Show*, *Presets* (named here as in English) —, a marked edge setting it apart from the
+  documents (`RibbonEdge`). The chevron in its top right corner collapses it to a strip, and opens it again; so do
+  *View ▸ Ribbon* and Ctrl+F1, as in Word. Collapsed, its options are still in the *Compare* and *View* menus; the
+  ribbon is kept open or collapsed for the next time, as the look is.
 - **Previous and next difference**: F7 and Shift+F7, or *Go*. *Only differences* hides the lines that are the
   same; *Only what is comparable* hides what has nothing in common with the other side — paragraphs, tables, rows and
   columns of tables on one side only — and shows the rest: the same paragraphs as they are, the close ones with their

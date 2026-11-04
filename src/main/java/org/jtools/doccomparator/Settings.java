@@ -17,6 +17,8 @@ final class Settings {
 
     static final String LOOK = "look";
     static final String LANGUAGE = "language";
+    /** Whether the ribbon is open: "true", or "false" when it is collapsed. */
+    static final String RIBBON = "ribbon";
     private static final String FILE = "doccomparator.properties";
 
     private final Path file;

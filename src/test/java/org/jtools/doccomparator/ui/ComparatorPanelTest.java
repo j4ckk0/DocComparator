@@ -22,6 +22,7 @@ import java.util.Set;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.swing.AbstractButton;
 import javax.swing.Action;
@@ -29,6 +30,7 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
+import javax.swing.JMenuItem;
 import javax.swing.JRadioButton;
 import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
@@ -215,6 +217,48 @@ class ComparatorPanelTest {
         }
         assertEquals(1, differences[0], "two → 2");
         assertEquals("Pasted text ↔ Pasted text — DocComparator", panel[0].title());
+    }
+
+    /**
+     * The ribbon collapses to its strip and opens again — its button, View ▸ Ribbon — the listener told, the menu item
+     * kept in step; opened from outside (the settings), no one told.
+     */
+    @Test
+    void theRibbonCollapsesAndOpens() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            ComparatorPanel panel = new ComparatorPanel();
+            List<Boolean> told = new ArrayList<>();
+            panel.onRibbon(told::add);
+            JButton previous = buttons(panel).stream().filter(b -> "▲ Previous".equals(b.getText())).findFirst()
+                    .orElseThrow();
+            JButton toggle = buttons(panel).stream()
+                    .filter(b -> "Collapse the ribbon (Ctrl+F1)".equals(b.getToolTipText())).findFirst().orElseThrow();
+            JMenuItem item = Arrays.stream(panel.viewMenu().getMenuComponents())
+                    .filter(c -> c instanceof JMenuItem i && "Ribbon".equals(i.getText())).map(JMenuItem.class::cast)
+                    .findFirst().orElseThrow();
+            assertTrue(shown(previous, panel) && item.isSelected(), "open at first");
+
+            toggle.doClick();
+            assertFalse(shown(previous, panel), "collapsed");
+            assertFalse(item.isSelected(), "its menu item, unticked");
+            assertEquals("Show the ribbon (Ctrl+F1)", toggle.getToolTipText());
+
+            panel.showRibbon(true);
+            assertTrue(shown(previous, panel) && item.isSelected(), "opened from outside");
+            item.doClick();
+            assertFalse(shown(previous, panel), "collapsed from the menu");
+            assertEquals(List.of(false, false), told, "told of the choices made, not of the setting");
+        });
+    }
+
+    /** Whether a component would be seen in this container: it and every container between them visible. */
+    private static boolean shown(Component component, Container in) {
+        for (Component c = component; c != null && c != in; c = c.getParent()) {
+            if (!c.isVisible()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** Text pasted goes to the side last clicked, left or right-clicked: the left until one is. */
