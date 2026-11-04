@@ -3,6 +3,12 @@
 What each version brought, newest first. The GitHub Releases carry the same notes with the downloads and their
 checksums.
 
+## 1.7 — 2026-11-04
+
+- No change to what the program does: the code reviewed again (REVIEW.md). Every word of the comparison is now made
+  by the view, the comparison keeping only data; the main panel's background work and the layout of the two heads
+  have classes of their own; no line of code is over 120 characters.
+
 ## 1.6 — 2026-11-04
 
 - **A Help menu**: the program's licence and the embedded Java runtime's, read from the program and its runtime
