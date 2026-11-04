@@ -1,8 +1,47 @@
 DocComparator
-Copyright 2026 j4ckk0
+Copyright 2026 jtools.org
 
-This product is licensed under the Apache License, Version 2.0 (LICENSE).
+This product is licensed under the Apache License, Version 2.0. The full text is in
+the LICENSE file beside this one.
 
-It includes FlatLaf (https://www.formdev.com/flatlaf/), Copyright FormDev Software GmbH,
-licensed under the Apache License, Version 2.0: its licence is in licenses/FlatLaf-LICENSE.txt
-of the distributions.
+
+FlatLaf
+=======
+
+doccomparator.jar, in the self-contained distributions, holds the classes of FlatLaf
+3.7.2 (https://www.formdev.com/flatlaf/), Copyright FormDev Software GmbH, the
+window's looks, licensed under the Apache License, Version 2.0. Its licence travels
+with it, in licenses/FlatLaf-LICENSE.txt of each distribution. The jar published on
+Maven Central does not hold it: FlatLaf is a dependency of it there.
+
+
+Embedded Java runtime
+=====================
+
+The self-contained distributions — the Windows and Linux archives — bundle an Eclipse
+Temurin 21 Java runtime (JRE). The jar published on Maven Central carries no runtime
+and is not concerned by this section.
+
+Eclipse Temurin (OpenJDK) is licensed under the GNU General Public License, version 2,
+with the Classpath Exception (GPLv2 + CPE). The Classpath Exception is what permits
+distributing DocComparator together with this runtime without affecting the licence of
+DocComparator's own code.
+
+The runtime's own licence and notices travel with it, in the jre/legal/ directory of
+each distribution:
+  - jre/legal/java.base/LICENSE              the GNU General Public License, version 2
+  - jre/legal/java.base/ASSEMBLY_EXCEPTION   the Classpath Exception
+  - jre/legal/java.base/ADDITIONAL_LICENSE_INFO
+  - jre/legal/<module>/*                     the per-component notices of each module
+The exact runtime build is recorded in jre/release.
+
+Source code for the OpenJDK runtime is available from:
+  - Eclipse Temurin:  https://adoptium.net/temurin/releases/?version=21
+  - OpenJDK project:  https://github.com/openjdk/jdk21u
+
+
+Sample files
+============
+
+The documents of samples/ are original, written by samples/make_samples.py for this
+project; they fall under the same licence.

@@ -14,21 +14,28 @@
   <url>https://github.com/j4ckk0/DocComparator</url>
   <inceptionYear>2026</inceptionYear>
 
+  <organization>
+    <name>jtools.org</name>
+    <url>https://github.com/j4ckk0</url>
+  </organization>
+
+  <!-- What Maven Central asks of every project it holds: its licence, who makes it, where its sources are
+       (PUBLISHING.md, section 7). -->
   <licenses>
     <license>
-      <name>Apache License, Version 2.0</name>
-      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <name>Apache License Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
       <distribution>repo</distribution>
     </license>
   </licenses>
 
-  <!-- What Maven Central asks of every project it holds: its licence above, who makes it, where its sources are
-       (README, "Publishing to Maven Central"). -->
   <developers>
     <developer>
       <id>j4ckk0</id>
-      <name>j4ckk0</name>
-      <url>https://github.com/j4ckk0</url>
+      <name>Jacques HENRY</name>
+      <email>j4ckk057@gmail.com</email>
+      <organization>jtools.org</organization>
+      <organizationUrl>https://github.com/j4ckk0</organizationUrl>
     </developer>
   </developers>
 
@@ -73,6 +80,37 @@
   <build>
     <finalName>doccomparator</finalName>
     <plugins>
+      <plugin>
+        <!-- Apache 2.0 header at the top of every Java source (same convention as the jtools projects) -->
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <version>2.4.0</version>
+        <configuration>
+          <verbose>false</verbose>
+          <licenseName>apache_v2</licenseName>
+          <organizationName>jtools.org</organizationName>
+          <inceptionYear>2026</inceptionYear>
+          <canUpdateCopyright>true</canUpdateCopyright>
+        </configuration>
+        <executions>
+          <execution>
+            <id>add-license-headers</id>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>update-file-header</goal>
+            </goals>
+            <configuration>
+              <includes>
+                <include>**/*.java</include>
+              </includes>
+              <roots>
+                <root>src/main/java</root>
+                <root>src/test</root>
+              </roots>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <!-- Nothing ships but the program's own classes and the JRE: NoNetworkTest reads the program's classes
              only, so a library would bring code it never checks (README, "No network"). -->
@@ -258,7 +296,7 @@
                     <fileVersion>${windowsVersion}</fileVersion>
                     <txtFileVersion>${project.version}</txtFileVersion>
                     <fileDescription>DocComparator</fileDescription>
-                    <copyright>j4ckk0</copyright>
+                    <copyright>jtools.org</copyright>
                     <productVersion>${windowsVersion}</productVersion>
                     <txtProductVersion>${project.version}</txtProductVersion>
                     <productName>DocComparator</productName>
@@ -299,14 +337,16 @@
     </profile>
 
     <!--
-      mvn deploy -Prelease
-      Publishes to Maven Central (README, "Publishing to Maven Central"): the program's own jar, FlatLaf a
-      dependency of it rather than held in it; its sources and javadoc; the pom with its version written out; each
-      signed with GPG; uploaded to the Central Portal, published from there once checked. Only with this profile:
-      the other builds reach for none of these plugins.
+      mvn -Ppublish deploy
+      Publishes DocComparator on Maven Central through the Central Portal (PUBLISHING.md, section 7): the
+      program's own jar, FlatLaf a dependency of it rather than held in it; its sources and javadoc; the pom with
+      its version written out; each signed. Needs the portal's token as the server "central" in
+      ~/.m2/settings.xml and a GPG key whose public part is on a key server. The upload is validated but not
+      released until it is published from the portal. Only with this profile: the other builds reach for none of
+      these plugins.
     -->
     <profile>
-      <id>release</id>
+      <id>publish</id>
       <build>
         <plugins>
           <plugin>
@@ -356,7 +396,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>3.12.0</version>
+            <version>3.6.3</version>
             <configuration>
               <!-- the comments say what each part is for; not every parameter has its @param -->
               <doclint>all,-missing</doclint>
@@ -374,7 +414,7 @@
             <!-- signs each file with the GPG key of the one publishing (-Dgpg.keyname= if several) -->
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
-            <version>3.2.8</version>
+            <version>3.2.4</version>
             <executions>
               <execution>
                 <id>sign-artifacts</id>
@@ -390,7 +430,8 @@
                  by hand from https://central.sonatype.com once its checks pass -->
             <groupId>org.sonatype.central</groupId>
             <artifactId>central-publishing-maven-plugin</artifactId>
-            <version>0.12.0</version>
+            <!-- 0.7.0 could not read the field the portal added to its status answer (XsdViewer, PUBLISHING.md) -->
+            <version>0.11.0</version>
             <extensions>true</extensions>
             <configuration>
               <publishingServerId>central</publishingServerId>
