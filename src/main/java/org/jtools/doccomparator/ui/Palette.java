@@ -29,6 +29,9 @@ final class Palette {
     final Color separator;
     final Color grid;
     final Color current;
+    /** The side text pasted goes to: its edges, its frame while it waits, and the inside of that frame. */
+    final Color chosenSide;
+    final Color chosenSideInside;
     final Color title;
     final Color titleText;
     final Color noSide;
@@ -54,6 +57,8 @@ final class Palette {
         separator = dark ? new Color(0x2E3034) : new Color(0xE4E4E4);
         grid = dark ? new Color(0x4A4D52) : new Color(0xC8C8C8);
         current = dark ? new Color(0x4C8DFF) : new Color(0x2F6FDD);
+        chosenSide = dark ? new Color(0x5B95F5) : new Color(0x5A8FE6);
+        chosenSideInside = dark ? new Color(0x232B38) : new Color(0xEDF3FD);
         title = dark ? new Color(0x393D45) : new Color(0x4A5568);
         titleText = Color.WHITE;
         noSide = dark ? new Color(0x27292D) : new Color(0xF2F2F2);

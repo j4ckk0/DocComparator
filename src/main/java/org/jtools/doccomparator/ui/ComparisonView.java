@@ -36,6 +36,8 @@ final class ComparisonView extends JComponent implements Scrollable {
     static final String LINES = "lines";
 
     private static final int GUTTER = 26;
+    /** The width of the band down each edge of the side chosen. */
+    private static final int CHOSEN_EDGE = 3;
     private static final int MARGIN = 28;
     private static final int RIGHT_PADDING = 8;
     private static final int TITLE_HEIGHT = 26;
@@ -68,7 +70,11 @@ final class ComparisonView extends JComponent implements Scrollable {
             @Override
             public void mousePressed(MouseEvent e) {
                 requestFocusInWindow();
-                leftChosen = e.getX() < getWidth() / 2;
+                boolean left = e.getX() < getWidth() / 2;
+                if (left != leftChosen) {
+                    leftChosen = left;
+                    repaint();
+                }
                 clicked(e);
             }
         };
@@ -295,6 +301,7 @@ final class ComparisonView extends JComponent implements Scrollable {
             for (int i = first; i < lines.size() && lines.get(i).top < clip.y + clip.height; i++) {
                 paintLine(g, lines.get(i), i == current);
             }
+            paintChosenSide(g, clip);
             if (waitingSide >= 0) {
                 paintSide(g, waitingSide, true);   // over its empty half, where it stays as the other scrolls
             }
@@ -312,7 +319,23 @@ final class ComparisonView extends JComponent implements Scrollable {
         paintSide(g, 1, false);
     }
 
-    /** A side waiting for its document, or opened: a place framed with dashes, saying so. */
+    /**
+     * The side text pasted goes to, a band down each of its edges: drawn the whole height of the view, it scrolls with
+     * the lines.
+     */
+    private void paintChosenSide(Graphics2D g, Rectangle clip) {
+        int column = columnWidth(getWidth());
+        int left = leftChosen ? 0 : column + GUTTER;
+        int right = leftChosen ? column : getWidth();
+        g.setColor(palette.chosenSide);
+        g.fillRect(left, clip.y, CHOSEN_EDGE, clip.height);
+        g.fillRect(right - CHOSEN_EDGE, clip.y, CHOSEN_EDGE, clip.height);
+    }
+
+    /**
+     * A side waiting for its document, or opened: a place framed with dashes, saying so; the side chosen, framed in its
+     * colour.
+     */
     private void paintSide(Graphics2D g, int side, boolean overLines) {
         Rectangle visible = getVisibleRect();
         int column = columnWidth(getWidth());
@@ -328,10 +351,12 @@ final class ComparisonView extends JComponent implements Scrollable {
         int height = Math.max(120, visible.height - 32);
         EmptySide says = emptySides[side];
         boolean opened = says.opened();
-        g.setColor(opened ? palette.background : palette.noSide);
+        boolean chosen = (side == 0) == leftChosen;
+        g.setColor(opened ? palette.background : chosen ? palette.chosenSideInside : palette.noSide);
         g.fillRoundRect(x, y, width, height, 16, 16);
-        g.setColor(opened ? palette.grid : palette.faint);
-        g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1, new float[] {8, 6}, 0));
+        g.setColor(chosen ? palette.chosenSide : opened ? palette.grid : palette.faint);
+        g.setStroke(new BasicStroke(chosen ? 3 : 2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1,
+                new float[] {8, 6}, 0));
         g.drawRoundRect(x, y, width, height, 16, 16);
         g.setStroke(new BasicStroke(1));
         Font title = fonts.heading().deriveFont(fonts.heading().getSize2D() + 4);
