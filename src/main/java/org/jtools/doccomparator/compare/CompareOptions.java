@@ -11,38 +11,19 @@ import java.util.Set;
  */
 public record CompareOptions(Set<Aspect> aspects) {
 
-    /** A kind of difference. */
+    /** A kind of difference; its label and description are texts of the language in use (i18n). */
     public enum Aspect {
-        TEXT("Text", "The words of paragraphs and cells; paragraphs added, removed or moved"),
-        BLANKS("Blanks", "Spaces, tabs, breaks and empty paragraphs"),
-        HEADINGS("Headings", "Heading levels: a title's depth"),
-        LISTS("Lists", "List items, their level and numbering"),
-        SECTIONS("Sections", "Section breaks and their number; paragraphs in text boxes"),
-        STYLES("Styles", "Paragraph, character and table styles, by name; the documents' style definitions"),
-        CHARACTERS("Characters", "Formatting set on the text: bold, italic, underline, font, size, colour, highlight…"),
-        INDENTATION("Indentation", "Paragraphs' indents: left, right, first line, hanging"),
-        SPACING("Spacing", "Space before and after paragraphs, line spacing"),
-        ALIGNMENT("Alignment", "Paragraphs' alignment: left, centred, right, justified"),
-        PARAGRAPHS("Paragraphs", "Other paragraph formatting: borders, shading, tabs, keep with next, page breaks…"),
-        TABLE_LAYOUT("Table layout", "Rows and columns added, removed or moved, their numbers; widths and heights"),
-        CELLS("Cells", "Cells' and tables' shading, borders, margins, vertical alignment; header rows…"),
-        TEMPLATE("Template", "The template attached, and the one named"),
-        HEADERS_AND_FOOTERS("Headers and footers", "Their text, as a part of its own");
+        TEXT, BLANKS, HEADINGS, LISTS, SECTIONS, STYLES, CHARACTERS, INDENTATION, SPACING, ALIGNMENT, PARAGRAPHS,
+        TABLE_LAYOUT, CELLS, TEMPLATE, HEADERS_AND_FOOTERS;
 
-        private final String label;
-        private final String description;
-
-        Aspect(String label, String description) {
-            this.label = label;
-            this.description = description;
+        /** The key of its label: "aspect.TABLE_LAYOUT.label". */
+        public String labelKey() {
+            return "aspect." + name() + ".label";
         }
 
-        public String label() {
-            return label;
-        }
-
-        public String description() {
-            return description;
+        /** The key of what it covers, in a sentence. */
+        public String descriptionKey() {
+            return "aspect." + name() + ".description";
         }
     }
 

@@ -11,6 +11,7 @@ import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.WordDocument;
 import org.jtools.doccomparator.ui.DocumentLook.PageMark;
+import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * Where a document's pages begin, for the document view, numbered: those it asks for — a page break in its text, a
@@ -83,11 +84,10 @@ final class PageMarks {
         List<PageMark> own = new ArrayList<>();
         for (Start start : starts) {
             page++;
-            own.add(new PageMark(start.offset(), start.asked() ? DocumentLook.PAGE_BREAK + " — page " + page
-                    : "Page " + page));
+            own.add(new PageMark(start.offset(), I18n.text(start.asked() ? "page.break" : "page.number", page)));
         }
         if (paragraph.endsSection()) {
-            own.add(new PageMark(text.length(), DocumentLook.SECTION_BREAK));
+            own.add(new PageMark(text.length(), I18n.text("page.sectionBreak")));
         }
         if (!text.isBlank()) {
             begun = true;

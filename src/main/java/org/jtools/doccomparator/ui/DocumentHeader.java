@@ -14,6 +14,8 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.i18n.I18n;
+import org.jtools.doccomparator.i18n.I18nLabels;
 
 /**
  * The head of a side, as Beyond Compare has it: the path of its document, which can be typed (Enter opens it), a
@@ -26,16 +28,18 @@ final class DocumentHeader extends JPanel {
     private final JTextField path = new JTextField();
     private final JLabel about = new FaintLabel(" ", JLabel.LEADING, true);
 
-    /** The head of the left side or the right; open chooses its document; area is what documents are dropped on. */
-    DocumentHeader(boolean onLeft, Action open, DocumentOpener opener, JComponent area) {
+    /**
+     * The head of the left side or the right; open chooses its document; area is what documents are dropped on; its
+     * labels bound with these.
+     */
+    DocumentHeader(boolean onLeft, Action open, DocumentOpener opener, JComponent area, I18nLabels labels) {
         super(new BorderLayout(4, 2));
         this.onLeft = onLeft;
         this.opener = opener;
-        path.setToolTipText("The " + (onLeft ? "left" : "right") + " document: type its path and press Enter, "
-                + "choose it with Open…, or drop it here");
+        labels.tip(path, onLeft ? "header.path.left.tip" : "header.path.right.tip");
         path.addActionListener(e -> typed());
         JButton choose = new JButton(open);
-        choose.setText("Open…");
+        labels.text(choose, "header.open");
         choose.setFocusable(false);
         add(path, BorderLayout.CENTER);
         add(choose, BorderLayout.EAST);
@@ -56,13 +60,13 @@ final class DocumentHeader extends JPanel {
         try {
             Path typed = Path.of(text);
             if (!Files.isRegularFile(typed)) {
-                opener.refuse("No such document: " + text);
+                opener.refuse(I18n.text("header.noSuchDocument", text));
                 Toolkit.getDefaultToolkit().beep();
                 return;
             }
             opener.open(onLeft, typed);
         } catch (InvalidPathException e) {
-            opener.refuse("Not a path: " + text);
+            opener.refuse(I18n.text("header.notAPath", text));
             Toolkit.getDefaultToolkit().beep();
         }
     }
@@ -76,10 +80,10 @@ final class DocumentHeader extends JPanel {
         }
         List<String> said = new ArrayList<>();
         if (read != null && read.template().named() != null) {
-            said.add("template " + read.template().named());
+            said.add(I18n.text("header.template", read.template().named()));
         }
         if (read != null && read.hasTrackedChanges()) {
-            said.add("tracked changes, read as accepted");
+            said.add(I18n.text("header.trackedChanges"));
         }
         about.setText(said.isEmpty() ? " " : String.join("  ·  ", said));
     }

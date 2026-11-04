@@ -8,17 +8,20 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import org.jtools.doccomparator.document.Picture;
+import org.jtools.doccomparator.i18n.I18n;
+import org.jtools.doccomparator.i18n.I18nLabels;
 
 /** The view's right-click menu: a side's text of the line clicked, copied; a right click makes its line current. */
 final class CopyMenu extends JPopupMenu {
 
     private final ComparisonView view;
 
-    CopyMenu(ComparisonView view) {
+    /** The menu of this view, its labels bound with these. */
+    CopyMenu(ComparisonView view, I18nLabels labels) {
         this.view = view;
-        JMenuItem copyLeft = new JMenuItem("Copy the left text");
+        JMenuItem copyLeft = labels.text(new JMenuItem(), "copy.left");
         copyLeft.addActionListener(e -> copy(true));
-        JMenuItem copyRight = new JMenuItem("Copy the right text");
+        JMenuItem copyRight = labels.text(new JMenuItem(), "copy.right");
         copyRight.addActionListener(e -> copy(false));
         add(copyLeft);
         add(copyRight);
@@ -56,7 +59,7 @@ final class CopyMenu extends JPopupMenu {
         } else {
             text.append(side.text.text());
         }
-        String copied = text.toString().replace(String.valueOf(Picture.IN_TEXT), "[picture]");
+        String copied = text.toString().replace(String.valueOf(Picture.IN_TEXT), I18n.text("copy.picture"));
         Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(copied), null);
     }
 }

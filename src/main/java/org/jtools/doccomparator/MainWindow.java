@@ -1,21 +1,24 @@
 package org.jtools.doccomparator;
 
 import java.awt.BorderLayout;
-import java.awt.event.KeyEvent;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import javax.swing.Action;
 import javax.swing.ButtonGroup;
 import javax.swing.JFrame;
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComponent;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import org.jtools.doccomparator.i18n.I18n;
+import org.jtools.doccomparator.i18n.I18nLabels;
 import org.jtools.doccomparator.ui.ComparatorPanel;
 
 /** The program's only window: the comparison and its menus. Closing it, or File ▸ Exit, ends the program. */
@@ -24,7 +27,9 @@ final class MainWindow extends JFrame {
     static final String APP_NAME = "DocComparator";
     private final ComparatorPanel panel = new ComparatorPanel();
     private final Settings settings;
-    private final JCheckBoxMenuItem darkMode = new JCheckBoxMenuItem("Dark mode");
+    /** The menus' own labels; the panel's are its own. */
+    private final I18nLabels labels = new I18nLabels();
+    private final JCheckBoxMenuItem darkMode = new JCheckBoxMenuItem();
     private final ButtonGroup looks = new ButtonGroup();
     private final List<JRadioButtonMenuItem> lookItems = new ArrayList<>();
 
@@ -43,6 +48,17 @@ final class MainWindow extends JFrame {
         setLocationRelativeTo(null);
     }
 
+    /**
+     * Speaks the language in use: the menus, the panel, the comparison; Swing's own dialogs too (the file chooser's
+     * buttons), which take the default locale.
+     */
+    void languageChanged() {
+        Locale.setDefault(I18n.language().locale());
+        JComponent.setDefaultLocale(I18n.language().locale());
+        labels.apply();
+        panel.languageChanged();
+    }
+
     /** Opens two documents and compares them, as given at the start. */
     void open(Path left, Path right) {
         panel.open(left, right);
@@ -53,8 +69,7 @@ final class MainWindow extends JFrame {
      * chosen kept for the next time (Settings), the window shown in it at once.
      */
     private JMenu lookMenu() {
-        JMenu menu = new JMenu("Look");
-        menu.setMnemonic(KeyEvent.VK_L);
+        JMenu menu = labels.menu(new JMenu(), "menu.look");
         String current = currentLook();
         String system = UIManager.getSystemLookAndFeelClassName();
         List<UIManager.LookAndFeelInfo> installed = new ArrayList<>(List.of(UIManager.getInstalledLookAndFeels()));
@@ -62,8 +77,10 @@ final class MainWindow extends JFrame {
         installed.sort(Comparator.comparingInt((UIManager.LookAndFeelInfo look) ->
                 look.getClassName().startsWith("com.formdev.flatlaf") ? 0 : look.getClassName().equals(system) ? 1 : 2));
         for (UIManager.LookAndFeelInfo look : installed) {
-            String name = look.getName() + (look.getClassName().equals(system) ? " (the system's)" : "");
-            JRadioButtonMenuItem item = new JRadioButtonMenuItem(name, look.getClassName().equals(current));
+            JRadioButtonMenuItem item = new JRadioButtonMenuItem(look.getName(), look.getClassName().equals(current));
+            if (look.getClassName().equals(system)) {
+                labels.on(() -> item.setText(I18n.text("menu.look.system", look.getName())));
+            }
             item.putClientProperty("look", look.getClassName());
             item.addActionListener(e -> applyLook(look.getClassName()));
             looks.add(item);
@@ -97,17 +114,15 @@ final class MainWindow extends JFrame {
     }
 
     private JMenuBar menuBar() {
-        JMenu file = new JMenu("File");
-        file.setMnemonic(KeyEvent.VK_F);
+        JMenu file = labels.menu(new JMenu(), "menu.file");
         for (Action action : panel.fileActions()) {
             file.add(new JMenuItem(action));
         }
         file.addSeparator();
-        JMenuItem exit = new JMenuItem("Exit", KeyEvent.VK_X);
+        JMenuItem exit = labels.menu(new JMenuItem(), "menu.file.exit");
         exit.addActionListener(e -> dispose());
         file.add(exit);
-        JMenu go = new JMenu("Go");
-        go.setMnemonic(KeyEvent.VK_G);
+        JMenu go = labels.menu(new JMenu(), "menu.go");
         for (Action action : panel.goActions()) {
             go.add(new JMenuItem(action));
         }
@@ -115,7 +130,7 @@ final class MainWindow extends JFrame {
         bar.add(file);
         JMenu view = panel.viewMenu();
         view.addSeparator();
-        darkMode.setMnemonic(KeyEvent.VK_D);
+        labels.menu(darkMode, "menu.view.dark");
         darkMode.setSelected(Looks.isDark());
         darkMode.addActionListener(e -> applyLook(Looks.inMode(currentLook(), darkMode.isSelected())));
         view.add(darkMode);

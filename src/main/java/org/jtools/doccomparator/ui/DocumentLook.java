@@ -18,8 +18,6 @@ record DocumentLook(List<StyledRun> runs, Alignment alignment, float left, float
                     float after, float lineFactor, float exactLine, boolean atLeast, Color shading, String number,
                     List<PageMark> marks) {
 
-    static final String PAGE_BREAK = "Page break";
-    static final String SECTION_BREAK = "Section break";
 
     /**
      * A page beginning in the paragraph, or a section ending: at this offset of its text (0, before it; its length,

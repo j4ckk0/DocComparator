@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.Insets;
-import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -28,6 +27,7 @@ import javax.swing.JRadioButton;
 import javax.swing.JRadioButtonMenuItem;
 import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.CompareOptions.Aspect;
+import org.jtools.doccomparator.i18n.I18nLabels;
 
 /**
  * What is compared and what is shown, chosen in the ribbon or in the Compare and View menus: the options, the lines
@@ -36,15 +36,16 @@ import org.jtools.doccomparator.compare.CompareOptions.Aspect;
  */
 final class OptionControls {
 
-    /** The kinds of layout, by group, in the ribbon and the Compare menu. */
+    /** The kinds of layout, by group (the key of its name), in the ribbon and the Compare menu. */
     private static final List<Map.Entry<String, List<Aspect>>> LAYOUT = List.of(
-            Map.entry("Structure", List.of(Aspect.HEADINGS, Aspect.LISTS, Aspect.SECTIONS, Aspect.TABLE_LAYOUT)),
-            Map.entry("Formatting", List.of(Aspect.STYLES, Aspect.CHARACTERS, Aspect.INDENTATION, Aspect.SPACING,
+            Map.entry("ribbon.group.structure", List.of(Aspect.HEADINGS, Aspect.LISTS, Aspect.SECTIONS, Aspect.TABLE_LAYOUT)),
+            Map.entry("ribbon.group.formatting", List.of(Aspect.STYLES, Aspect.CHARACTERS, Aspect.INDENTATION, Aspect.SPACING,
                     Aspect.ALIGNMENT, Aspect.PARAGRAPHS, Aspect.CELLS)),
-            Map.entry("Document", List.of(Aspect.TEMPLATE, Aspect.HEADERS_AND_FOOTERS)));
+            Map.entry("ribbon.group.document", List.of(Aspect.TEMPLATE, Aspect.HEADERS_AND_FOOTERS)));
     /** The client property telling which view a button chooses. */
     private static final String DOCUMENT_VIEW = "documentView";
 
+    private final I18nLabels labels;
     private final Runnable optionsChanged;
     private final Consumer<Boolean> shownChanged;
     private CompareOptions options = CompareOptions.DEFAULT;
@@ -53,15 +54,16 @@ final class OptionControls {
     private final List<AbstractButton> viewButtons = new ArrayList<>();
     /** While the buttons are set to the options: their changes are not choices. */
     private boolean showingOptions;
-    private final JCheckBox darkBox = new JCheckBox("Dark");
+    private final JCheckBox darkBox = new JCheckBox();
     private Consumer<Boolean> darkModeListener = dark -> { };
     private boolean showingDarkMode;
 
     /**
      * Controls telling optionsChanged when the options change, and shownChanged when the lines shown do (true when it
-     * is the view).
+     * is the view); their labels bound with these.
      */
-    OptionControls(Runnable optionsChanged, Consumer<Boolean> shownChanged) {
+    OptionControls(I18nLabels labels, Runnable optionsChanged, Consumer<Boolean> shownChanged) {
+        this.labels = labels;
         this.optionsChanged = optionsChanged;
         this.shownChanged = shownChanged;
     }
@@ -106,48 +108,46 @@ final class OptionControls {
         for (Action action : go) {
             goButtons.add(new JButton(action));
         }
-        ribbon.add(group("Go", 3, goButtons.toArray(JComponent[]::new)));
+        ribbon.add(group("ribbon.group.go", 3, goButtons.toArray(JComponent[]::new)));
         ButtonGroup views = new ButtonGroup();
-        JRadioButton diff = viewButton("Diff", false,
-                "The text, plain and compact: the differences at a glance, as Beyond Compare shows them");
-        JRadioButton document = viewButton("Document", true,
-                "Each paragraph as Word lays it out: fonts, sizes, colours, alignment, indents, spacing, shading");
+        JRadioButton diff = viewButton("ribbon.view.diff", "ribbon.view.diff.tip", false);
+        JRadioButton document = viewButton("ribbon.view.document", "ribbon.view.document.tip", true);
         views.add(diff);
         views.add(document);
-        darkBox.setToolTipText("The window dark, or light: FlatLaf's dark look, or its light one (View ▸ Look)");
+        labels.text(darkBox, "ribbon.view.dark");
+        labels.tip(darkBox, "ribbon.view.dark.tip");
         darkBox.addItemListener(e -> {
             if (!showingDarkMode) {
                 darkModeListener.accept(darkBox.isSelected());
             }
         });
-        ribbon.add(group("View", 3, diff, document, darkBox));
-        ribbon.add(group("Text", 3, aspectBox(Aspect.TEXT), aspectBox(Aspect.BLANKS)));
+        ribbon.add(group("ribbon.group.view", 3, diff, document, darkBox));
+        ribbon.add(group("ribbon.group.text", 3, aspectBox(Aspect.TEXT), aspectBox(Aspect.BLANKS)));
         for (Map.Entry<String, List<Aspect>> layout : LAYOUT) {
             ribbon.add(group(layout.getKey(), 3,
                     layout.getValue().stream().map(this::aspectBox).toArray(JComponent[]::new)));
         }
-        JCheckBox only = new JCheckBox("Only differences");
-        only.setToolTipText("Hide the lines that are the same");
+        JCheckBox only = labels.tip(labels.text(new JCheckBox(), "ribbon.show.differences"),
+                "ribbon.show.differences.tip");
         only.addItemListener(e -> {
             shown = shown.withOnlyDifferences(only.isSelected());
             shownChanged.accept(false);
         });
-        JCheckBox comparable = new JCheckBox("Only what is comparable");
-        comparable.setToolTipText("Hide what has nothing in common with the other side: paragraphs, tables, rows and "
-                + "columns on one side only; the same paragraphs stay as they are, the close ones with their differences");
+        JCheckBox comparable = labels.tip(labels.text(new JCheckBox(), "ribbon.show.comparable"),
+                "ribbon.show.comparable.tip");
         comparable.addItemListener(e -> {
             shown = shown.withOnlyComparable(comparable.isSelected());
             shownChanged.accept(false);
         });
-        ribbon.add(group("Show", 3, only, comparable));
-        ribbon.add(group("Presets", 3, preset("Text only", CompareOptions.TEXT_ONLY),
-                preset("Layout only", CompareOptions.LAYOUT_ONLY), preset("All", CompareOptions.ALL)));
+        ribbon.add(group("ribbon.group.show", 3, only, comparable));
+        ribbon.add(group("ribbon.group.presets", 3, preset("preset.text", CompareOptions.TEXT_ONLY),
+                preset("preset.layout", CompareOptions.LAYOUT_ONLY), preset("preset.all", CompareOptions.ALL)));
         ribbon.add(Box.createHorizontalGlue());
         return ribbon;
     }
 
     /** A group of the ribbon: its items in columns of so many, top to bottom, then left to right; its name under them. */
-    private static JPanel group(String name, int rows, JComponent... items) {
+    private JPanel group(String name, int rows, JComponent... items) {
         int columns = (items.length + rows - 1) / rows;
         JPanel grid = new JPanel(new GridLayout(rows, columns, 6, 0));
         JComponent[] cells = new JComponent[rows * columns];
@@ -163,7 +163,7 @@ final class OptionControls {
                 button.setMargin(new Insets(1, 4, 1, 4));
             }
         }
-        JLabel title = new FaintLabel(name, JLabel.CENTER, true);
+        JLabel title = labels.text(new FaintLabel(" ", JLabel.CENTER, true), name);
 
         JPanel group = new JPanel(new BorderLayout(0, 2)) {
             @Override
@@ -182,9 +182,9 @@ final class OptionControls {
     // The view
 
     /** A button choosing a view, kept in step with the others choosing the same. */
-    private JRadioButton viewButton(String name, boolean document, String tip) {
-        JRadioButton button = new JRadioButton(name, document == shown.documentView());
-        button.setToolTipText(tip);
+    private JRadioButton viewButton(String name, String tip, boolean document) {
+        JRadioButton button = new JRadioButton((String) null, document == shown.documentView());
+        labels.tip(labels.text(button, name), tip);
         return registerView(button, document);
     }
 
@@ -213,12 +213,11 @@ final class OptionControls {
 
     /** The views, as a menu of the window. */
     JMenu viewMenu() {
-        JMenu menu = new JMenu("View");
-        menu.setMnemonic(KeyEvent.VK_V);
+        JMenu menu = labels.menu(new JMenu(), "menu.view");
         ButtonGroup group = new ButtonGroup();
         for (boolean document : new boolean[] {false, true}) {
-            JRadioButtonMenuItem item = registerView(new JRadioButtonMenuItem(document ? "Document view" : "Diff view",
-                    document == shown.documentView()), document);
+            JRadioButtonMenuItem item = registerView(labels.text(new JRadioButtonMenuItem((String) null,
+                    document == shown.documentView()), document ? "menu.view.document" : "menu.view.diff"), document);
             group.add(item);
             menu.add(item);
         }
@@ -230,11 +229,12 @@ final class OptionControls {
 
     /** A check box for a kind of difference, kept in step with the options. */
     private JCheckBox aspectBox(Aspect aspect) {
-        return register(aspect, new JCheckBox(aspect.label()));
+        return register(aspect, new JCheckBox());
     }
 
     private <B extends AbstractButton> B register(Aspect aspect, B button) {
-        button.setToolTipText(aspect.description());
+        labels.text(button, aspect.labelKey());
+        labels.tip(button, aspect.descriptionKey());
         button.setSelected(options.has(aspect));
         button.addItemListener(e -> {
             if (!showingOptions) {
@@ -258,31 +258,30 @@ final class OptionControls {
     }
 
     private JButton preset(String name, CompareOptions preset) {
-        JButton button = new JButton(name);
+        JButton button = labels.text(new JButton(), name);
         button.addActionListener(e -> setOptions(preset));
         return button;
     }
 
     /** The same options, as a menu of the window. */
     JMenu compareMenu() {
-        JMenu menu = new JMenu("Compare");
-        menu.setMnemonic(KeyEvent.VK_C);
-        menu.add(register(Aspect.TEXT, new JCheckBoxMenuItem(Aspect.TEXT.label())));
-        menu.add(register(Aspect.BLANKS, new JCheckBoxMenuItem(Aspect.BLANKS.label())));
+        JMenu menu = labels.menu(new JMenu(), "menu.compare");
+        menu.add(register(Aspect.TEXT, new JCheckBoxMenuItem()));
+        menu.add(register(Aspect.BLANKS, new JCheckBoxMenuItem()));
         for (Map.Entry<String, List<Aspect>> group : LAYOUT) {
             menu.addSeparator();
-            JMenuItem title = new JMenuItem(group.getKey());
+            JMenuItem title = labels.text(new JMenuItem(), group.getKey());
             title.setEnabled(false);
             menu.add(title);
             for (Aspect aspect : group.getValue()) {
-                menu.add(register(aspect, new JCheckBoxMenuItem(aspect.label())));
+                menu.add(register(aspect, new JCheckBoxMenuItem()));
             }
         }
         menu.addSeparator();
-        for (Map.Entry<String, CompareOptions> preset : List.of(Map.entry("Text only", CompareOptions.TEXT_ONLY),
-                Map.entry("Layout only", CompareOptions.LAYOUT_ONLY), Map.entry("All", CompareOptions.ALL),
-                Map.entry("None", CompareOptions.TEXT_ONLY.with(Aspect.TEXT, false)))) {
-            JMenuItem item = new JMenuItem(preset.getKey());
+        for (Map.Entry<String, CompareOptions> preset : List.of(Map.entry("preset.text", CompareOptions.TEXT_ONLY),
+                Map.entry("preset.layout", CompareOptions.LAYOUT_ONLY), Map.entry("preset.all", CompareOptions.ALL),
+                Map.entry("preset.none", CompareOptions.TEXT_ONLY.with(Aspect.TEXT, false)))) {
+            JMenuItem item = labels.text(new JMenuItem(), preset.getKey());
             item.addActionListener(e -> setOptions(preset.getValue()));
             menu.add(item);
         }

@@ -21,6 +21,7 @@ import javax.swing.Scrollable;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import org.jtools.doccomparator.compare.PropertyDifference;
+import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * The two documents side by side, line by line: each line as high as its taller side, so that what goes together
@@ -512,26 +513,27 @@ final class ComparisonView extends JComponent implements Scrollable {
             return line.left == null && line.right == null ? null : describe(line.marking());
         }
         if (side.columns != null) {
-            return side.moved() ? "Moved: click to go to its match" : describe(side.marking);
+            return side.moved() ? I18n.text("view.moved.tip") : describe(side.marking);
         }
         int column = columnWidth(getWidth());
         int x = e.getX() - (side == line.left ? 0 : column + GUTTER) - MARGIN;
         int y = e.getY() - line.top - LineSide.PADDING - (side.caption == null ? 0 : side.caption.height() + LineSide.GAP);
         List<PropertyDifference> formatting = side.text.formattingAt(x, y);
         if (!formatting.isEmpty()) {
-            return "<html>Formatted otherwise:<br>" + formatting.stream().map(d -> escape(d.toString()))
+            return "<html>" + escape(I18n.text("view.formatting.tip")) + "<br>" + formatting.stream()
+                    .map(d -> escape(Lines.said(d)))
                     .collect(Collectors.joining("<br>")) + "</html>";
         }
-        return side.moved() ? "Moved: click to go to its match" : describe(side.marking);
+        return side.moved() ? I18n.text("view.moved.tip") : describe(side.marking);
     }
 
     private static String describe(LineSide.Marking marking) {
         return switch (marking) {
             case SAME -> null;
-            case CHANGED -> "The text differs";
-            case OTHERWISE -> "The same text; its structure or style differs";
-            case MOVED -> "Moved";
-            case ORPHAN -> "Only on this side";
+            case CHANGED -> I18n.text("view.changed");
+            case OTHERWISE -> I18n.text("view.otherwise");
+            case MOVED -> I18n.text("view.moved");
+            case ORPHAN -> I18n.text("view.orphan");
         };
     }
 

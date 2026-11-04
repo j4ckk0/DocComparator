@@ -5,6 +5,7 @@ import java.awt.Font;
 import java.awt.font.FontRenderContext;
 import java.util.List;
 import org.jtools.doccomparator.compare.Pairing;
+import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * One side of a line of the view: a paragraph and how it compares, a row of a table, or a property of the document.
@@ -71,8 +72,8 @@ final class LineSide {
     void linkTo(int line, boolean below, Font said, Palette palette) {
         counterpartLine = line;
         if (said != null) {
-            link = TextBlock.plain("Moved — its match is " + (below ? "below ↓" : "above ↑")
-                    + " (click to go there)", said, palette.link, palette);
+            link = TextBlock.plain(I18n.text(below ? "line.movedBelow" : "line.movedAbove"), said, palette.link,
+                    palette);
         }
     }
 

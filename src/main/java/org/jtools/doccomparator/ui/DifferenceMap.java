@@ -10,6 +10,7 @@ import java.awt.event.MouseEvent;
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
 import javax.swing.JViewport;
+import org.jtools.doccomparator.i18n.I18nLabels;
 
 /**
  * The whole comparison at a glance, beside the view: a mark for each line that differs, at its height in the documents,
@@ -23,10 +24,11 @@ final class DifferenceMap extends JComponent {
     private final ComparisonView view;
     private final JViewport viewport;
 
-    DifferenceMap(ComparisonView view, JScrollPane scroll) {
+    /** The map of this view's differences, scrolled with scroll; its tooltip bound with labels. */
+    DifferenceMap(ComparisonView view, JScrollPane scroll, I18nLabels labels) {
         this.view = view;
         this.viewport = scroll.getViewport();
-        setToolTipText("Every difference: click to go there");
+        labels.tip(this, "map.tip");
         viewport.addChangeListener(e -> repaint());
         view.addPropertyChangeListener(ComparisonView.LINES, e -> repaint());
         MouseAdapter mouse = new MouseAdapter() {

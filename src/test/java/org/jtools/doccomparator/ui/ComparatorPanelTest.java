@@ -10,12 +10,24 @@ import com.formdev.flatlaf.FlatDarkLaf;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Font;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.AbstractButton;
 import javax.swing.Action;
 import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
 import javax.swing.JRadioButton;
 import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
@@ -24,6 +36,8 @@ import javax.swing.UnsupportedLookAndFeelException;
 import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.DocumentComparer;
 import org.jtools.doccomparator.docx.DocxReader;
+import org.jtools.doccomparator.i18n.I18n;
+import org.jtools.doccomparator.i18n.I18nLanguage;
 import org.junit.jupiter.api.Test;
 
 /** The panel, made without a screen: what its buttons do. */
@@ -115,6 +129,73 @@ class ComparatorPanelTest {
         } finally {
             UIManager.setLookAndFeel(before);
         }
+    }
+
+    /**
+     * Another language: every label of the panel, its menus and tooltips included, in it at once — but those its
+     * files write the same in both ("Document", "Styles").
+     */
+    @Test
+    void anotherLanguageRelabelsEverything() throws Exception {
+        Properties english = texts("en");
+        Properties french = texts("fr");
+        Set<String> same = new HashSet<>();
+        english.stringPropertyNames().stream().filter(key -> english.getProperty(key).equals(french.getProperty(key)))
+                .forEach(key -> same.add(english.getProperty(key)));
+        SwingUtilities.invokeAndWait(() -> {
+            ComparatorPanel panel = new ComparatorPanel();
+            List<Component> parts = new ArrayList<>(List.of(panel, panel.viewMenu(), panel.compareMenu()));
+            Map<Component, List<String>> before = new IdentityHashMap<>();
+            parts.forEach(part -> labels(part, before));
+            I18n.use(I18nLanguage.FRENCH);
+            panel.languageChanged();
+            Map<Component, List<String>> after = new IdentityHashMap<>();
+            parts.forEach(part -> labels(part, after));
+            assertTrue(before.size() > 60, "the labels found: " + before.size());
+            before.forEach((component, labels) -> {
+                for (int i = 0; i < labels.size(); i++) {
+                    String was = labels.get(i);
+                    if (!same.contains(was)) {
+                        assertNotEquals(was, after.get(component).get(i), "still in English");
+                    }
+                }
+            });
+        });
+    }
+
+    /** Each label and tooltip of a component and of those it holds, menus' items included, " " for none. */
+    private static void labels(Component component, Map<Component, List<String>> found) {
+        List<String> labels = new ArrayList<>();
+        if (component instanceof AbstractButton button && button.getText() != null && !button.getText().isBlank()) {
+            labels.add(button.getText());
+        }
+        if (component instanceof JLabel label && label.getText() != null && !label.getText().isBlank()) {
+            labels.add(label.getText());
+        }
+        if (component instanceof JComponent part && part.getToolTipText() != null && !part.getToolTipText().isBlank()) {
+            labels.add(part.getToolTipText());
+        }
+        if (!labels.isEmpty()) {
+            found.put(component, labels);
+        }
+        if (component instanceof JMenu menu) {
+            for (Component item : menu.getMenuComponents()) {
+                labels(item, found);
+            }
+        }
+        if (component instanceof Container container) {
+            for (Component inner : container.getComponents()) {
+                labels(inner, found);
+            }
+        }
+    }
+
+    private static Properties texts(String code) throws IOException {
+        Properties texts = new Properties();
+        try (InputStream in = I18n.class.getResourceAsStream("messages_" + code + ".properties")) {
+            texts.load(new InputStreamReader(in, StandardCharsets.UTF_8));
+        }
+        return texts;
     }
 
     /** No document open: the empty sides dark in a dark look, from the start and once the look turns dark. */

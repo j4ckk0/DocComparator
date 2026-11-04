@@ -32,6 +32,16 @@ public final class I18nLabels {
         return button;
     }
 
+    /** A menu or a menu item: its text, and its first letter as its mnemonic (Alt+F, File; Alt+F, Fichier). */
+    public <B extends AbstractButton> B menu(B item, String key) {
+        on(() -> {
+            String text = I18n.text(key);
+            item.setText(text);
+            item.setMnemonic(Character.toUpperCase(text.charAt(0)));
+        });
+        return item;
+    }
+
     public JLabel text(JLabel label, String key) {
         bind(label::setText, key);
         return label;

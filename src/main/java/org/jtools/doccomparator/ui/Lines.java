@@ -26,6 +26,7 @@ import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * A comparison into the lines of the view: a title for each part, then its pairings. Those with a paragraph on one side
@@ -35,6 +36,10 @@ import org.jtools.doccomparator.document.WordDocument;
  */
 final class Lines {
 
+    /** Between a part's title and its count of differences; alone() takes the count off by it. */
+    private static final String TITLE_COUNT = " \u2014 ";
+    /** Between the notes of a paragraph or a row. */
+    private static final String BETWEEN_NOTES = "  \u00B7  ";
     /** The most formatting differences a paragraph lists; the rest are in the tooltip of the text. */
     private static final int LISTED_FORMATTING = 4;
 
@@ -92,7 +97,7 @@ final class Lines {
         List<Line> lines = new ArrayList<>();
         for (Line line : of(itself, Shown.ALL.withDocumentView(shown.documentView()), fonts, palette)) {
             if (line.isTitle()) {
-                int dash = line.title.indexOf(" \u2014 ");
+                int dash = line.title.indexOf(TITLE_COUNT);
                 lines.add(Line.title(dash < 0 ? line.title : line.title.substring(0, dash)));
             } else {
                 lines.add(onLeft ? Line.of(line.left, null) : Line.of(null, line.right));
@@ -123,7 +128,7 @@ final class Lines {
         if (differences.isEmpty()) {
             return;
         }
-        lines.add(Line.title("Document — " + count(differences.size())));
+        lines.add(Line.title(I18n.text("line.document") + TITLE_COUNT + count(differences.size())));
         for (PropertyDifference difference : differences) {
             lines.add(Line.of(property(difference.property(), difference.left()),
                     property(difference.property(), difference.right())));
@@ -186,7 +191,7 @@ final class Lines {
             side.linkTo(target, target > line, said ? fonts.small() : null, palette);
         });
         long differences = lines.subList(titleLine, lines.size()).stream().filter(Line::differs).count();
-        lines.set(titleLine, Line.title(story.title() + " \u2014 " + count(differences)));
+        lines.set(titleLine, Line.title(story.title() + TITLE_COUNT + count(differences)));
     }
 
     /**
@@ -245,10 +250,10 @@ final class Lines {
                 continue;
             }
             LineSide.Marking columnMarking = marking(slot);
-            String said = slot.moved() ? " (moved)" : slot.left() < 0 || slot.right() < 0
-                    ? (onLeft ? " (removed)" : " (added)") : "";
+            String said = I18n.text(slot.moved() ? "line.column.moved" : slot.left() < 0 || slot.right() < 0
+                    ? (onLeft ? "line.column.removed" : "line.column.added") : "line.column", columnName(column));
             columns.add(new LineSide(columnMarking, null, null, null,
-                    TextBlock.plain(columnName(column) + said, fonts.small(), palette.faint, palette), null, null));
+                    TextBlock.plain(said, fonts.small(), palette.faint, palette), null, null));
         }
         Item item = onLeft ? pairing.left() : pairing.right();
         String notes = notes(pairing, onLeft, List.of());
@@ -286,8 +291,8 @@ final class Lines {
         if (!rowProperties.isEmpty()) {
             marking = marking.stronger(LineSide.Marking.OTHERWISE);
         }
-        String notes = String.join("  \u00B7  ", rowProperties.stream()
-                .map(d -> d.property() + ": " + (onLeft ? d.left() : d.right())).toList());
+        String notes = String.join(BETWEEN_NOTES, rowProperties.stream()
+                .map(d -> I18n.text("line.property", d.property(), onLeft ? d.left() : d.right())).toList());
         return new LineSide(marking, pairing, String.valueOf(number), null, null, columns,
                 notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), palette.faint, palette));
     }
@@ -370,7 +375,7 @@ final class Lines {
             marker = null;
         }
         TextBlock text = new TextBlock(item.text(), heading && laidOut == null ? fonts.heading() : fonts.text(),
-                palette.text, palette, spans, formatting, "(empty paragraph)", laidOut).withPictures(pictures(item));
+                palette.text, palette, spans, formatting, I18n.text("line.emptyParagraph"), laidOut).withPictures(pictures(item));
         String location = inTable ? null : location(item, false);
         TextBlock caption = location == null ? null : TextBlock.plain(location, fonts.small(), palette.faint, palette);
         String notes = notes(pairing, onLeft, formatting);
@@ -380,9 +385,9 @@ final class Lines {
 
     /** A property of the document, its value on one side. */
     private LineSide property(String property, String value) {
-        String text = property + ": " + value;
-        List<Span> spans = List.of(new Span(0, property.length() + 2, Span.Kind.SAME),
-                new Span(property.length() + 2, text.length(), Span.Kind.CHANGED));
+        String text = I18n.text("line.property", property, value);
+        int named = text.length() - value.length();   // the value last, its name and the colon before it
+        List<Span> spans = List.of(new Span(0, named, Span.Kind.SAME), new Span(named, text.length(), Span.Kind.CHANGED));
         return new LineSide(LineSide.Marking.CHANGED, null, null, null,
                 new TextBlock(text, fonts.text(), palette.text, palette, spans, List.of(), " "), null, null);
     }
@@ -417,27 +422,35 @@ final class Lines {
     private static String notes(Pairing pairing, boolean onLeft, List<FormatSpan> formatting) {
         List<String> notes = new ArrayList<>();
         for (PropertyDifference difference : pairing.diff().properties()) {
-            notes.add(difference.property() + ": " + (onLeft ? difference.left() : difference.right()));
+            notes.add(I18n.text("line.property", difference.property(), onLeft ? difference.left() : difference.right()));
         }
         Set<PropertyDifference> formats = new LinkedHashSet<>();
         formatting.forEach(span -> formats.addAll(span.differences()));
         if (!formats.isEmpty()) {
-            List<String> listed = formats.stream().limit(LISTED_FORMATTING).map(PropertyDifference::toString).toList();
-            notes.add("formatting (dotted): " + String.join(", ", listed) + (formats.size() > LISTED_FORMATTING ? "…" : ""));
+            List<String> listed = formats.stream().limit(LISTED_FORMATTING).map(Lines::said).toList();
+            notes.add(I18n.text("line.formatting", String.join(", ", listed)
+                    + (formats.size() > LISTED_FORMATTING ? "…" : "")));
         }
-        return String.join("  ·  ", notes);
+        return String.join(BETWEEN_NOTES, notes);
     }
 
     /** The heading level ("H2"), or the mark of a list item as Word shows it; null for neither. */
     private static String marker(Item item, ListNumbers numbers) {
         if (item.paragraph().headingLevel() > 0) {
-            return "H" + item.paragraph().headingLevel();
+            return I18n.text("line.heading", item.paragraph().headingLevel());
         }
         ListItem list = item.paragraph().listItem();
         return list == null ? null : numbers.next(list);
     }
 
-    private static String count(long differences) {
-        return differences == 0 ? "no difference" : differences == 1 ? "1 difference" : differences + " differences";
+    /** How many differences: "no difference", "1 difference", "3 differences". */
+    static String count(long differences) {
+        return differences == 0 ? I18n.text("count.none") : differences == 1 ? I18n.text("count.one")
+                : I18n.text("count.many", differences);
+    }
+
+    /** A property difference as the view says it: "shading: clear → fill D9E2F3". */
+    static String said(PropertyDifference difference) {
+        return I18n.text("line.change", difference.property(), difference.left(), difference.right());
     }
 }

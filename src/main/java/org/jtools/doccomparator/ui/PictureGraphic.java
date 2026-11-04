@@ -10,6 +10,7 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.Locale;
 import org.jtools.doccomparator.document.Picture;
+import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * A picture in a line of text, in the place of the character standing for it (TextAttribute.CHAR_REPLACEMENT), its
@@ -111,12 +112,12 @@ final class PictureGraphic extends GraphicAttribute {
     /** What the frame of a picture that cannot be shown says. */
     private String said() {
         return switch (picture.kind()) {
-            case LINKED -> "Linked picture, not fetched";
-            case TOO_LARGE -> "Picture too large to show";
-            case UNSUPPORTED -> "chart".equals(picture.format()) ? "Chart"
-                    : "diagram".equals(picture.format()) ? "Diagram" : "Picture not found";
-            case IMAGE -> (picture.format() == null ? "Picture" : picture.format().toUpperCase(Locale.ROOT)
-                    + " picture") + ", not shown";
+            case LINKED -> I18n.text("picture.linked");
+            case TOO_LARGE -> I18n.text("picture.tooLarge");
+            case UNSUPPORTED -> I18n.text("chart".equals(picture.format()) ? "picture.chart"
+                    : "diagram".equals(picture.format()) ? "picture.diagram" : "picture.missing");
+            case IMAGE -> picture.format() == null ? I18n.text("picture.notShown")
+                    : I18n.text("picture.formatNotShown", picture.format().toUpperCase(Locale.ROOT));
         };
     }
 }

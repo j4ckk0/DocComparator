@@ -34,6 +34,8 @@ import org.jtools.doccomparator.compare.Comparison;
 import org.jtools.doccomparator.compare.DocumentComparer;
 import org.jtools.doccomparator.document.WordDocument;
 import org.jtools.doccomparator.docx.DocxReader;
+import org.jtools.doccomparator.i18n.I18n;
+import org.jtools.doccomparator.i18n.I18nLabels;
 
 /**
  * The comparison of two documents, all of it but the window: the ribbon (OptionControls), the head of each side
@@ -45,19 +47,20 @@ public final class ComparatorPanel extends JPanel {
 
     private final ComparisonView view = new ComparisonView();
     private final JScrollPane scroll = new JScrollPane(view);
-    private final StatusLine statusLine = new StatusLine();
-    private final Action openLeft = action("Open left…", "Open the left document",
+    /** The labels of the panel and of its parts, which it gives them: set again together when the language changes. */
+    private final I18nLabels labels = new I18nLabels();
+    private final StatusLine statusLine = new StatusLine(labels);
+    private final Action openLeft = action("action.openLeft", "action.openLeft.tip",
             KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK), () -> choose(true));
-    private final Action openRight = action("Open right…", "Open the right document",
+    private final Action openRight = action("action.openRight", "action.openRight.tip",
             KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK),
             () -> choose(false));
-    private final Action swap = action("Swap sides", "Put the left document on the right, and the right on the left",
-            null, this::swap);
-    private final Action previous = action("▲ Previous", "Go to the previous difference (Shift+F7)",
+    private final Action swap = action("action.swap", "action.swap.tip", null, this::swap);
+    private final Action previous = action("action.previous", "action.previous.tip",
             KeyStroke.getKeyStroke(KeyEvent.VK_F7, InputEvent.SHIFT_DOWN_MASK), () -> goToDifference(false));
-    private final Action next = action("Next ▼", "Go to the next difference (F7)",
-            KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0), () -> goToDifference(true));
-    private final OptionControls controls = new OptionControls(this::compare, this::shownChanged);
+    private final Action next = action("action.next", "action.next.tip", KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0),
+            () -> goToDifference(true));
+    private final OptionControls controls = new OptionControls(labels, this::compare, this::shownChanged);
     private final DocumentOpener opener = new DocumentOpener() {
         @Override
         public void open(boolean onLeft, Path path) {
@@ -93,8 +96,8 @@ public final class ComparatorPanel extends JPanel {
 
     public ComparatorPanel() {
         super(new BorderLayout());
-        leftHeader = new DocumentHeader(true, openLeft, opener, this);
-        rightHeader = new DocumentHeader(false, openRight, opener, this);
+        leftHeader = new DocumentHeader(true, openLeft, opener, this, labels);
+        rightHeader = new DocumentHeader(false, openRight, opener, this, labels);
         showEmptySides();
         scroll.getVerticalScrollBar().setUnitIncrement(24);
         scroll.setBorder(BorderFactory.createEmptyBorder());
@@ -110,12 +113,12 @@ public final class ComparatorPanel extends JPanel {
 
         JPanel center = new JPanel(new BorderLayout());
         center.add(scroll, BorderLayout.CENTER);
-        center.add(new DifferenceMap(view, scroll), BorderLayout.EAST);
+        center.add(new DifferenceMap(view, scroll, labels), BorderLayout.EAST);
         add(center, BorderLayout.CENTER);
         add(statusLine, BorderLayout.SOUTH);
 
         view.addPropertyChangeListener(ComparisonView.CURRENT_LINE, e -> updatePosition());
-        view.setComponentPopupMenu(new CopyMenu(view));
+        view.setComponentPopupMenu(new CopyMenu(view, labels));
         TransferHandler drop = new DropHandler(opener, this, null);
         view.setTransferHandler(drop);
         setTransferHandler(drop);
@@ -126,6 +129,17 @@ public final class ComparatorPanel extends JPanel {
         }
         showEmptyView();
         updateActions();
+    }
+
+    /**
+     * The language has changed: every label in it, and the documents read again — the names of their parts, and what
+     * the comparison says of them, are written in it as they are read and compared.
+     */
+    public void languageChanged() {
+        labels.apply();
+        leftDocument = null;
+        rightDocument = null;
+        compare();
     }
 
     /** Told the window's title each time the documents change. */
@@ -187,8 +201,8 @@ public final class ComparatorPanel extends JPanel {
 
     private void choose(boolean onLeft) {
         JFileChooser chooser = new JFileChooser(lastDirectory);
-        chooser.setDialogTitle(onLeft ? "Open the left document" : "Open the right document");
-        chooser.setFileFilter(new FileNameExtensionFilter("Word documents (*.docx, *.docm, *.dotx, *.dotm)",
+        chooser.setDialogTitle(I18n.text(onLeft ? "chooser.left" : "chooser.right"));
+        chooser.setFileFilter(new FileNameExtensionFilter(I18n.text("chooser.wordDocuments"),
                 "docx", "docm", "dotx", "dotm"));
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             lastDirectory = chooser.getCurrentDirectory();
@@ -237,7 +251,7 @@ public final class ComparatorPanel extends JPanel {
         WordDocument knownLeft = leftDocument;
         WordDocument knownRight = rightDocument;
         CompareOptions options = controls.options();
-        inBackground("Comparing…", () -> {
+        inBackground("status.comparing", () -> {
             WordDocument a = knownLeft != null ? knownLeft : read(left);
             WordDocument b = knownRight != null ? knownRight : read(right);
             PictureImages.prepare(a, b);   // decoded here, away from the window's thread
@@ -246,7 +260,7 @@ public final class ComparatorPanel extends JPanel {
             leftDocument = result.left();
             rightDocument = result.right();
             show(result);
-        }, "Not compared", "Cannot compare");
+        }, "status.notCompared", "dialog.cannotCompare");
     }
 
     /**
@@ -257,7 +271,7 @@ public final class ComparatorPanel extends JPanel {
         comparison = null;
         Path path = onLeft ? leftPath : rightPath;
         WordDocument known = onLeft ? leftDocument : rightDocument;
-        inBackground("Reading…", () -> {
+        inBackground("status.reading", () -> {
             WordDocument document = known != null ? known : read(path);
             PictureImages.prepare(document);
             return document;
@@ -273,18 +287,18 @@ public final class ComparatorPanel extends JPanel {
             Palette palette = Palette.of(shown.documentView());
             view.setLines(Lines.alone(document, onLeft, shown, view.fonts(), palette), -1, palette);
             view.setWaitingSide(onLeft ? 1 : 0);
-            statusLine.say("Open the other document to compare.");
+            statusLine.say(I18n.text("status.openTheOther"));
             updateActions();
-        }, "Not read", "Cannot read");
+        }, "status.notRead", "dialog.cannotRead");
     }
 
     /**
-     * Runs work away from the window's thread, the status saying so and the cursor waiting, then gives its result to
-     * done on the window's thread — unless other work has replaced it. A failure is said in the status line and a
-     * message: "failed: why", under this title.
+     * Runs work away from the window's thread, the status saying so (the text of saying) and the cursor waiting, then
+     * gives its result to done on the window's thread — unless other work has replaced it. A failure is said in the
+     * status line (failed's text, why as its argument) and a message, under title's text.
      */
     private <T> void inBackground(String saying, Callable<T> work, Consumer<T> done, String failed, String title) {
-        statusLine.say(saying);
+        statusLine.say(I18n.text(saying));
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         SwingWorker<T, Void> worker = new SwingWorker<>() {
             @Override
@@ -303,8 +317,8 @@ public final class ComparatorPanel extends JPanel {
                     done.accept(get());
                 } catch (ExecutionException e) {
                     Throwable cause = e.getCause();
-                    statusLine.say(failed + ": " + cause.getMessage());
-                    JOptionPane.showMessageDialog(ComparatorPanel.this, cause.getMessage(), title,
+                    statusLine.say(I18n.text(failed, cause.getMessage()));
+                    JOptionPane.showMessageDialog(ComparatorPanel.this, cause.getMessage(), I18n.text(title),
                             JOptionPane.ERROR_MESSAGE);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -322,17 +336,18 @@ public final class ComparatorPanel extends JPanel {
 
     /** While a side has no document: what goes there, and how to open it; the side opened, its document's name. */
     private void showEmptySides() {
-        view.setEmptySides(emptySide(leftPath, "Left", "Ctrl+O"), emptySide(rightPath, "Right", "Ctrl+Shift+O"));
+        view.setEmptySides(emptySide(leftPath, "empty.left", "Ctrl+O"),
+                emptySide(rightPath, "empty.right", "Ctrl+Shift+O"));
     }
 
-    private static ComparisonView.EmptySide emptySide(Path path, String side, String key) {
+    /** A side without its document: its name (the text of side), then how to open it, its shortcut said; or opened. */
+    private static ComparisonView.EmptySide emptySide(Path path, String side, String shortcut) {
         if (path != null) {
             return new ComparisonView.EmptySide(true, String.valueOf(path.getFileName()),
-                    List.of("opened — now the other document"));
+                    List.of(I18n.text("empty.opened")));
         }
-        return new ComparisonView.EmptySide(false, side + " document", List.of("Drop a Word document here,",
-                "or choose it with Open… above (" + key + "),", "or type its path above.", "",
-                "Two dropped at once: the first on the left."));
+        return new ComparisonView.EmptySide(false, I18n.text(side), List.of(I18n.text("empty.drop"),
+                I18n.text("empty.choose", shortcut), I18n.text("empty.type"), "", I18n.text("empty.two")));
     }
 
     private static WordDocument read(Path path) throws IOException {
@@ -356,8 +371,7 @@ public final class ComparatorPanel extends JPanel {
         SwingUtilities.invokeLater(() -> scroll.getViewport().setViewPosition(new Point(0, Math.min(at.y,
                 Math.max(0, view.getHeight() - scroll.getViewport().getHeight())))));
         int[] count = view.differenceCount();
-        statusLine.say(result.same() ? "The documents are the same, as compared."
-                : count[0] + (count[0] == 1 ? " difference" : " differences"));
+        statusLine.say(result.same() ? I18n.text("status.same") : Lines.count(count[0]));
         updatePosition();
         updateActions();
     }
@@ -408,16 +422,16 @@ public final class ComparatorPanel extends JPanel {
         swap.setEnabled(leftPath != null || rightPath != null);
     }
 
-    private static Action action(String name, String tip, KeyStroke key, Runnable run) {
-        Action action = new AbstractAction(name) {
+    /** An action named by the text of nameKey, its tooltip tipKey's. */
+    private Action action(String nameKey, String tipKey, KeyStroke shortcut, Runnable run) {
+        Action action = labels.action(new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 run.run();
             }
-        };
-        action.putValue(Action.SHORT_DESCRIPTION, tip);
-        if (key != null) {
-            action.putValue(Action.ACCELERATOR_KEY, key);
+        }, nameKey, tipKey);
+        if (shortcut != null) {
+            action.putValue(Action.ACCELERATOR_KEY, shortcut);
         }
         return action;
     }

@@ -9,6 +9,8 @@ import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import org.jtools.doccomparator.i18n.I18n;
+import org.jtools.doccomparator.i18n.I18nLabels;
 
 /**
  * The status line, under the sides: what the comparison says, on the left; on the right, the current difference and
@@ -19,7 +21,8 @@ final class StatusLine extends JPanel {
     private final JLabel status = new JLabel(" ");
     private final JLabel position = new JLabel(" ");
 
-    StatusLine() {
+    /** The status line, its legend's labels bound with these. */
+    StatusLine(I18nLabels labels) {
         super(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(3, 6, 3, 6));
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -27,10 +30,10 @@ final class StatusLine extends JPanel {
         add(left, BorderLayout.CENTER);
         JPanel legend = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         legend.add(position);
-        legend.add(legend("text differs", Palette.CHANGED_MARK));
-        legend.add(legend("one side only", Palette.ORPHAN_MARK));
-        legend.add(legend("moved", Palette.MOVED_MARK));
-        legend.add(legend("layout", Palette.OTHERWISE_MARK));
+        legend.add(labels.text(legend(Palette.CHANGED_MARK), "legend.changed"));
+        legend.add(labels.text(legend(Palette.ORPHAN_MARK), "legend.orphan"));
+        legend.add(labels.text(legend(Palette.MOVED_MARK), "legend.moved"));
+        legend.add(labels.text(legend(Palette.OTHERWISE_MARK), "legend.layout"));
         add(legend, BorderLayout.EAST);
     }
 
@@ -41,11 +44,11 @@ final class StatusLine extends JPanel {
 
     /** Which difference is the current one, from 1, of how many; nothing when it is none of them (0). */
     void showPosition(int current, int count) {
-        position.setText(current == 0 ? " " : "difference " + current + " of " + count);
+        position.setText(current == 0 ? " " : I18n.text("status.position", current, count));
     }
 
-    private static JLabel legend(String text, Color color) {
-        JLabel label = new JLabel(text, new Swatch(color), JLabel.LEFT);
+    private static JLabel legend(Color color) {
+        JLabel label = new JLabel(" ", new Swatch(color), JLabel.LEFT);
         label.setFont(label.getFont().deriveFont(label.getFont().getSize2D() - 1));
         return label;
     }

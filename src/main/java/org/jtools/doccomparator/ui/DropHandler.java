@@ -11,6 +11,7 @@ import java.util.List;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
+import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * Documents dropped: two at once, left and right; one, on the side it is dropped on (or the side given). As a list
@@ -103,7 +104,7 @@ final class DropHandler extends TransferHandler {
                 return FileUris.paths((String) data.getTransferData(URI_LIST));
             }
         } catch (UnsupportedFlavorException | IOException e) {
-            opener.refuse("Not dropped: " + e.getMessage());
+            opener.refuse(I18n.text("drop.failed", e.getMessage()));
         }
         return List.of();
     }
