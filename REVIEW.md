@@ -170,7 +170,7 @@ language change becomes slow on big documents. It is listed so the choice is a k
 
 ## Patterns
 
-- **Literals that repeat a value held elsewhere (5):**
+- **Literals that repeat a value held elsewhere (5)** — done:
   - `"DocComparator"` appears in `ComparatorPanel.title()` and as `MainWindow.APP_NAME`.
   - The shortcut texts `"Ctrl+O"`, `"Ctrl+Shift+O"` and `"Ctrl+V"` in `ComparatorPanel.showEmptySides` are written
     next to the `KeyStroke`s they describe, so the two can drift apart; deriving them from the action's

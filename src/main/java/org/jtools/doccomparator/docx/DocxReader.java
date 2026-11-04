@@ -41,6 +41,9 @@ import org.jtools.doccomparator.i18n.I18n;
  */
 public final class DocxReader {
 
+    /** The files read, by their extension: Word's documents and templates, with macros or without, built alike. */
+    public static final List<String> EXTENSIONS = List.of("docx", "docm", "dotx", "dotm");
+
     private DocxReader() {
     }
 

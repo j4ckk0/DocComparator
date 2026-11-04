@@ -37,6 +37,7 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +61,7 @@ import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.Comparison;
 import org.jtools.doccomparator.compare.DocumentComparer;
 import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.docx.DocxReader;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.i18n.I18nLabels;
 
@@ -76,6 +78,10 @@ public final class ComparatorPanel extends JPanel {
     private static final String BETWEEN_NAMES = " ↔ ";
     /** The name of a side without its document yet. */
     private static final String NO_NAME = "…";
+    /** Between a shortcut's keys, as the menus show it: "Ctrl+O". */
+    private static final String BETWEEN_KEYS = "+";
+    /** The empty line between the ways to open a side and the word on dropping two at once. */
+    private static final String SPACER = "";
 
     private final ComparisonView view = new ComparisonView();
     private final JScrollPane scroll = new JScrollPane(view);
@@ -274,7 +280,7 @@ public final class ComparatorPanel extends JPanel {
         JFileChooser chooser = new JFileChooser(lastDirectory);
         chooser.setDialogTitle(I18n.text(side.of("chooser.left", "chooser.right")));
         chooser.setFileFilter(new FileNameExtensionFilter(I18n.text("chooser.wordDocuments"),
-                "docx", "docm", "dotx", "dotm"));
+                DocxReader.EXTENSIONS.toArray(String[]::new)));
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             lastDirectory = chooser.getCurrentDirectory();
             open(side, chooser.getSelectedFile().toPath());
@@ -400,21 +406,35 @@ public final class ComparatorPanel extends JPanel {
 
     /** While a side has no document: what goes there, and how to open it; the side opened, its document's name. */
     private void showEmptySides() {
-        view.setEmptySides(emptySide(sides.get(Side.LEFT).source(), "empty.left", "Ctrl+O"),
-                emptySide(sides.get(Side.RIGHT).source(), "empty.right", "Ctrl+Shift+O"));
+        view.setEmptySides(emptySide(sides.get(Side.LEFT).source(), "empty.left", shortcut(openLeft)),
+                emptySide(sides.get(Side.RIGHT).source(), "empty.right", shortcut(openRight)));
     }
 
     /**
      * A side without its document: its name (the text of side), then how to open it, its shortcut said, or paste a
      * text there; or opened.
      */
-    private static EmptySide emptySide(DocumentSource source, String side, String open) {
+    private EmptySide emptySide(DocumentSource source, String side, String open) {
         if (source != null) {
             return new EmptySide(true, source.name(), List.of(I18n.text("empty.opened")));
         }
         return new EmptySide(false, I18n.text(side), List.of(I18n.text("empty.drop"),
-                I18n.text("empty.choose", open), I18n.text("empty.type"), I18n.text("empty.paste", "Ctrl+V"), "",
-                I18n.text("empty.two")));
+                I18n.text("empty.choose", open), I18n.text("empty.type"), I18n.text("empty.paste", shortcut(pasteHere)),
+                SPACER, I18n.text("empty.two")));
+    }
+
+    /** An action's shortcut, its keys named in the language in use: "Ctrl+Shift+O"; "Ctrl+Maj+O" in French. */
+    private static String shortcut(Action action) {
+        KeyStroke key = (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);
+        List<String> keys = new ArrayList<>();
+        if ((key.getModifiers() & InputEvent.CTRL_DOWN_MASK) != 0) {
+            keys.add(I18n.text("key.ctrl"));
+        }
+        if ((key.getModifiers() & InputEvent.SHIFT_DOWN_MASK) != 0) {
+            keys.add(I18n.text("key.shift"));
+        }
+        keys.add(KeyEvent.getKeyText(key.getKeyCode()));   // a letter, a function key: the same in every language
+        return String.join(BETWEEN_KEYS, keys);
     }
 
     /** Shows a comparison, keeping the place the view was at. */

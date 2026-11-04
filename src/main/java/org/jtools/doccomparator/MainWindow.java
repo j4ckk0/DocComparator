@@ -49,6 +49,8 @@ final class MainWindow extends JFrame {
     private static final String APP_NAME = "DocComparator";
     /** Between the documents' names and the program's, in the title. */
     private static final String TITLE_SEPARATOR = " — ";
+    /** The client property of a View ▸ Look item: the class of the look it chooses. */
+    private static final String LOOK_CLASS = "look";
     private final ComparatorPanel panel = new ComparatorPanel();
     private final Settings settings;
     /** The menus' own labels; the panel's are its own. */
@@ -120,7 +122,7 @@ final class MainWindow extends JFrame {
             if (look.getClassName().equals(system)) {
                 labels.on(() -> item.setText(I18n.text("menu.look.system", look.getName())));
             }
-            item.putClientProperty("look", look.getClassName());
+            item.putClientProperty(LOOK_CLASS, look.getClassName());
             item.addActionListener(e -> applyLook(look.getClassName()));
             looks.add(item);
             lookItems.add(item);
@@ -140,7 +142,7 @@ final class MainWindow extends JFrame {
         settings.set(Settings.LOOK, currentLook());
         panel.showDarkMode(Looks.isDark());
         for (JRadioButtonMenuItem item : lookItems) {
-            item.setSelected(currentLook().equals(item.getClientProperty("look")));
+            item.setSelected(currentLook().equals(item.getClientProperty(LOOK_CLASS)));
         }
     }
 
