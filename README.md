@@ -336,6 +336,50 @@ installing where they are unpacked:
 Both are built from either system, and hold the program's `LICENSE` and `NOTICE`, and, in `licenses/`, the licence
 of FlatLaf, whose classes `doccomparator.jar` holds. Previous versions' archives are removed from `releases/` once the new one is built.
 
+## Publishing to Maven Central
+
+The program is published as `org.jtools:doccomparator:<version>`: its own jar, FlatLaf a dependency of it (the
+distributions' `doccomparator.jar` holds FlatLaf; this one does not), with its sources, its javadoc, and the pom, its
+version written out. The distributions, with their JREs, are not published there: `mvn deploy` never takes them.
+
+Once, before the first release:
+
+1. An account on the [Central Portal](https://central.sonatype.com), and the namespace `org.jtools` verified there:
+   the Portal gives a code to put in a DNS TXT record of `jtools.org`, which only the domain's owner can do. Without
+   the domain, the namespace `io.github.j4ckk0` is verified by signing in with the GitHub account, and the pom's
+   `groupId` changes to it.
+2. A user token, generated on the Portal (*View Account* ▸ *Generate User Token*), in `~/.m2/settings.xml`, never
+   in the project:
+
+   ```xml
+   <settings>
+     <servers>
+       <server>
+         <id>central</id>
+         <username><!-- the token's username --></username>
+         <password><!-- the token's password --></password>
+       </server>
+     </servers>
+   </settings>
+   ```
+3. A GPG key, its public half on a key server, where Maven Central checks the signatures:
+
+   ```bash
+   gpg --gen-key
+   gpg --keyserver keyserver.ubuntu.com --send-keys <key id>
+   ```
+
+Each release: the version in `pom.xml` (`revision`, and `windowsVersion` with it), then
+
+```bash
+mvn clean deploy -Prelease          # tests, then signs (GPG asks for the key's passphrase) and uploads
+```
+
+The upload waits on the Portal, under *Deployments*, while its checks run; *Publish* makes it public, for good: a
+version published can never be changed nor removed. `mvn verify -Prelease -Dgpg.skip` builds the same without
+signing nor uploading, to see what would be published in `target/`. This build, like the first, uses the network: the
+program does not.
+
 ## Layout
 
 | Path | What it holds |

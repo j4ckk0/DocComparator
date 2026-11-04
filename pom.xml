@@ -11,6 +11,8 @@
 
   <name>DocComparator</name>
   <description>Compares two Word documents (.docx), their text first, side by side; a desktop program with its own Java runtime that never reaches the network.</description>
+  <url>https://github.com/j4ckk0/DocComparator</url>
+  <inceptionYear>2026</inceptionYear>
 
   <licenses>
     <license>
@@ -19,6 +21,28 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
+
+  <!-- What Maven Central asks of every project it holds: its licence above, who makes it, where its sources are
+       (README, "Publishing to Maven Central"). -->
+  <developers>
+    <developer>
+      <id>j4ckk0</id>
+      <name>j4ckk0</name>
+      <url>https://github.com/j4ckk0</url>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/j4ckk0/DocComparator.git</connection>
+    <developerConnection>scm:git:git@github.com:j4ckk0/DocComparator.git</developerConnection>
+    <url>https://github.com/j4ckk0/DocComparator</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/j4ckk0/DocComparator/issues</url>
+  </issueManagement>
 
   <properties>
     <revision>1.5</revision>
@@ -259,6 +283,8 @@
                 <configuration>
                   <finalName>${project.artifactId}-${project.version}</finalName>
                   <appendAssemblyId>true</appendAssemblyId>
+                  <!-- not artifacts of the project: never deployed (a release would upload the JREs) -->
+                  <attach>false</attach>
                   <outputDirectory>${release.dir}</outputDirectory>
                   <descriptors>
                     <descriptor>src/assembly/windows.xml</descriptor>
@@ -267,6 +293,109 @@
                 </configuration>
               </execution>
             </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!--
+      mvn deploy -Prelease
+      Publishes to Maven Central (README, "Publishing to Maven Central"): the program's own jar, FlatLaf a
+      dependency of it rather than held in it; its sources and javadoc; the pom with its version written out; each
+      signed with GPG; uploaded to the Central Portal, published from there once checked. Only with this profile:
+      the other builds reach for none of these plugins.
+    -->
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <!-- the jar of Maven Central: the program's classes, FlatLaf named by the pom, not held twice -->
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>default</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <!-- ${revision} written out in the pom deployed: Maven resolves it in this build only -->
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>flatten-maven-plugin</artifactId>
+            <version>1.8.0</version>
+            <configuration>
+              <flattenMode>resolveCiFriendliesOnly</flattenMode>
+              <updatePomFile>true</updatePomFile>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+            </configuration>
+            <executions>
+              <execution>
+                <id>flatten</id>
+                <phase>process-resources</phase>
+                <goals>
+                  <goal>flatten</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>3.3.1</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>3.12.0</version>
+            <configuration>
+              <!-- the comments say what each part is for; not every parameter has its @param -->
+              <doclint>all,-missing</doclint>
+            </configuration>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <!-- signs each file with the GPG key of the one publishing (-Dgpg.keyname= if several) -->
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.2.8</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <!-- uploads to the Central Portal, its token in ~/.m2/settings.xml under the server "central"; published
+                 by hand from https://central.sonatype.com once its checks pass -->
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.12.0</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>false</autoPublish>
+            </configuration>
           </plugin>
         </plugins>
       </build>
