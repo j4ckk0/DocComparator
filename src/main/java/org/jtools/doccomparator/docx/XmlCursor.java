@@ -9,6 +9,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * A walk through one XML part of a .docx, element by element, that fetches nothing: no DTD, no external entity. A
@@ -50,7 +51,7 @@ final class XmlCursor implements AutoCloseable {
         factory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
         factory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");   // no protocol at all, file: included
         factory.setXMLResolver((publicId, systemId, baseUri, namespace) -> {
-            throw new XMLStreamException("refused to fetch " + systemId);
+            throw new XMLStreamException(I18n.text("error.fetchRefused", systemId));
         });
         try {
             return new XmlCursor(in, factory.createXMLStreamReader(in), part);
@@ -68,18 +69,17 @@ final class XmlCursor implements AutoCloseable {
         while (true) {
             int event = next();
             if (event == XMLStreamConstants.DTD) {
-                throw new DocxException(part, "it has a DOCTYPE, which Word never writes: refused, as it could make the "
-                        + "reading fetch another file or reach the network");
+                throw new DocxException(part, I18n.text("error.doctype"));
             }
             if (event == XMLStreamConstants.START_ELEMENT) {
                 break;
             }
             if (event == XMLStreamConstants.END_DOCUMENT) {
-                throw new DocxException(part, "it holds no XML element");
+                throw new DocxException(part, I18n.text("error.noElement"));
             }
         }
         if (!reader.getLocalName().equals(localName)) {
-            throw new DocxException(part, "<" + reader.getLocalName() + "> where a Word document has <" + localName + ">");
+            throw new DocxException(part, I18n.text("error.wrongRoot", reader.getLocalName(), localName));
         }
     }
 
@@ -95,7 +95,7 @@ final class XmlCursor implements AutoCloseable {
                 case XMLStreamConstants.END_ELEMENT:
                     return false;
                 case XMLStreamConstants.END_DOCUMENT:
-                    throw new DocxException(part, "the XML ends inside an element");
+                    throw new DocxException(part, I18n.text("error.truncated"));
                 default:
                     // text between elements, comments, processing instructions: nothing Word means
             }
@@ -146,7 +146,7 @@ final class XmlCursor implements AutoCloseable {
             } else if (event == XMLStreamConstants.END_ELEMENT) {
                 depth--;
             } else if (event == XMLStreamConstants.END_DOCUMENT) {
-                throw new DocxException(part, "the XML ends inside an element");
+                throw new DocxException(part, I18n.text("error.truncated"));
             }
         }
     }

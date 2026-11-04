@@ -16,6 +16,7 @@ import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.TextBox;
+import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * The blocks of a story — the body, a header, a footnote… — as the reader of the comparison wants them: the text as
@@ -79,14 +80,17 @@ final class StoryReader {
         return blocks;
     }
 
-    /** The footnotes or endnotes of footnotes.xml or endnotes.xml, numbered as they come; separators are not notes. */
-    List<Story> readNotes(XmlCursor xml, Story.Kind kind, String noun) throws DocxException {
+    /**
+     * The footnotes or endnotes of footnotes.xml or endnotes.xml, numbered as they come, each labelled by the text of
+     * label ("Footnote {0}"); separators are not notes.
+     */
+    List<Story> readNotes(XmlCursor xml, Story.Kind kind, String label) throws DocxException {
         List<Story> notes = new ArrayList<>();
         while (xml.nextChild()) {
             String type = xml.wordAttribute("type");
             boolean note = xml.isWord("footnote") || xml.isWord("endnote");
             if (note && (type == null || type.equals("normal"))) {
-                notes.add(new Story(kind, noun + " " + (notes.size() + 1), readBlocks(xml)));
+                notes.add(new Story(kind, I18n.text(label, notes.size() + 1), readBlocks(xml)));
             } else {
                 xml.skip();
             }

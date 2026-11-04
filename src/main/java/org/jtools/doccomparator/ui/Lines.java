@@ -412,7 +412,7 @@ final class Lines {
         }
         String location = item.location();
         if (item.story() == Story.Kind.BODY) {
-            location = location.substring(location.indexOf(", ") + 2);
+            location = location.substring(location.indexOf(Item.BETWEEN_PLACES) + Item.BETWEEN_PLACES.length());
             location = Character.toUpperCase(location.charAt(0)) + location.substring(1);
         }
         return location;

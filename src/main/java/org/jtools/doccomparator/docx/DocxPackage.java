@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
+import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * A .docx as what it is: a zip of XML parts, linked by relationships (Open Packaging Conventions). Gives a part's
@@ -46,7 +47,7 @@ final class DocxPackage implements AutoCloseable {
         try {
             return new DocxPackage(fileName, new ZipFile(file.toFile()));
         } catch (ZipException e) {
-            throw new DocxException(fileName + " is not a Word document (.docx): it is not a zip archive");
+            throw new DocxException(I18n.text("error.notZip", fileName));
         }
     }
 
@@ -59,7 +60,7 @@ final class DocxPackage implements AutoCloseable {
         if (has("word/document.xml")) {
             return "word/document.xml";
         }
-        throw new DocxException(fileName + " is not a Word document (.docx): it holds no main document");
+        throw new DocxException(I18n.text("error.noMainDocument", fileName));
     }
 
     /** The relationships of a part ("" for the package's own), none when it has no relationship part. */
@@ -102,12 +103,12 @@ final class DocxPackage implements AutoCloseable {
     XmlCursor open(String part) throws DocxException {
         ZipEntry entry = entries.get(part.toLowerCase(Locale.ROOT));
         if (entry == null) {
-            throw new DocxException(fileName, "it has no part " + part);
+            throw new DocxException(fileName, I18n.text("error.noPart", part));
         }
         try {
             return XmlCursor.open(new LimitedInputStream(zip.getInputStream(entry), part), part);
         } catch (IOException e) {
-            throw new DocxException(fileName, part + " cannot be read: " + e.getMessage());
+            throw new DocxException(fileName, I18n.text("error.unreadable", part, e.getMessage()));
         }
     }
 
@@ -129,7 +130,7 @@ final class DocxPackage implements AutoCloseable {
         }
         ZipEntry entry = entries.get(part.toLowerCase(Locale.ROOT));
         if (entry == null) {
-            throw new DocxException(fileName, "it has no part " + part);
+            throw new DocxException(fileName, I18n.text("error.noPart", part));
         }
         MessageDigest digest;
         try {
@@ -153,7 +154,7 @@ final class DocxPackage implements AutoCloseable {
                 }
             }
         } catch (IOException e) {
-            throw new DocxException(fileName, part + " cannot be read: " + e.getMessage());
+            throw new DocxException(fileName, I18n.text("error.unreadable", part, e.getMessage()));
         }
         Binary binary = new Binary(HexFormat.of().formatHex(digest.digest()), keeping ? kept.toByteArray() : null);
         binaries.put(part.toLowerCase(Locale.ROOT), binary);
@@ -218,7 +219,7 @@ final class DocxPackage implements AutoCloseable {
         private void count(int bytes) throws DocxException {
             left -= bytes;
             if (left < 0) {
-                throw new DocxException(part, "larger than " + (LARGEST_PART >> 20) + " MiB once unzipped: refused");
+                throw new DocxException(part, I18n.text("error.tooLarge", LARGEST_PART >> 20));
             }
         }
     }

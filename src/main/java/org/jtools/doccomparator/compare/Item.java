@@ -5,6 +5,7 @@ import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.Story;
+import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * What the comparison pairs, one against one: a paragraph, or a whole table, compared row by row and column by column
@@ -24,6 +25,9 @@ public record Item(Story.Kind story, String label, List<Place> places, Paragraph
     public Item {
         places = List.copyOf(places);
     }
+
+    /** Between the places of a location: the view takes the body's label off by it ("Body, table 2" → "Table 2"). */
+    public static final String BETWEEN_PLACES = ", ";
 
     public Item(Story.Kind story, String label, List<Place> places, Paragraph paragraph, Table table) {
         this(story, label, places, paragraph, table, Formatting.NONE);
@@ -64,8 +68,9 @@ public record Item(Story.Kind story, String label, List<Place> places, Paragraph
     public String location() {
         StringBuilder location = new StringBuilder(label);
         for (Place place : places) {
-            location.append(place.textBox() ? ", text box" : place.isTable() ? ", table " + place.table()
-                    : ", row " + place.row() + ", column " + place.column());
+            location.append(BETWEEN_PLACES).append(place.textBox() ? I18n.text("location.textBox")
+                    : place.isTable() ? I18n.text("location.table", place.table())
+                    : I18n.text("location.cell", place.row(), place.column()));
         }
         return location.toString();
     }
@@ -75,6 +80,6 @@ public record Item(Story.Kind story, String label, List<Place> places, Paragraph
      * cell, which an inserted table, row or column would change for all those after it: those are compared as such.
      */
     String placeInStructure() {
-        return places.stream().anyMatch(Place::textBox) ? "text box" : "text";
+        return I18n.text(places.stream().anyMatch(Place::textBox) ? "value.place.textBox" : "value.place.text");
     }
 }

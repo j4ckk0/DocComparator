@@ -354,7 +354,7 @@ public final class ComparatorPanel extends JPanel {
         try {
             return DocxReader.read(path);
         } catch (IOException e) {
-            throw new IOException(path.getFileName() + ": " + e.getMessage(), e);
+            throw new IOException(I18n.text("error.in", path.getFileName(), e.getMessage()), e);
         }
     }
 

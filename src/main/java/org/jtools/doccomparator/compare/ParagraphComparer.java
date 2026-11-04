@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.TreeSet;
 import org.jtools.doccomparator.compare.CompareOptions.Aspect;
@@ -14,6 +13,8 @@ import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Picture;
 import org.jtools.doccomparator.document.Run;
 import org.jtools.doccomparator.document.StyleSheet;
+import org.jtools.doccomparator.i18n.I18n;
+import java.util.function.UnaryOperator;
 
 /**
  * Step two of a comparison: how two paired paragraphs differ. Their words first — the fewest words removed and added
@@ -323,9 +324,9 @@ final class ParagraphComparer {
     /** How two runs are formatted otherwise, as the options compare it: their character style, their own properties. */
     private List<PropertyDifference> runDifferences(Run a, Run b) {
         Differences differences = new Differences(options);
-        differences.add(Aspect.STYLES, "character style", leftStyles.nameOf(a.styleId()),
+        differences.add(Aspect.STYLES, I18n.text("compared.characterStyle"), leftStyles.nameOf(a.styleId()),
                 rightStyles.nameOf(b.styleId()));
-        differences.formatting(Aspects.Source.RUN, "", a.formatting(), b.formatting());
+        differences.formatting(Aspects.Source.RUN, a.formatting(), b.formatting());
         return differences.list();
     }
 
@@ -335,21 +336,23 @@ final class ParagraphComparer {
      */
     private List<PropertyDifference> properties(Paragraph a, Paragraph b, Item itemA, Item itemB) {
         Differences differences = new Differences(options);
-        differences.add(Aspect.SECTIONS, "story", itemA.story().name().toLowerCase(Locale.ROOT),
-                itemB.story().name().toLowerCase(Locale.ROOT));
-        differences.add(Aspect.HEADINGS, "heading", heading(a.headingLevel()), heading(b.headingLevel()));
-        differences.add(Aspect.LISTS, "list", list(a.listItem()), list(b.listItem()));
-        differences.add(Aspect.SECTIONS, "place", itemA.placeInStructure(), itemB.placeInStructure());
-        differences.add(Aspect.SECTIONS, "section", a.endsSection() ? "ends here" : null,
-                b.endsSection() ? "ends here" : null);
-        differences.add(Aspect.STYLES, "paragraph style", paragraphStyleName(leftStyles, a.styleId()),
+        differences.add(Aspect.SECTIONS, I18n.text("compared.story"), I18n.text("value.story." + itemA.story().name()),
+                I18n.text("value.story." + itemB.story().name()));
+        differences.add(Aspect.HEADINGS, I18n.text("compared.heading"), heading(a.headingLevel()),
+                heading(b.headingLevel()));
+        differences.add(Aspect.LISTS, I18n.text("compared.list"), list(a.listItem()), list(b.listItem()));
+        differences.add(Aspect.SECTIONS, I18n.text("compared.place"), itemA.placeInStructure(),
+                itemB.placeInStructure());
+        differences.add(Aspect.SECTIONS, I18n.text("compared.section"), a.endsSection() ? I18n.text("value.endsHere")
+                : null, b.endsSection() ? I18n.text("value.endsHere") : null);
+        differences.add(Aspect.STYLES, I18n.text("compared.paragraphStyle"), paragraphStyleName(leftStyles, a.styleId()),
                 paragraphStyleName(rightStyles, b.styleId()));
 
         Formatting appliedA = leftStyles.effectiveParagraph(a);
         Formatting appliedB = rightStyles.effectiveParagraph(b);
-        differences.formatting(Aspects.Source.PARAGRAPH, "", appliedA, appliedB,
+        differences.formatting(Aspects.Source.PARAGRAPH, UnaryOperator.identity(), appliedA, appliedB,
                 aspect -> aspect == Aspect.INDENTATION || aspect == Aspect.SPACING || aspect == Aspect.ALIGNMENT);
-        differences.formatting(Aspects.Source.PARAGRAPH, "", a.formatting(), b.formatting(),
+        differences.formatting(Aspects.Source.PARAGRAPH, UnaryOperator.identity(), a.formatting(), b.formatting(),
                 aspect -> aspect == Aspect.PARAGRAPHS);   // headings, lists, styles: said above
         return differences.list();
     }
@@ -360,16 +363,16 @@ final class ParagraphComparer {
     }
 
     private static String heading(int level) {
-        return level == 0 ? null : "heading " + level;
+        return level == 0 ? null : I18n.text("value.heading", level);
     }
 
     private static String list(ListItem item) {
         if (item == null) {
             return null;
         }
-        String format = item.numberFormat() == null ? "list" : item.numberFormat();
+        String format = item.numberFormat() == null ? I18n.text("value.list") : item.numberFormat();
         String text = item.levelText() == null || item.numberFormat() != null && item.numberFormat().equals("bullet")
                 ? "" : " \"" + item.levelText() + "\"";
-        return format + text + ", level " + (item.level() + 1);
+        return I18n.text("value.listLevel", format + text, item.level() + 1);
     }
 }

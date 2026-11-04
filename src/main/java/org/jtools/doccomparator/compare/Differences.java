@@ -8,6 +8,7 @@ import java.util.TreeSet;
 import java.util.function.Predicate;
 import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import org.jtools.doccomparator.document.Formatting;
+import java.util.function.UnaryOperator;
 
 /** The differences of properties found; those of a kind the options leave out are dropped as they are found. */
 final class Differences {
@@ -32,28 +33,34 @@ final class Differences {
         }
     }
 
-    /** The properties two formattings set from there differ in, each under its name preceded by prefix. */
-    void formatting(Aspects.Source source, String prefix, Formatting a, Formatting b) {
-        formatting(source, prefix, a, b, aspect -> true);
+    /** The properties two formattings set from there differ in, each under its name. */
+    void formatting(Aspects.Source source, Formatting a, Formatting b) {
+        formatting(source, UnaryOperator.identity(), a, b, aspect -> true);
+    }
+
+    /** The properties two formattings set from there differ in, each under its name as named says it ("cell {0}"). */
+    void formatting(Aspects.Source source, UnaryOperator<String> named, Formatting a, Formatting b) {
+        formatting(source, named, a, b, aspect -> true);
     }
 
     /**
-     * The properties two formattings set from there differ in, of the kinds kept, each under its name preceded by
-     * prefix. A property and its attributes are one difference: "shading: clear, color auto, fill D9E2F3".
+     * The properties two formattings set from there differ in, of the kinds kept, each under its name as named says
+     * it. A property and its attributes are one difference: "shading: clear, color auto, fill D9E2F3".
      */
-    void formatting(Aspects.Source source, String prefix, Formatting a, Formatting b, Predicate<Aspect> kept) {
+    void formatting(Aspects.Source source, UnaryOperator<String> named, Formatting a, Formatting b,
+                    Predicate<Aspect> kept) {
         for (Map.Entry<String, List<String>> property : properties(a, b).entrySet()) {
             Aspect aspect = Aspects.of(source, property.getKey());
             if (aspect != null && kept.test(aspect)) {
-                add(aspect, prefix + PropertyNames.of(property.getKey()), value(a, property), value(b, property));
+                add(aspect, named.apply(PropertyNames.of(property.getKey())), value(a, property), value(b, property));
             }
         }
     }
 
-    /** The properties two formattings set differ in, all of this kind, each under its name preceded by prefix. */
-    void formattingAs(Aspect aspect, String prefix, Formatting a, Formatting b) {
+    /** The properties two formattings set differ in, all of this kind, each under its name as named says it. */
+    void formattingAs(Aspect aspect, UnaryOperator<String> named, Formatting a, Formatting b) {
         for (Map.Entry<String, List<String>> property : properties(a, b).entrySet()) {
-            add(aspect, prefix + PropertyNames.of(property.getKey()), value(a, property), value(b, property));
+            add(aspect, named.apply(PropertyNames.of(property.getKey())), value(a, property), value(b, property));
         }
     }
 

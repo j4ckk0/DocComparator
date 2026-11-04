@@ -13,6 +13,7 @@ import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.Style;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * Compares two Word documents: their paragraphs and tables paired (Pairer), the pairs compared (ParagraphComparer,
@@ -42,11 +43,12 @@ public final class DocumentComparer {
 
     private Comparison compare() {
         List<StoryComparison> stories = new ArrayList<>();
-        stories.add(compare("Body", List.of(left.body()), List.of(right.body())));
+        stories.add(compare(I18n.text("part.body"), List.of(left.body()), List.of(right.body())));
         if (options.has(Aspect.HEADERS_AND_FOOTERS)) {
-            stories.add(compare("Headers and footers", left.headersAndFooters(), right.headersAndFooters()));
+            stories.add(compare(I18n.text("part.headersAndFooters"), left.headersAndFooters(),
+                    right.headersAndFooters()));
         }
-        stories.add(compare("Footnotes and endnotes", left.notes(), right.notes()));
+        stories.add(compare(I18n.text("part.notes"), left.notes(), right.notes()));
         return new Comparison(left, right, options, stories, documentDifferences());
     }
 
@@ -127,9 +129,12 @@ public final class DocumentComparer {
 
     private List<PropertyDifference> documentDifferences() {
         Differences differences = new Differences(options);
-        differences.add(Aspect.TEMPLATE, "attached template", left.template().attached(), right.template().attached());
-        differences.add(Aspect.TEMPLATE, "template", left.template().named(), right.template().named());
-        differences.add(Aspect.SECTIONS, "sections", String.valueOf(sections(left)), String.valueOf(sections(right)));
+        differences.add(Aspect.TEMPLATE, I18n.text("compared.attachedTemplate"), left.template().attached(),
+                right.template().attached());
+        differences.add(Aspect.TEMPLATE, I18n.text("compared.template"), left.template().named(),
+                right.template().named());
+        differences.add(Aspect.SECTIONS, I18n.text("compared.sections"), String.valueOf(sections(left)),
+                String.valueOf(sections(right)));
         if (options.has(Aspect.STYLES)) {
             styleDifferences(differences, left.styles(), right.styles());
         }
@@ -149,8 +154,10 @@ public final class DocumentComparer {
 
     /** The defaults, then each style by name, as both documents define them: all of it a matter of styles. */
     private static void styleDifferences(Differences differences, StyleSheet a, StyleSheet b) {
-        differences.formattingAs(Aspect.STYLES, "default paragraph ", a.defaultParagraph(), b.defaultParagraph());
-        differences.formattingAs(Aspect.STYLES, "default text ", a.defaultRun(), b.defaultRun());
+        differences.formattingAs(Aspect.STYLES, name -> I18n.text("compared.ofDefaultParagraph", name),
+                a.defaultParagraph(), b.defaultParagraph());
+        differences.formattingAs(Aspect.STYLES, name -> I18n.text("compared.ofDefaultText", name), a.defaultRun(),
+                b.defaultRun());
         Map<String, Style> stylesA = byName(a);
         Map<String, Style> stylesB = byName(b);
         TreeSet<String> names = new TreeSet<>(stylesA.keySet());
@@ -158,16 +165,18 @@ public final class DocumentComparer {
         for (String name : names) {
             Style styleA = stylesA.get(name);
             Style styleB = stylesB.get(name);
-            String style = "style \"" + name + "\"";
             if (styleA == null || styleB == null) {
-                differences.add(Aspect.STYLES, style, styleA == null ? null : "defined", styleB == null ? null : "defined");
+                differences.add(Aspect.STYLES, I18n.text("compared.style", name),
+                        styleA == null ? null : I18n.text("value.defined"), styleB == null ? null : I18n.text("value.defined"));
                 continue;
             }
-            differences.add(Aspect.STYLES, style + " type", styleA.type(), styleB.type());
-            differences.add(Aspect.STYLES, style + " based on", a.nameOf(styleA.basedOn()),
+            differences.add(Aspect.STYLES, I18n.text("compared.styleType", name), styleA.type(), styleB.type());
+            differences.add(Aspect.STYLES, I18n.text("compared.styleBasedOn", name), a.nameOf(styleA.basedOn()),
                     b.nameOf(styleB.basedOn()));
-            differences.formattingAs(Aspect.STYLES, style + " paragraph ", styleA.paragraph(), styleB.paragraph());
-            differences.formattingAs(Aspect.STYLES, style + " text ", styleA.run(), styleB.run());
+            differences.formattingAs(Aspect.STYLES, property -> I18n.text("compared.ofStyleParagraph", property, name),
+                    styleA.paragraph(), styleB.paragraph());
+            differences.formattingAs(Aspect.STYLES, property -> I18n.text("compared.ofStyleText", property, name),
+                    styleA.run(), styleB.run());
         }
     }
 
