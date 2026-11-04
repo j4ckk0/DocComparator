@@ -13,6 +13,7 @@ import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
@@ -21,6 +22,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -37,6 +40,7 @@ import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -45,6 +49,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
@@ -66,13 +71,13 @@ import org.jtools.doccomparator.docx.DocxReader;
  */
 public final class ComparatorPanel extends JPanel {
 
-    private static final String HINT = "Open the two documents to compare: the buttons above, or drop them here\n"
-            + "(both at once, or each on its side).";
+    private static final String HINT = "Open the two documents to compare: type their paths above, choose them with "
+            + "Open\u2026,\nor drop them here \u2014 both at once, or each on its side.";
 
     private final ComparisonView view = new ComparisonView();
     private final JScrollPane scroll = new JScrollPane(view);
-    private final DocumentHeader leftHeader = new DocumentHeader("Left");
-    private final DocumentHeader rightHeader = new DocumentHeader("Right");
+    private final DocumentHeader leftHeader = new DocumentHeader(true);
+    private final DocumentHeader rightHeader = new DocumentHeader(false);
     private final JLabel status = new JLabel(" ");
     private final JLabel position = new JLabel(" ");
     private final Action openLeft = action("Open left…", "Open the left document",
@@ -122,9 +127,11 @@ public final class ComparatorPanel extends JPanel {
 
         view.addPropertyChangeListener(ComparisonView.CURRENT_LINE, e -> updatePosition());
         view.setComponentPopupMenu(popup());
-        TransferHandler drop = new DropHandler();
+        TransferHandler drop = new DropHandler(null);
         view.setTransferHandler(drop);
         setTransferHandler(drop);
+        leftHeader.acceptDrops();
+        rightHeader.acceptDrops();
         for (Action action : List.of(openLeft, openRight, previous, next)) {
             KeyStroke key = (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);
             getInputMap(WHEN_IN_FOCUSED_WINDOW).put(key, action);
@@ -159,7 +166,7 @@ public final class ComparatorPanel extends JPanel {
         compare();
     }
 
-    private void open(boolean onLeft, Path path) {
+    void open(boolean onLeft, Path path) {
         if (onLeft) {
             leftPath = path;
             leftDocument = null;
@@ -269,19 +276,9 @@ public final class ComparatorPanel extends JPanel {
                 Math.max(0, view.getHeight() - scroll.getViewport().getHeight())))));
         int[] count = view.differenceCount();
         status.setText(result.same() ? "The documents are the same, as compared."
-                : count[0] + (count[0] == 1 ? " difference" : " differences") + summary(result));
+                : count[0] + (count[0] == 1 ? " difference" : " differences"));
         updatePosition();
         updateActions();
-    }
-
-    private static String summary(Comparison comparison) {
-        StringBuilder summary = new StringBuilder();
-        if (comparison.left().hasTrackedChanges() || comparison.right().hasTrackedChanges()) {
-            summary.append("  ·  tracked changes read as accepted (");
-            summary.append(comparison.left().hasTrackedChanges() && comparison.right().hasTrackedChanges() ? "both sides"
-                    : comparison.left().hasTrackedChanges() ? "left side" : "right side").append(')');
-        }
-        return summary.toString();
     }
 
     String title() {
@@ -327,8 +324,6 @@ public final class ComparatorPanel extends JPanel {
     private JToolBar toolBar() {
         JToolBar bar = new JToolBar();
         bar.setFloatable(false);
-        bar.add(button(openLeft));
-        bar.add(button(openRight));
         bar.add(button(swap));
         bar.addSeparator();
         bar.add(button(previous));
@@ -569,68 +564,173 @@ public final class ComparatorPanel extends JPanel {
 
     // -----------------------------------------------------------------------------------------------------------------
 
-    /** The name of a side's document, its folder, and what can be said of it. */
-    private static final class DocumentHeader extends JPanel {
+    /**
+     * The head of a side, as Beyond Compare has it: the path of its document, which can be typed (Enter opens it), a
+     * button to choose one, what can be said of the document under them; documents dropped on it open on its side.
+     */
+    private final class DocumentHeader extends JPanel {
 
-        private final String side;
-        private final JLabel name = new JLabel();
-        private final JLabel folder = new JLabel();
+        private final boolean onLeft;
+        private final JTextField path = new JTextField();
+        private final JLabel about = new JLabel(" ");
 
-        DocumentHeader(String side) {
-            super(new BorderLayout());
-            this.side = side;
-            name.setFont(name.getFont().deriveFont(Font.BOLD));
-            folder.setFont(folder.getFont().deriveFont(folder.getFont().getSize2D() - 1));
-            folder.setForeground(Palette.FAINT);
-            add(name, BorderLayout.NORTH);
-            add(folder, BorderLayout.SOUTH);
-            show(null, null);
+        DocumentHeader(boolean onLeft) {
+            super(new BorderLayout(4, 2));
+            this.onLeft = onLeft;
+            path.setToolTipText("The " + (onLeft ? "left" : "right") + " document: type its path and press Enter, "
+                    + "choose it with Open\u2026, or drop it here");
+            path.addActionListener(e -> typed());
+            JButton choose = new JButton(onLeft ? openLeft : openRight);
+            choose.setText("Open\u2026");
+            choose.setFocusable(false);
+            about.setFont(about.getFont().deriveFont(about.getFont().getSize2D() - 1));
+            about.setForeground(Palette.FAINT);
+            add(path, BorderLayout.CENTER);
+            add(choose, BorderLayout.EAST);
+            add(about, BorderLayout.SOUTH);
         }
 
-        void show(Path path, WordDocument document) {
-            if (path == null) {
-                name.setText(side + ": no document");
-                folder.setText(" ");
-                setToolTipText(null);
+        /** Documents dropped on the head, or its path, open on its side; text dropped on the path is typed in it. */
+        void acceptDrops() {
+            DropHandler drop = new DropHandler(onLeft);
+            setTransferHandler(drop);
+            path.setTransferHandler(new DropHandler(onLeft, path.getTransferHandler()));
+        }
+
+        private void typed() {
+            String text = path.getText().strip();
+            if (text.startsWith("\"") && text.endsWith("\"") && text.length() > 1) {
+                text = text.substring(1, text.length() - 1);   // a path copied with its quotes
+            }
+            if (text.isEmpty()) {
                 return;
             }
-            name.setText(side + ": " + path.getFileName());
-            Path parent = path.toAbsolutePath().getParent();
-            String template = document == null || document.template().named() == null ? ""
-                    : "  ·  template " + document.template().named();
-            folder.setText((parent == null ? "" : parent.toString()) + template);
-            setToolTipText(path.toAbsolutePath().toString());
+            try {
+                Path typed = Path.of(text);
+                if (!Files.isRegularFile(typed)) {
+                    status.setText("No such document: " + text);
+                    Toolkit.getDefaultToolkit().beep();
+                    return;
+                }
+                open(onLeft, typed);
+            } catch (InvalidPathException e) {
+                status.setText("Not a path: " + text);
+                Toolkit.getDefaultToolkit().beep();
+            }
+        }
+
+        void show(Path document, WordDocument read) {
+            path.setText(document == null ? "" : document.toAbsolutePath().toString());
+            if (document == null) {
+                about.setText(" ");
+                return;
+            }
+            List<String> said = new ArrayList<>();
+            if (read != null && read.template().named() != null) {
+                said.add("template " + read.template().named());
+            }
+            if (read != null && read.hasTrackedChanges()) {
+                said.add("tracked changes, read as accepted");
+            }
+            about.setText(said.isEmpty() ? " " : String.join("  \u00B7  ", said));
         }
     }
 
-    /** Documents dropped on the panel: two at once, left and right; one, on the side it is dropped on. */
+    /** A Linux desktop's way of dropping files: their URIs, one a line (FileUris). */
+    private static final DataFlavor URI_LIST = uriList();
+
+    private static DataFlavor uriList() {
+        try {
+            return new DataFlavor("text/uri-list;class=java.lang.String");
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
+     * Documents dropped: two at once, left and right; one, on the side it is dropped on (or the side given). As a list
+     * of files (Windows, macOS) or of file URIs (Linux). Anything else goes to the handler given, if any: text dropped
+     * on a path field is typed in it.
+     */
     private final class DropHandler extends TransferHandler {
+
+        private final Boolean side;
+        private final TransferHandler otherwise;
+
+        DropHandler(Boolean side) {
+            this(side, null);
+        }
+
+        DropHandler(Boolean side, TransferHandler otherwise) {
+            this.side = side;
+            this.otherwise = otherwise;
+        }
+
+        private boolean hasFiles(TransferSupport support) {
+            return support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)
+                    || support.isDataFlavorSupported(URI_LIST);
+        }
 
         @Override
         public boolean canImport(TransferSupport support) {
-            return support.isDrop() && support.isDataFlavorSupported(DataFlavor.javaFileListFlavor);
+            if (hasFiles(support)) {
+                if (support.isDrop()) {
+                    support.setDropAction(COPY);
+                }
+                return true;
+            }
+            return otherwise != null && otherwise.canImport(support);
         }
 
         @Override
         public boolean importData(TransferSupport support) {
-            if (!canImport(support)) {
+            if (!hasFiles(support)) {
+                return otherwise != null && otherwise.importData(support);
+            }
+            List<Path> files = files(support);
+            if (files.isEmpty()) {
                 return false;
             }
+            if (files.size() >= 2) {
+                open(files.get(0), files.get(1));
+            } else {
+                boolean onLeft = side != null ? side : leftHalf(support);
+                open(onLeft, files.getFirst());
+            }
+            return true;
+        }
+
+        private boolean leftHalf(TransferSupport support) {
+            if (!support.isDrop()) {
+                return leftPath == null;   // pasted: the side not open yet, the left first
+            }
+            Point at = SwingUtilities.convertPoint(support.getComponent(), support.getDropLocation().getDropPoint(),
+                    ComparatorPanel.this);
+            return at.x < getWidth() / 2;
+        }
+
+        private List<Path> files(TransferSupport support) {
             try {
-                @SuppressWarnings("unchecked")
-                List<File> files = (List<File>) support.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
-                if (files.size() >= 2) {
-                    open(files.get(0).toPath(), files.get(1).toPath());
-                } else if (files.size() == 1) {
-                    Component target = support.getComponent();
-                    Point at = SwingUtilities.convertPoint(target, support.getDropLocation().getDropPoint(),
-                            ComparatorPanel.this);
-                    open(at.x < getWidth() / 2, files.getFirst().toPath());
+                Transferable data = support.getTransferable();
+                if (support.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                    @SuppressWarnings("unchecked")
+                    List<File> files = (List<File>) data.getTransferData(DataFlavor.javaFileListFlavor);
+                    if (!files.isEmpty()) {
+                        return files.stream().map(File::toPath).toList();
+                    }
                 }
-                return true;
+                if (support.isDataFlavorSupported(URI_LIST)) {
+                    return FileUris.paths((String) data.getTransferData(URI_LIST));
+                }
             } catch (UnsupportedFlavorException | IOException e) {
-                return false;
+                status.setText("Not dropped: " + e.getMessage());
             }
+            return List.of();
+        }
+
+        @Override
+        public int getSourceActions(JComponent component) {
+            return otherwise != null ? otherwise.getSourceActions(component) : NONE;
         }
     }
 

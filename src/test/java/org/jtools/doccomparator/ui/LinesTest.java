@@ -109,6 +109,10 @@ class LinesTest {
         assertEquals(left, comparable.get(moved.counterpartLine).right.counterpartLine, "links still right");
         long tableRows = comparable.stream().filter(l -> l.left != null && l.left.columns != null).count();
         assertEquals(4, tableRows, "the columns' line and the three rows both tables have; not the oil's");
+        assertTrue(comparable.stream().filter(l -> l.left != null && l.left.columns != null)
+                .allMatch(l -> l.left.columns.size() == 2), "nor the quantities, a column the handbook has not got");
+        assertEquals("", lines(comparable, "Stop the pump and lock out the main switch."),
+                "the same paragraph is shown, and nothing marked in it");
     }
 
     @Test
@@ -133,6 +137,13 @@ class LinesTest {
             }
         }
         throw new AssertionError("no title " + title);
+    }
+
+    /** The differences marked in the left text of the line starting so: none, "". */
+    private static String lines(List<Line> lines, String start) {
+        Line line = lines.get(lineWith(lines, start, true));
+        assertEquals(Cell.Look.SAME, line.look());
+        return line.left.text.text().equals(line.right.text.text()) ? "" : "differs";
     }
 
     private static int lineWith(List<Line> lines, String start, boolean onLeft) {

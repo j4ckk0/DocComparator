@@ -181,7 +181,8 @@ final class Lines {
     private Cell tableHeader(Row row, boolean onLeft, Cell.Look look) {
         TableComparison table = row.table();
         List<Cell> columns = new ArrayList<>();
-        for (Slot slot : table.columns()) {
+        for (int c : shownColumns(table)) {
+            Slot slot = table.columns().get(c);
             int column = onLeft ? slot.left() : slot.right();
             if (column < 0) {
                 columns.add(null);
@@ -204,7 +205,7 @@ final class Lines {
         Slot rowSlot = table.rows().get(r);
         Cell.Look look = look(rowSlot);
         List<Cell> columns = new ArrayList<>();
-        for (int c = 0; c < table.columns().size(); c++) {
+        for (int c : shownColumns(table)) {
             Slot columnSlot = table.columns().get(c);
             if ((onLeft ? columnSlot.left() : columnSlot.right()) < 0) {
                 columns.add(null);
@@ -230,6 +231,18 @@ final class Lines {
                 .map(d -> d.property() + ": " + (onLeft ? d.left() : d.right())).toList());
         return new Cell(look, row, String.valueOf(number), null, null, columns,
                 notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), Palette.FAINT));
+    }
+
+    /** The columns shown: all; only what is comparable, those with a match on the other side, moved or not. */
+    private List<Integer> shownColumns(TableComparison table) {
+        List<Integer> shown = new ArrayList<>();
+        for (int c = 0; c < table.columns().size(); c++) {
+            Slot slot = table.columns().get(c);
+            if (!onlyComparable || slot.left() >= 0 && slot.right() >= 0 || slot.moved()) {
+                shown.add(c);
+            }
+        }
+        return shown;
     }
 
     /** A column by its letters, as a spreadsheet names it: A to Z, then AA… */
