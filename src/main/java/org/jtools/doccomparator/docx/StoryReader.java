@@ -306,8 +306,15 @@ final class StoryReader {
     private void readRows(XmlCursor xml, List<Table.Row> rows) throws DocxException {
         if (xml.isWord("tr")) {
             List<Table.Cell> cells = new ArrayList<>();
-            xml.forChildren(child -> readCells(child, cells));
-            rows.add(new Table.Row(cells));
+            Formatting[] properties = {Formatting.NONE};
+            xml.forChildren(child -> {
+                if (child.isWord("trPr")) {
+                    properties[0] = FormattingReader.read(child, () -> trackedChanges = true);
+                } else {
+                    readCells(child, cells);
+                }
+            });
+            rows.add(new Table.Row(properties[0], cells));
         } else if (xml.isWord("sdt")) {
             xml.sdtContent(content -> content.forChildren(child -> readRows(child, rows)));
         } else if (xml.isWord("customXml")) {
@@ -334,7 +341,7 @@ final class StoryReader {
         } else if (xml.isWord("customXml")) {
             xml.forChildren(child -> readCells(child, cells));
         } else {
-            xml.skip();   // w:trPr, w:tblPrEx: the row's own properties
+            xml.skip();   // w:tblPrEx: the table's properties, for this row
         }
     }
 

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import java.util.Map;
 import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.Formatting;
@@ -108,16 +109,22 @@ class TableComparerTest {
     }
 
     @Test
-    void stylesAsideOnlyLayoutAndContentCount() {
+    void aTablesStyleAndPlaceCountEachWithTheirSwitch() {
         Table styled = new Table("TableGrid", new Formatting(Map.of("jc", "center")), table(PARTS).rows());
         Table plain = table(PARTS);
-        assertEquals(Row.Status.SAME, compare(styled, plain, CompareOptions.DEFAULT.withStyles(false)).status());
+        assertEquals(Row.Status.SAME, compare(styled, plain, CompareOptions.TEXT_ONLY).status());
+        Row styles = compare(styled, plain, CompareOptions.TEXT_ONLY.with(Aspect.STYLES, true));
+        assertEquals(List.of(new PropertyDifference(Aspect.STYLES, "table style", "TableGrid", "(none)")),
+                styles.diff().properties());
+        Row layout = compare(styled, plain, CompareOptions.TEXT_ONLY.with(Aspect.TABLE_LAYOUT, true));
+        assertEquals(List.of(new PropertyDifference(Aspect.TABLE_LAYOUT, "table alignment", "center", "(none)")),
+                layout.diff().properties(), "jc of a table places it: its layout");
     }
 
     @Test
     void aTableIsPairedWithATableOnly() {
         List<Row> rows = DocumentComparer.compare(document(paragraph("Part Reference Quantity"), table(PARTS)),
-                document(table(PARTS)), CompareOptions.DEFAULT).stories().getFirst().rows();
+                document(table(PARTS)), Paragraphs.FULL).stories().getFirst().rows();
         assertEquals(2, rows.size());
         assertEquals(Row.Status.LEFT_ONLY, rows.get(0).status());
         assertEquals(Row.Status.SAME, rows.get(1).status());
@@ -128,7 +135,7 @@ class TableComparerTest {
     }
 
     private static Row compare(Table left, Table right) {
-        return compare(left, right, CompareOptions.DEFAULT);
+        return compare(left, right, Paragraphs.FULL);
     }
 
     private static Row compare(Table left, Table right, CompareOptions options) {

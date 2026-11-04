@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.TreeSet;
+import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.ListItem;
 import org.jtools.doccomparator.document.Paragraph;
@@ -46,8 +48,23 @@ final class ParagraphComparer {
     ParagraphDiff compare(Unit a, Unit b) {
         TextComparison comparison = new TextComparison(a, b);
         comparison.compareText();
-        return new ParagraphDiff(comparison.left.spans, comparison.right.spans, comparison.left.formatting,
-                comparison.right.formatting, properties(a.item().paragraph(), b.item().paragraph(), a.item(), b.item()));
+        return new ParagraphDiff(counted(comparison.left.spans), counted(comparison.right.spans),
+                comparison.left.formatting, comparison.right.formatting,
+                properties(a.item().paragraph(), b.item().paragraph(), a.item(), b.item()));
+    }
+
+    /** The spans as the options count them: the text left out, what differs in it is shown, as blanks are, and does not count. */
+    private List<Span> counted(List<Span> spans) {
+        if (options.text()) {
+            return spans;
+        }
+        List<Span> shown = new ArrayList<>();
+        for (Span span : spans) {
+            if (span.kind() != Span.Kind.ABSENT) {
+                shown.add(span.differs() ? new Span(span.start(), span.end(), Span.Kind.UNIMPORTANT) : span);
+            }
+        }
+        return shown;
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -230,7 +247,7 @@ final class ParagraphComparer {
         private void same(int startA, int endA, int startB, int endB) {
             left.add(startA, endA, Span.Kind.SAME);
             right.add(startB, endB, Span.Kind.SAME);
-            if (!options.styles() || endA - startA != endB - startB) {
+            if (!options.has(Aspect.STYLES) && !options.has(Aspect.CHARACTERS) || endA - startA != endB - startB) {
                 return;
             }
             for (int k = 0; k < endA - startA; k++) {
@@ -300,48 +317,38 @@ final class ParagraphComparer {
     // -----------------------------------------------------------------------------------------------------------------
     // Formatting and properties
 
-    /** How two runs are formatted otherwise: their character style, the properties set on them. */
+    /** How two runs are formatted otherwise, as the options compare it: their character style, their own properties. */
     private List<PropertyDifference> runDifferences(Run a, Run b) {
-        List<PropertyDifference> differences = new ArrayList<>();
-        add(differences, PropertyDifference.of("character style", styleName(leftStyles, a.styleId()),
-                styleName(rightStyles, b.styleId())));
-        formattingDifferences(differences, "", a.formatting(), b.formatting());
-        return differences;
+        Differences differences = new Differences(options);
+        differences.add(Aspect.STYLES, "character style", styleName(leftStyles, a.styleId()),
+                styleName(rightStyles, b.styleId()));
+        differences.formatting(Aspects.Source.RUN, "", a.formatting(), b.formatting());
+        return differences.list();
     }
 
-    /** What else than their text differs between two paragraphs, as the options compare it. */
+    /**
+     * What else than their text differs between two paragraphs, as the options compare it. Indentation, spacing and
+     * alignment as they apply, through the styles; the rest of the paragraph's formatting as it sets it itself.
+     */
     private List<PropertyDifference> properties(Paragraph a, Paragraph b, Item itemA, Item itemB) {
-        List<PropertyDifference> differences = new ArrayList<>();
-        if (options.structure()) {
-            add(differences, PropertyDifference.of("story", itemA.story().name().toLowerCase(),
-                    itemB.story().name().toLowerCase()));
-            add(differences, PropertyDifference.of("heading", heading(a.headingLevel()), heading(b.headingLevel())));
-            add(differences, PropertyDifference.of("list", list(a.listItem()), list(b.listItem())));
-            add(differences, PropertyDifference.of("place", itemA.placeInStructure(), itemB.placeInStructure()));
-            add(differences, PropertyDifference.of("section", a.endsSection() ? "ends here" : null,
-                    b.endsSection() ? "ends here" : null));
-        }
-        if (options.styles()) {
-            add(differences, PropertyDifference.of("paragraph style", paragraphStyleName(leftStyles, a.styleId()),
-                    paragraphStyleName(rightStyles, b.styleId())));
-            formattingDifferences(differences, "paragraph ", a.formatting(), b.formatting());
-        }
-        return differences;
-    }
+        Differences differences = new Differences(options);
+        differences.add(Aspect.SECTIONS, "story", itemA.story().name().toLowerCase(Locale.ROOT),
+                itemB.story().name().toLowerCase(Locale.ROOT));
+        differences.add(Aspect.HEADINGS, "heading", heading(a.headingLevel()), heading(b.headingLevel()));
+        differences.add(Aspect.LISTS, "list", list(a.listItem()), list(b.listItem()));
+        differences.add(Aspect.SECTIONS, "place", itemA.placeInStructure(), itemB.placeInStructure());
+        differences.add(Aspect.SECTIONS, "section", a.endsSection() ? "ends here" : null,
+                b.endsSection() ? "ends here" : null);
+        differences.add(Aspect.STYLES, "paragraph style", paragraphStyleName(leftStyles, a.styleId()),
+                paragraphStyleName(rightStyles, b.styleId()));
 
-    /** The properties two formattings set otherwise, each under its name preceded by prefix. */
-    static void formattingDifferences(List<PropertyDifference> differences, String prefix, Formatting a, Formatting b) {
-        TreeSet<String> names = new TreeSet<>(a.values().keySet());
-        names.addAll(b.values().keySet());
-        for (String name : names) {
-            add(differences, PropertyDifference.of(prefix + name, a.get(name), b.get(name)));
-        }
-    }
-
-    private static void add(List<PropertyDifference> differences, PropertyDifference difference) {
-        if (difference != null) {
-            differences.add(difference);
-        }
+        Formatting appliedA = Differences.effective(leftStyles, a.styleId(), a.formatting());
+        Formatting appliedB = Differences.effective(rightStyles, b.styleId(), b.formatting());
+        differences.formatting(Aspects.Source.PARAGRAPH, "", appliedA, appliedB,
+                aspect -> aspect == Aspect.INDENTATION || aspect == Aspect.SPACING || aspect == Aspect.ALIGNMENT);
+        differences.formatting(Aspects.Source.PARAGRAPH, "", a.formatting(), b.formatting(),
+                aspect -> aspect == Aspect.PARAGRAPHS);   // headings, lists, styles: said above
+        return differences.list();
     }
 
     String leftStyleName(String id) {

@@ -9,10 +9,15 @@ public record Table(String styleId, Formatting formatting, List<Row> rows) imple
         rows = List.copyOf(rows);
     }
 
-    public record Row(List<Cell> cells) {
+    /** A row: its own properties (w:trPr: height, header repeated on each page…) and its cells. */
+    public record Row(Formatting formatting, List<Cell> cells) {
 
         public Row {
             cells = List.copyOf(cells);
+        }
+
+        public Row(List<Cell> cells) {
+            this(Formatting.NONE, cells);
         }
     }
 

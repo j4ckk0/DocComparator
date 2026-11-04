@@ -18,8 +18,10 @@ public record Row(Item left, Item right, Status status, int counterpart, Paragra
     public enum Status {
         /** The same, as the options compare it. */
         SAME,
-        /** The same text, but its structure or style differs (for a table: rows or columns moved). */
-        SAME_TEXT,
+        /** The same, as the options compare it, but moved (the text compared). */
+        MOVED,
+        /** Its text the same, or not compared, but another aspect compared differs: a heading level, a style… */
+        OTHERWISE,
         /** Its text differs. */
         CHANGED,
         /** Only in the left document. */
@@ -34,13 +36,13 @@ public record Row(Item left, Item right, Status status, int counterpart, Paragra
 
     /** Whether the row shows a difference: one to go to from the previous or the next. */
     public boolean differs() {
-        return status != Status.SAME || moved();
+        return status != Status.SAME;
     }
 
     static Status statusOf(ParagraphDiff diff) {
         if (diff.textDiffers()) {
             return Status.CHANGED;
         }
-        return diff.otherwiseDiffers() ? Status.SAME_TEXT : Status.SAME;
+        return diff.otherwiseDiffers() ? Status.OTHERWISE : Status.SAME;
     }
 }

@@ -22,23 +22,30 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import javax.swing.AbstractAction;
+import javax.swing.AbstractButton;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
@@ -46,6 +53,7 @@ import javax.swing.SwingWorker;
 import javax.swing.TransferHandler;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import org.jtools.doccomparator.compare.CompareOptions;
+import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import org.jtools.doccomparator.compare.Comparison;
 import org.jtools.doccomparator.compare.DocumentComparer;
 import org.jtools.doccomparator.document.WordDocument;
@@ -85,6 +93,7 @@ public final class ComparatorPanel extends JPanel {
     private WordDocument rightDocument;
     private CompareOptions options = CompareOptions.DEFAULT;
     private boolean onlyDifferences;
+    private boolean onlyComparable;
     private Comparison comparison;
     private SwingWorker<?, ?> running;
     private Consumer<String> titleListener = title -> { };
@@ -255,7 +264,7 @@ public final class ComparatorPanel extends JPanel {
         leftHeader.show(leftPath, result.left());
         rightHeader.show(rightPath, result.right());
         Point at = scroll.getViewport().getViewPosition();
-        view.setLines(Lines.of(result, onlyDifferences, view.fonts()), -1);
+        view.setLines(Lines.of(result, onlyDifferences, onlyComparable, view.fonts()), -1);
         SwingUtilities.invokeLater(() -> scroll.getViewport().setViewPosition(new Point(0, Math.min(at.y,
                 Math.max(0, view.getHeight() - scroll.getViewport().getHeight())))));
         int[] count = view.differenceCount();
@@ -326,20 +335,9 @@ public final class ComparatorPanel extends JPanel {
         bar.add(button(next));
         bar.addSeparator();
         bar.add(new JLabel("Compare:  "));
-        JCheckBox text = new JCheckBox("Text", true);
-        text.setEnabled(false);
-        text.setToolTipText("The text is always compared");
-        bar.add(text);
-        bar.add(option("Structure", "Headings, lists, tables' rows and columns counted, sections",
-                options.structure(), on -> options = options.withStructure(on)));
-        bar.add(option("Blanks", "Spaces, tabs, breaks and empty paragraphs; left out, they are shown but do not count",
-                options.blanks(), on -> options = options.withBlanks(on)));
-        bar.add(option("Template", "The template attached, and the one named", options.template(),
-                on -> options = options.withTemplate(on)));
-        bar.add(option("Headers and footers", "Their text, as a part of its own", options.headersAndFooters(),
-                on -> options = options.withHeadersAndFooters(on)));
-        bar.add(option("Styles", "Paragraph and character styles by name, the formatting set on the text, style definitions",
-                options.styles(), on -> options = options.withStyles(on)));
+        bar.add(aspectBox(Aspect.TEXT));
+        bar.add(aspectBox(Aspect.BLANKS));
+        bar.add(layoutButton());
         bar.addSeparator();
         JCheckBox only = new JCheckBox("Only differences");
         only.setToolTipText("Hide the lines that are the same");
@@ -350,18 +348,134 @@ public final class ComparatorPanel extends JPanel {
             }
         });
         bar.add(only);
+        JToggleButton comparable = new JToggleButton("Only what is comparable");
+        comparable.setFocusable(false);
+        comparable.setToolTipText("Hide what has no match on the other side: paragraphs, tables and rows of tables "
+                + "on one side only (moved ones have their match, and stay)");
+        comparable.addItemListener(e -> {
+            onlyComparable = comparable.isSelected();
+            if (comparison != null) {
+                show(comparison);
+            }
+        });
+        bar.add(comparable);
         bar.add(Box.createHorizontalGlue());
         return bar;
     }
 
-    private JCheckBox option(String name, String tip, boolean on, Consumer<Boolean> set) {
-        JCheckBox box = new JCheckBox(name, on);
-        box.setToolTipText(tip);
-        box.addItemListener(e -> {
-            set.accept(box.isSelected());
-            compare();
+    // -----------------------------------------------------------------------------------------------------------------
+    // The options: a check box for each kind of difference, wherever it is shown, all kept alike
+
+    /** The kinds of layout, by group, in the Layout panel and the Compare menu. */
+    private static final List<Map.Entry<String, List<Aspect>>> LAYOUT = List.of(
+            Map.entry("Structure", List.of(Aspect.HEADINGS, Aspect.LISTS, Aspect.SECTIONS, Aspect.TABLE_LAYOUT)),
+            Map.entry("Formatting", List.of(Aspect.STYLES, Aspect.CHARACTERS, Aspect.INDENTATION, Aspect.SPACING,
+                    Aspect.ALIGNMENT, Aspect.PARAGRAPHS, Aspect.CELLS)),
+            Map.entry("Document", List.of(Aspect.TEMPLATE, Aspect.HEADERS_AND_FOOTERS)));
+
+    private final Map<Aspect, List<AbstractButton>> aspectButtons = new EnumMap<>(Aspect.class);
+    private final List<Runnable> optionsShown = new ArrayList<>();
+    private boolean showingOptions;
+
+    /** A check box for a kind of difference, kept in step with the options. */
+    private JCheckBox aspectBox(Aspect aspect) {
+        return register(aspect, new JCheckBox(aspect.label()));
+    }
+
+    private <B extends AbstractButton> B register(Aspect aspect, B button) {
+        button.setToolTipText(aspect.description());
+        button.setSelected(options.has(aspect));
+        button.addItemListener(e -> {
+            if (!showingOptions) {
+                setOptions(options.with(aspect, button.isSelected()));
+            }
         });
-        return box;
+        aspectButtons.computeIfAbsent(aspect, a -> new ArrayList<>()).add(button);
+        return button;
+    }
+
+    /** Compares with these options, every check box showing them. */
+    private void setOptions(CompareOptions changed) {
+        options = changed;
+        showingOptions = true;
+        try {
+            aspectButtons.forEach((aspect, buttons) -> buttons.forEach(b -> b.setSelected(options.has(aspect))));
+            optionsShown.forEach(Runnable::run);
+        } finally {
+            showingOptions = false;
+        }
+        compare();
+    }
+
+    /** "Layout ▾": a panel of the kinds of layout, by group, which stays open while they are ticked. */
+    private JButton layoutButton() {
+        JPopupMenu popup = new JPopupMenu();
+        JPanel panel = new JPanel(new GridLayout(1, LAYOUT.size(), 16, 0));
+        panel.setBorder(BorderFactory.createEmptyBorder(8, 10, 6, 10));
+        for (Map.Entry<String, List<Aspect>> group : LAYOUT) {
+            JPanel column = new JPanel(new GridLayout(0, 1, 0, 2));
+            JLabel title = new JLabel(group.getKey());
+            title.setFont(title.getFont().deriveFont(Font.BOLD));
+            column.add(title);
+            for (Aspect aspect : group.getValue()) {
+                column.add(aspectBox(aspect));
+            }
+            JPanel top = new JPanel(new BorderLayout());
+            top.add(column, BorderLayout.NORTH);
+            panel.add(top);
+        }
+        JPanel presets = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
+        presets.add(preset("Text only", CompareOptions.TEXT_ONLY));
+        presets.add(preset("Layout only", CompareOptions.LAYOUT_ONLY));
+        presets.add(preset("All", CompareOptions.ALL));
+        presets.add(preset("None", CompareOptions.TEXT_ONLY.with(Aspect.TEXT, false)));
+        JPanel content = new JPanel(new BorderLayout());
+        content.add(panel, BorderLayout.CENTER);
+        content.add(presets, BorderLayout.SOUTH);
+        popup.add(content);
+
+        JButton button = new JButton();
+        button.setFocusable(false);
+        button.setToolTipText("The layout to compare as well: structure, formatting, the document's own");
+        Runnable label = () -> {
+            long on = LAYOUT.stream().flatMap(group -> group.getValue().stream()).filter(options::has).count();
+            button.setText("Layout (" + on + ") \u25BE");
+        };
+        label.run();
+        optionsShown.add(label);
+        button.addActionListener(e -> popup.show(button, 0, button.getHeight()));
+        return button;
+    }
+
+    private JButton preset(String name, CompareOptions preset) {
+        JButton button = new JButton(name);
+        button.addActionListener(e -> setOptions(preset));
+        return button;
+    }
+
+    /** The same options, as a menu of the window. */
+    public JMenu compareMenu() {
+        JMenu menu = new JMenu("Compare");
+        menu.setMnemonic(KeyEvent.VK_C);
+        menu.add(register(Aspect.TEXT, new JCheckBoxMenuItem(Aspect.TEXT.label())));
+        menu.add(register(Aspect.BLANKS, new JCheckBoxMenuItem(Aspect.BLANKS.label())));
+        for (Map.Entry<String, List<Aspect>> group : LAYOUT) {
+            menu.addSeparator();
+            JMenuItem title = new JMenuItem(group.getKey());
+            title.setEnabled(false);
+            menu.add(title);
+            for (Aspect aspect : group.getValue()) {
+                menu.add(register(aspect, new JCheckBoxMenuItem(aspect.label())));
+            }
+        }
+        menu.addSeparator();
+        for (Map.Entry<String, CompareOptions> preset : List.of(Map.entry("Text only", CompareOptions.TEXT_ONLY),
+                Map.entry("Layout only", CompareOptions.LAYOUT_ONLY), Map.entry("All", CompareOptions.ALL))) {
+            JMenuItem item = new JMenuItem(preset.getKey());
+            item.addActionListener(e -> setOptions(preset.getValue()));
+            menu.add(item);
+        }
+        return menu;
     }
 
     private static JButton button(Action action) {
@@ -381,8 +495,8 @@ public final class ComparatorPanel extends JPanel {
         legend.add(legend("text differs", Palette.CHANGED_MARK));
         legend.add(legend("one side only", Palette.ORPHAN_MARK));
         legend.add(legend("moved", Palette.MOVED_MARK));
-        legend.add(legend("structure, style", Palette.OTHERWISE_MARK));
-        legend.add(legend("blanks", new Color(0x7FA6F0)));
+        legend.add(legend("layout", Palette.OTHERWISE_MARK));
+        legend.add(legend("not counted", new Color(0x7FA6F0)));
         bar.add(legend, BorderLayout.EAST);
         return bar;
     }

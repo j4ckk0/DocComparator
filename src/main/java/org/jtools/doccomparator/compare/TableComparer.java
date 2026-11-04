@@ -3,6 +3,8 @@ package org.jtools.doccomparator.compare;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import org.jtools.doccomparator.compare.CompareOptions.Aspect;
+import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.Table;
 
 /**
@@ -15,7 +17,9 @@ import org.jtools.doccomparator.document.Table;
  * <li>Where a row meets a column, the two cells, compared as paragraphs (ParagraphComparer); a cell of a moved row or
  * column with its match, where it is on its side.</li>
  * </ol>
- * Cells are placed on the table's grid (TableGrid): a merged cell where it starts.
+ * Cells are placed on the table's grid (TableGrid): a merged cell where it starts. The tables', rows' and cells' own
+ * properties are compared as the options say: their widths and heights with the table layout, their shading, borders
+ * and the like with the cell formatting.
  */
 final class TableComparer {
 
@@ -41,7 +45,15 @@ final class TableComparer {
         int[] rowOfA = Slot.leftPartners(rows, rowsA.size());
         int[] rowOfB = Slot.rightPartners(rows, rowsB.size());
         List<List<Row>> cells = new ArrayList<>();
+        List<List<PropertyDifference>> rowProperties = new ArrayList<>();
         for (Slot row : rows) {
+            int left = row.left() >= 0 ? row.left() : partner(rowOfB, row.right());
+            int right = row.right() >= 0 ? row.right() : partner(rowOfA, row.left());
+            Differences differences = new Differences(options);
+            if (left >= 0 && right >= 0) {
+                differences.formatting(Aspects.Source.ROW, "row ", rowFormatting(a, left), rowFormatting(b, right));
+            }
+            rowProperties.add(differences.list());
             List<Row> line = new ArrayList<>();
             for (Slot column : columns) {
                 Unit x = cell(a, row.left(), column.left());
@@ -60,30 +72,31 @@ final class TableComparer {
             }
             cells.add(line);
         }
-        return new TableComparison(columns, rows, cells);
+        return new TableComparison(columns, rows, cells, rowProperties);
     }
 
-    /** The properties of two tables, as the options compare them: their size, their style. */
-    ParagraphDiff properties(Unit a, Unit b, TableComparison table) {
-        List<PropertyDifference> differences = new ArrayList<>();
-        if (options.structure()) {
-            add(differences, PropertyDifference.of("rows", String.valueOf(a.cells().length),
-                    String.valueOf(b.cells().length)));
-            add(differences, PropertyDifference.of("columns", String.valueOf(columns(a).size()),
-                    String.valueOf(columns(b).size())));
-            add(differences, PropertyDifference.of("place", a.item().placeInStructure(), b.item().placeInStructure()));
-        }
-        if (options.styles()) {
-            Table x = a.item().table();
-            Table y = b.item().table();
-            add(differences, PropertyDifference.of("table style", paragraphs.leftStyleName(x.styleId()),
-                    paragraphs.rightStyleName(y.styleId())));
-        }
-        return new ParagraphDiff(List.of(), List.of(), List.of(), List.of(), differences);
+    /** The properties of two tables, as the options compare them: their size, their place, their style, their own. */
+    ParagraphDiff properties(Unit a, Unit b) {
+        Differences differences = new Differences(options);
+        differences.add(Aspect.TABLE_LAYOUT, "rows", String.valueOf(a.cells().length), String.valueOf(b.cells().length));
+        differences.add(Aspect.TABLE_LAYOUT, "columns", String.valueOf(columns(a).size()),
+                String.valueOf(columns(b).size()));
+        differences.add(Aspect.SECTIONS, "place", a.item().placeInStructure(), b.item().placeInStructure());
+        Table x = a.item().table();
+        Table y = b.item().table();
+        differences.add(Aspect.STYLES, "table style", paragraphs.leftStyleName(x.styleId()),
+                paragraphs.rightStyleName(y.styleId()));
+        differences.formatting(Aspects.Source.TABLE, "table ", x.formatting(), y.formatting());
+        return new ParagraphDiff(List.of(), List.of(), List.of(), List.of(), differences.list());
+    }
+
+    /** How two tables compare: rows and columns added, removed or moved count with the table layout only. */
+    Row.Status status(TableComparison table, ParagraphDiff properties) {
+        return table.status(properties, options.has(Aspect.TABLE_LAYOUT));
     }
 
     /** A table alone, laid out as it is: its rows and columns, each cell alone. */
-    static TableComparison alone(Unit table, boolean onLeft) {
+    TableComparison alone(Unit table, boolean onLeft) {
         int rowCount = table.cells().length;
         int columnCount = rowCount == 0 ? 0 : table.cells()[0].length;
         List<Slot> columns = new ArrayList<>();
@@ -101,12 +114,23 @@ final class TableComparer {
             }
             cells.add(line);
         }
-        return new TableComparison(columns, rows, cells);
+        return new TableComparison(columns, rows, cells, rows.stream().map(row -> List.<PropertyDifference>of()).toList());
     }
 
+    /** Two cells: their text as two paragraphs, and their own properties (shading, borders…). */
     private Row pair(Unit x, Unit y) {
-        ParagraphDiff diff = paragraphs.compare(x, y);
+        ParagraphDiff text = paragraphs.compare(x, y);
+        Differences differences = new Differences(options);
+        differences.formatting(Aspects.Source.CELL, "cell ", x.item().cell(), y.item().cell());
+        List<PropertyDifference> properties = new ArrayList<>(text.properties());
+        properties.addAll(differences.list());
+        ParagraphDiff diff = new ParagraphDiff(text.left(), text.right(), text.leftFormatting(), text.rightFormatting(),
+                properties);
         return new Row(x.item(), y.item(), Row.statusOf(diff), -1, diff, null);
+    }
+
+    private static Formatting rowFormatting(Unit table, int row) {
+        return table.item().table().rows().get(row).formatting();
     }
 
     private static Row withoutRight(Row pair) {
@@ -117,9 +141,11 @@ final class TableComparer {
         return new Row(null, pair.right(), pair.status(), -1, pair.diff(), null);
     }
 
-    private static Row cellAlone(Unit cell, boolean onLeft) {
-        return new Row(onLeft ? cell.item() : null, onLeft ? null : cell.item(),
-                onLeft ? Row.Status.LEFT_ONLY : Row.Status.RIGHT_ONLY, -1, ParagraphDiff.alone(cell.text(), onLeft), null);
+    /** A cell alone, in a row or a column the other table has not got: text added or removed, if the text counts. */
+    private Row cellAlone(Unit cell, boolean onLeft) {
+        Row.Status status = !options.text() ? Row.Status.SAME : onLeft ? Row.Status.LEFT_ONLY : Row.Status.RIGHT_ONLY;
+        return new Row(onLeft ? cell.item() : null, onLeft ? null : cell.item(), status, -1,
+                ParagraphDiff.alone(cell.text(), onLeft, options.text()), null);
     }
 
     private static int partner(int[] partners, int index) {
@@ -220,11 +246,5 @@ final class TableComparer {
 
     private static int columnCount(Unit table) {
         return table.cells().length == 0 ? 0 : table.cells()[0].length;
-    }
-
-    private static void add(List<PropertyDifference> differences, PropertyDifference difference) {
-        if (difference != null) {
-            differences.add(difference);
-        }
     }
 }

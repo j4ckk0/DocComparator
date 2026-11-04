@@ -18,9 +18,13 @@ public record ParagraphDiff(List<Span> left, List<Span> right, List<FormatSpan> 
         properties = List.copyOf(properties);
     }
 
-    /** A paragraph with no counterpart, on the left side or the right: its whole text is only there. */
-    static ParagraphDiff alone(String text, boolean onLeft) {
-        List<Span> spans = text.isEmpty() ? List.of() : List.of(new Span(0, text.length(), Span.Kind.ONLY_HERE));
+    /**
+     * A paragraph with no counterpart, on the left side or the right: its whole text is only there — which does not
+     * count when the text does not.
+     */
+    static ParagraphDiff alone(String text, boolean onLeft, boolean counted) {
+        List<Span> spans = text.isEmpty() ? List.of()
+                : List.of(new Span(0, text.length(), counted ? Span.Kind.ONLY_HERE : Span.Kind.UNIMPORTANT));
         return onLeft ? new ParagraphDiff(spans, List.of(), List.of(), List.of(), List.of())
                 : new ParagraphDiff(List.of(), spans, List.of(), List.of(), List.of());
     }

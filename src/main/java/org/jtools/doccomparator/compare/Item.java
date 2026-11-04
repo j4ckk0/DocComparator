@@ -1,6 +1,7 @@
 package org.jtools.doccomparator.compare;
 
 import java.util.List;
+import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.Story;
@@ -15,11 +16,17 @@ import org.jtools.doccomparator.document.Story;
  * @param places    the text boxes, the table and the cell it is in, the outermost first; empty in the flow of the story
  * @param paragraph the paragraph; for a table, its text alone, cell after cell
  * @param table     the table, null for a paragraph or a cell
+ * @param cell      a cell's own properties (w:tcPr); none for a paragraph or a table
  */
-public record Item(Story.Kind story, String label, List<Place> places, Paragraph paragraph, Table table) {
+public record Item(Story.Kind story, String label, List<Place> places, Paragraph paragraph, Table table,
+                   Formatting cell) {
 
     public Item {
         places = List.copyOf(places);
+    }
+
+    public Item(Story.Kind story, String label, List<Place> places, Paragraph paragraph, Table table) {
+        this(story, label, places, paragraph, table, Formatting.NONE);
     }
 
     /**

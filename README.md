@@ -1,8 +1,9 @@
 # DocComparator
 
 Compares two Word documents (`.docx`): two versions of one file, or two different documents, one of which took
-paragraphs from the other and changed pieces of their sentences. The text comes first; the structure, the blanks, the
-template, the headers and footers and the styles can each be compared or left out. Paragraphs that nearly match are
+paragraphs from the other and changed pieces of their sentences. The text comes first; each kind of layout — heading
+levels, lists, styles, indentation, spacing, tables' layout, cells' shading and borders… — can be compared as well,
+each on its own switch, and the text itself can be left out to compare the layout alone. Paragraphs that nearly match are
 shown side by side, their differences marked within them; tables are compared row by row and column by column.
 
 DocComparator is a desktop program that runs on its own: each distribution carries its Java runtime, so nothing needs
@@ -96,10 +97,13 @@ at once, or each on its side. The two sides scroll as one, each paragraph beside
   then a line for each row, its cells under their columns, an empty narrow place where a side has not got a column.
 - **The map** at the right shows every difference at its height in the documents; a click goes there.
 - **Previous and next difference**: F7 and Shift+F7, or the toolbar. *Only differences* hides the lines that are the
-  same.
-- **The options** in the toolbar compare again at once; the documents are not read again.
-- What is said under a paragraph: what else differs (heading, list, style, formatting), on each side its own value.
-  A right click copies a side's text.
+  same; *Only what is comparable* hides what has no match on the other side — paragraphs, tables, rows of tables on
+  one side only — to see two different documents by what they share.
+- **What is compared**: *Text* and *Blanks* in the toolbar, the layout under *Layout ▾*, by group (structure,
+  formatting, the document), with *Text only*, *Layout only*, *All*, *None*; the same in the *Compare* menu. Each
+  change compares again at once; the documents are not read again.
+- What is said under a paragraph, a cell or a row: what else differs (heading, style, indent, shading…), on each side
+  its own value. A right click copies a side's text.
 
 ## How it compares
 
@@ -139,18 +143,36 @@ numbers stay whole (`2025` → `2026`). Each side gets its spans: the same, chan
 
 Cells are placed on the table's grid, as Word lays it out: a cell spanning columns (`gridSpan`) at the first of them, a
 cell merged with the one above (`vMerge`) at the top one. A cell's paragraphs are one text, a line break between them;
-a table within a cell is read as text. Styles count only with the styles: the table's style, the paragraphs' and the
-text's in its cells.
+a table within a cell is read as text. Rows and columns moved count with the table layout only; added or removed, they
+hold text, which counts with the text. The tables', rows' and cells' own properties count each with its switch.
 
-**The options** (`CompareOptions`): the text is always compared; the rest can each be left out.
+**What is compared** (`CompareOptions`): each kind of difference on its own switch. By default, the text and the
+headers and footers: the content; the layout is there to switch on when it matters.
 
-| Option | Compared |
+| Switch | Compared |
 |---|---|
-| structure | heading levels, lists, a paragraph's place (text, text box), tables' numbers of rows and columns, the number of sections |
-| blanks | spaces, tabs and breaks as they are, and empty paragraphs; left out, a difference of blanks alone is shown, but does not count |
-| template | the template attached, the one named |
-| headers and footers | their paragraphs, as a story of their own |
-| styles | paragraph and character styles by name (the same in every language: "heading 1"), the formatting set on paragraphs and text, the documents' style definitions |
+| Text | the words of paragraphs and cells; paragraphs added, removed, moved. Off: paragraphs are still paired by their text, the only way to compare their layout, and what differs in it is shown, but does not count |
+| Blanks | spaces, tabs and breaks as they are, and empty paragraphs; off, a difference of blanks alone is shown, but does not count |
+| Headings | heading levels: a title's depth |
+| Lists | list items, their level and numbering |
+| Sections | section breaks and their number; paragraphs in text boxes |
+| Table layout | rows and columns added, removed or moved, their numbers; tables', columns' and rows' widths and heights, a table's place |
+| Styles | paragraph, character and table styles by name (the same in every language: "heading 1"); the documents' style definitions |
+| Characters | the formatting set on the text: bold, italic, underline, font, size, colour, highlight… |
+| Indentation, Spacing, Alignment | paragraphs' indents, space before and after, line spacing, alignment — as they apply, through the paragraph's style and those it is based on |
+| Paragraphs | the rest of a paragraph's own formatting: borders, shading, tabs, keep with next… |
+| Cell formatting | cells' and tables' shading, borders, margins, vertical alignment; header rows, rows kept on one page |
+| Template | the template attached, the one named |
+| Headers and footers | their text, as a part of its own |
+
+Which switch a property is on depends on where it is set: `jc` aligns a paragraph's text (Alignment) but places a table
+(Table layout); `shd` shades text (Characters), a paragraph (Paragraphs) or a cell (Cell formatting) — `Aspects` says
+which. A property and its attributes are one difference, named as a reader says it: "cell shading: clear, color auto,
+fill D9E2F3". Word's `cnfStyle`, the table style's banding flags it writes on rows, cells and paragraphs, is never
+compared: Word rewrites it on every row below one inserted.
+
+Not compared yet: the formatting text takes from its styles (Characters compares what is set on the text itself, Styles
+the styles), the indentation a list's numbering gives its items.
 
 ## Samples
 
@@ -160,7 +182,7 @@ run it again after a change: it writes the same files):
 | Document | What it is |
 |---|---|
 | `procedure-revA.docx` | the reference: a maintenance procedure, revision A |
-| `procedure-revB.docx` | its next version: paragraphs added, sentences changed, two sections swapped, a table row added, formatting and heading levels changed, blanks added, tracked changes, another footer and template |
+| `procedure-revB.docx` | its next version: paragraphs added, sentences changed, two sections swapped, a table row added, formatting and heading levels changed, a paragraph indented, the table's header row shaded and taller, a cell's border, blanks added, tracked changes, another footer and template |
 | `training-handbook.docx` | another document, on another template, with other headings and styles, that copied paragraphs from revision A, in another order, and changed pieces of them |
 
 The script says what each change is; `SamplesTest` checks that the comparison finds them.
@@ -219,7 +241,7 @@ Both are built from either system. Previous versions' archives are removed from 
 | `src/main/java/org/jtools/doccomparator/` | `Launcher` (the entry point, given two documents or none), `MainWindow` (the window, its menus), `NoNetworkResolver` (see "No network") |
 | `…/document/` | what a Word document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
 | `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `StylesReader`, `Numbering`, `FormattingReader` |
-| `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Row`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` |
+| `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Row`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `PropertyNames` |
 | `…/ui/` | `ComparatorPanel` (the toolbar, the sides, the status line), `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked) |
 | `src/main/resources/META-INF/services/` | what installs `NoNetworkResolver` |
 | `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `compare/`: each step, tables, and `SamplesTest`; `ui/LinesTest`, the view, drawn without a screen |

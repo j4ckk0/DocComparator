@@ -1,40 +1,83 @@
 package org.jtools.doccomparator.compare;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 /**
- * What the comparison takes into account besides the text, which it always compares:
- * <ul>
- * <li>structure: the headings and their levels, the lists, where a paragraph is (body, table cell, text box), the
- * sections;</li>
- * <li>blanks: spaces, tabs and breaks as they are, and empty paragraphs; left out, a difference of blanks alone is
- * shown, but does not count;</li>
- * <li>template: the template each document is attached to, and names;</li>
- * <li>headers and footers;</li>
- * <li>styles: the styles of paragraphs and of text, the formatting set on them, the documents' style definitions.</li>
- * </ul>
+ * What the comparison takes into account: the text and each kind of layout, each counted or left out on its own. Left
+ * out, a difference is not shown, but for the blanks, which are shown and do not count. The text left out, paragraphs
+ * are still paired by it — their layout can only be compared so — but what differs in it is not shown.
  */
-public record CompareOptions(boolean structure, boolean blanks, boolean template, boolean headersAndFooters,
-                             boolean styles) {
+public record CompareOptions(Set<Aspect> aspects) {
 
-    /** Everything but the blanks. */
-    public static final CompareOptions DEFAULT = new CompareOptions(true, false, true, true, true);
+    /** A kind of difference. */
+    public enum Aspect {
+        TEXT("Text", "The words of paragraphs and cells; paragraphs added, removed or moved"),
+        BLANKS("Blanks", "Spaces, tabs, breaks and empty paragraphs; left out, they are shown but do not count"),
+        HEADINGS("Headings", "Heading levels: a title's depth"),
+        LISTS("Lists", "List items, their level and numbering"),
+        SECTIONS("Sections", "Section breaks and their number; paragraphs in text boxes"),
+        STYLES("Styles", "Paragraph, character and table styles, by name; the documents' style definitions"),
+        CHARACTERS("Characters", "Formatting set on the text: bold, italic, underline, font, size, colour, highlight…"),
+        INDENTATION("Indentation", "Paragraphs' indents: left, right, first line, hanging"),
+        SPACING("Spacing", "Space before and after paragraphs, line spacing"),
+        ALIGNMENT("Alignment", "Paragraphs' alignment: left, centred, right, justified"),
+        PARAGRAPHS("Paragraphs", "Other paragraph formatting: borders, shading, tabs, keep with next, page breaks…"),
+        TABLE_LAYOUT("Table layout", "Rows and columns added, removed or moved, their numbers; widths and heights"),
+        CELLS("Cell formatting", "Cells' and tables' shading, borders, margins, vertical alignment; header rows…"),
+        TEMPLATE("Template", "The template attached, and the one named"),
+        HEADERS_AND_FOOTERS("Headers and footers", "Their text, as a part of its own");
 
-    public CompareOptions withStructure(boolean on) {
-        return new CompareOptions(on, blanks, template, headersAndFooters, styles);
+        private final String label;
+        private final String description;
+
+        Aspect(String label, String description) {
+            this.label = label;
+            this.description = description;
+        }
+
+        public String label() {
+            return label;
+        }
+
+        public String description() {
+            return description;
+        }
     }
 
-    public CompareOptions withBlanks(boolean on) {
-        return new CompareOptions(structure, on, template, headersAndFooters, styles);
+    /** The text, the headers and footers included: the content, the layout left out until asked for. */
+    public static final CompareOptions DEFAULT = new CompareOptions(EnumSet.of(Aspect.TEXT, Aspect.HEADERS_AND_FOOTERS));
+    /** The text alone, the body's and the notes'. */
+    public static final CompareOptions TEXT_ONLY = new CompareOptions(EnumSet.of(Aspect.TEXT));
+    /** Everything but the text and the blanks: the layout, the headers and footers included. */
+    public static final CompareOptions LAYOUT_ONLY = new CompareOptions(
+            EnumSet.complementOf(EnumSet.of(Aspect.TEXT, Aspect.BLANKS)));
+    /** Everything. */
+    public static final CompareOptions ALL = new CompareOptions(EnumSet.allOf(Aspect.class));
+
+    public CompareOptions {
+        aspects = Set.copyOf(aspects);
     }
 
-    public CompareOptions withTemplate(boolean on) {
-        return new CompareOptions(structure, blanks, on, headersAndFooters, styles);
+    public boolean has(Aspect aspect) {
+        return aspects.contains(aspect);
     }
 
-    public CompareOptions withHeadersAndFooters(boolean on) {
-        return new CompareOptions(structure, blanks, template, on, styles);
+    public CompareOptions with(Aspect aspect, boolean on) {
+        EnumSet<Aspect> changed = aspects.isEmpty() ? EnumSet.noneOf(Aspect.class) : EnumSet.copyOf(aspects);
+        if (on) {
+            changed.add(aspect);
+        } else {
+            changed.remove(aspect);
+        }
+        return new CompareOptions(changed);
     }
 
-    public CompareOptions withStyles(boolean on) {
-        return new CompareOptions(structure, blanks, template, headersAndFooters, on);
+    public boolean blanks() {
+        return has(Aspect.BLANKS);
+    }
+
+    public boolean text() {
+        return has(Aspect.TEXT);
     }
 }

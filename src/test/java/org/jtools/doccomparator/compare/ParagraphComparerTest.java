@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import java.util.Map;
 import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.ListItem;
@@ -59,7 +60,7 @@ class ParagraphComparerTest {
 
     @Test
     void blanksComparedCount() {
-        CompareOptions blanks = CompareOptions.DEFAULT.withBlanks(true);
+        CompareOptions blanks = Paragraphs.FULL.with(Aspect.BLANKS, true);
         assertTrue(compare(blanks, paragraph("one two"), paragraph("one  two")).textDiffers());
         assertTrue(compare(blanks, paragraph("one two"), paragraph("one two ")).textDiffers());
     }
@@ -68,21 +69,21 @@ class ParagraphComparerTest {
     void theFormattingOfTheSameTextIsComparedWithTheStyles() {
         Paragraph bold = paragraph(null, 0, null, run("A pressure "), run("must", "b"), run(" be reported."));
         Paragraph underlined = paragraph(null, 0, null, run("A pressure "), run("must", "u"), run(" be reported."));
-        ParagraphDiff diff = compare(CompareOptions.DEFAULT, bold, underlined);
+        ParagraphDiff diff = compare(Paragraphs.FULL, bold, underlined);
         assertFalse(diff.textDiffers());
         assertTrue(diff.otherwiseDiffers());
-        assertEquals(List.of(new FormatSpan(11, 15, List.of(new PropertyDifference("b", "true", "(none)"),
-                new PropertyDifference("u", "(none)", "true")))), diff.leftFormatting());
+        assertEquals(List.of(new FormatSpan(11, 15, List.of(new PropertyDifference(Aspect.CHARACTERS, "bold", "true", "(none)"),
+                new PropertyDifference(Aspect.CHARACTERS, "underline", "(none)", "true")))), diff.leftFormatting());
         assertEquals(diff.leftFormatting(), diff.rightFormatting());
 
-        assertFalse(compare(CompareOptions.DEFAULT.withStyles(false), bold, underlined).otherwiseDiffers());
+        assertFalse(compare(Paragraphs.FULL.with(Aspect.CHARACTERS, false), bold, underlined).otherwiseDiffers());
     }
 
     @Test
     void stylesAreComparedByName() {
         StyleSheet english = styles("Heading1", "heading 1");
         StyleSheet french = styles("Titre1", "heading 1");
-        ParagraphComparer comparer = new ParagraphComparer(CompareOptions.DEFAULT, new Vocabulary(), english, french);
+        ParagraphComparer comparer = new ParagraphComparer(Paragraphs.FULL, new Vocabulary(), english, french);
         Vocabulary vocabulary = new Vocabulary();
         ParagraphDiff diff = comparer.compare(
                 Paragraphs.unit(paragraph("Heading1", 1, null, run("Scope")), false, vocabulary),
@@ -94,10 +95,10 @@ class ParagraphComparerTest {
     void theStructureIsCompared() {
         Paragraph heading = paragraph(null, 1, null, run("Records"));
         Paragraph item = paragraph(null, 0, new ListItem("4", 0, "decimal", "%1."), run("Records"));
-        ParagraphDiff diff = compare(CompareOptions.DEFAULT.withStyles(false), heading, item);
-        assertEquals(List.of(new PropertyDifference("heading", "heading 1", "(none)"),
-                new PropertyDifference("list", "(none)", "decimal \"%1.\", level 1")), diff.properties());
-        assertFalse(compare(CompareOptions.DEFAULT.withStyles(false).withStructure(false), heading, item)
+        ParagraphDiff diff = compare(Paragraphs.FULL.with(Aspect.STYLES, false), heading, item);
+        assertEquals(List.of(new PropertyDifference(Aspect.HEADINGS, "heading", "heading 1", "(none)"),
+                new PropertyDifference(Aspect.LISTS, "list", "(none)", "decimal \"%1.\", level 1")), diff.properties());
+        assertFalse(compare(Paragraphs.FULL.with(Aspect.HEADINGS, false).with(Aspect.LISTS, false), heading, item)
                 .otherwiseDiffers());
     }
 
@@ -107,7 +108,7 @@ class ParagraphComparerTest {
     }
 
     private static ParagraphDiff compare(String left, String right) {
-        return compare(CompareOptions.DEFAULT, paragraph(left), paragraph(right));
+        return compare(Paragraphs.FULL, paragraph(left), paragraph(right));
     }
 
     private static ParagraphDiff compare(CompareOptions options, Paragraph left, Paragraph right) {

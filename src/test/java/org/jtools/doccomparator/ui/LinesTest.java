@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Font;
@@ -91,6 +92,26 @@ class LinesTest {
     }
 
     @Test
+    void onlyWhatIsComparableLeavesOutWhatHasNoMatch() throws IOException {
+        Comparison comparison = compare("training-handbook.docx");
+        List<Line> comparable = Lines.of(comparison, false, true, FONTS);
+        for (Line line : comparable) {
+            if (!line.isTitle() && line.left != null && line.right == null) {
+                assertTrue(line.left.counterpartLine >= 0, "alone, it is moved: " + line.left.text);
+            }
+        }
+        lineWith(comparable, "This module describes", false);
+        lineWith(comparable, "The module does not cover", false);
+        assertThrows(AssertionError.class, () -> lineWith(comparable, "Why must you wait", false), "the quiz");
+        assertThrows(AssertionError.class, () -> lineWith(comparable, "Scope", true));
+        int left = lineWith(comparable, "Wear safety glasses", true);
+        Cell moved = comparable.get(left).left;
+        assertEquals(left, comparable.get(moved.counterpartLine).right.counterpartLine, "links still right");
+        long tableRows = comparable.stream().filter(l -> l.left != null && l.left.columns != null).count();
+        assertEquals(4, tableRows, "the columns' line and the three rows both tables have; not the oil's");
+    }
+
+    @Test
     void theViewIsDrawnWithoutAScreen() throws IOException {
         ComparisonView view = new ComparisonView();
         view.setLines(Lines.of(compare("training-handbook.docx"), false, view.fonts()), 3);
@@ -126,6 +147,6 @@ class LinesTest {
 
     private static Comparison compare(String right) throws IOException {
         return DocumentComparer.compare(DocxReader.read(Path.of("samples", "procedure-revA.docx")),
-                DocxReader.read(Path.of("samples", right)), CompareOptions.DEFAULT);
+                DocxReader.read(Path.of("samples", right)), CompareOptions.ALL.with(CompareOptions.Aspect.BLANKS, false));
     }
 }

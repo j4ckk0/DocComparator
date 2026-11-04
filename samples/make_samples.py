@@ -4,8 +4,8 @@ Writes the sample documents of samples/, to try DocComparator on (README, "Sampl
 
   procedure-revA.docx      the reference: a maintenance procedure, revision A
   procedure-revB.docx      its next version: paragraphs added and removed, sentences changed, two sections swapped,
-                           a table row added, formatting changed, extra blanks, tracked changes, another footer
-                           and template
+                           a table row added, formatting changed, a paragraph indented, the table's header shaded
+                           and taller, a cell's border, extra blanks, tracked changes, another footer and template
   training-handbook.docx   another document, on another template, with other headings and styles, that copied
                            paragraphs from revision A, in another order, and changed pieces of them
 
@@ -85,20 +85,36 @@ def paragraph(*content, style=None, num=None, level=0, extra=""):
     return f"<w:p>{'<w:pPr>' + ppr + '</w:pPr>' if ppr else ''}{body}</w:p>"
 
 
-def table(rows, style, header=True):
-    """A table of text cells; the first row repeated on each page as its header."""
+def table(rows, style, header=True, header_fill=None, header_height=None, borders=None):
+    """
+    A table of text cells; the first row repeated on each page as its header, shaded with header_fill if given (a
+    colour, "D9E2F3"), header_height high (twentieths of a point). borders: {(row, column): its border's width, in
+    eighths of a point}. Each cell carries Word's w:cnfStyle, its row's banding as the table style sees it: Word
+    rewrites it below a row inserted, which is no difference anyone made.
+    """
     columns = len(rows[0])
     width = 9000 // columns
     grid = "".join(f'<w:gridCol w:w="{width}"/>' for _ in range(columns))
     xml = (f'<w:tbl><w:tblPr><w:tblStyle w:val="{style}"/><w:tblW w:w="0" w:type="auto"/>'
            f'<w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" '
            f'w:noHBand="0" w:noVBand="1"/></w:tblPr><w:tblGrid>{grid}</w:tblGrid>')
+    borders = borders or {}
     for index, cells in enumerate(rows):
-        trpr = "<w:trPr><w:tblHeader/></w:trPr>" if header and index == 0 else ""
+        trpr = ""
+        if header and index == 0:
+            height = f'<w:trHeight w:val="{header_height}"/>' if header_height else ""
+            trpr = f"<w:trPr>{height}<w:tblHeader/></w:trPr>"
         xml += f"<w:tr>{trpr}"
-        for cell in cells:
+        band = "100000000000" if index == 0 else ("000000100000" if index % 2 else "000000010000")
+        for column, cell in enumerate(cells):
             content = run(cell, b=header and index == 0)
-            xml += f'<w:tc><w:tcPr><w:tcW w:w="{width}" w:type="dxa"/></w:tcPr><w:p>{content}</w:p></w:tc>'
+            tcpr = f'<w:cnfStyle w:val="{band}"/><w:tcW w:w="{width}" w:type="dxa"/>'
+            if (index, column) in borders:
+                tcpr += (f'<w:tcBorders><w:bottom w:val="single" w:sz="{borders[(index, column)]}" w:space="0" '
+                         f'w:color="C00000"/></w:tcBorders>')
+            if header and index == 0 and header_fill:
+                tcpr += f'<w:shd w:val="clear" w:color="auto" w:fill="{header_fill}"/>'
+            xml += f'<w:tc><w:tcPr>{tcpr}</w:tcPr><w:p>{content}</w:p></w:tc>'
         xml += "</w:tr>"
     return xml + "</w:tbl>"
 
@@ -387,12 +403,15 @@ def procedure_revision_b():
         step("Fit a new element, reference KP-F-110, and screw the cover back",
              inserted(" and tighten it to 25 N·m"), "."),                                     # tracked insertion
         step("Restart the pump, wait two minutes and check that no leak appears around the cover."),  # changed
-        paragraph("The parts needed for one maintenance are listed below."),
+        paragraph("The parts needed for one maintenance are listed below.",
+                  extra='<w:ind w:left="720"/>'),                                                  # now indented
         table([["Part", "Reference", "Quantity"],
                ["Suction filter element", "KP-F-110", "1"],
                ["Cover seal", "KP-J-031", "1"],
                ["Drain valve seal", "KP-J-034", "1"],                                              # added row
-               ["Hydraulic oil ISO VG 46", "KP-H-046", "3 litres"]], ids["TableGrid"]),            # 2 → 3
+               ["Hydraulic oil ISO VG 46", "KP-H-046", "3 litres"]], ids["TableGrid"],             # 2 → 3
+              header_fill="D9E2F3", header_height=400,                                             # header shaded, taller
+              borders={(4, 2): 12}),                                                               # a red border under 3 litres
 
         h1("Safety"),
         paragraph("Before any operation, the pump must be stopped, isolated and locked out with a personal padlock."),

@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import org.jtools.doccomparator.compare.CompareOptions;
+import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import org.jtools.doccomparator.compare.Comparison;
 import org.jtools.doccomparator.compare.FormatSpan;
 import org.jtools.doccomparator.compare.Item;
@@ -32,18 +34,30 @@ final class Lines {
 
     private final Fonts fonts;
     private final boolean onlyDifferences;
+    private final boolean onlyComparable;
+    private final CompareOptions options;
     private final List<Line> lines = new ArrayList<>();
     /** The numbers lists are at, on each side: by list, a counter for each level. */
     private final Map<String, int[]> leftNumbers = new HashMap<>();
     private final Map<String, int[]> rightNumbers = new HashMap<>();
 
-    private Lines(Fonts fonts, boolean onlyDifferences) {
+    private Lines(Fonts fonts, boolean onlyDifferences, boolean onlyComparable, CompareOptions options) {
         this.fonts = fonts;
         this.onlyDifferences = onlyDifferences;
+        this.onlyComparable = onlyComparable;
+        this.options = options;
     }
 
     static List<Line> of(Comparison comparison, boolean onlyDifferences, Fonts fonts) {
-        Lines lines = new Lines(fonts, onlyDifferences);
+        return of(comparison, onlyDifferences, false, fonts);
+    }
+
+    /**
+     * The lines of a comparison: only those that differ, if asked; only what is comparable, if asked — what has its
+     * match on the other side, moved or not: a paragraph, a table, a row of a table on one side only is left out.
+     */
+    static List<Line> of(Comparison comparison, boolean onlyDifferences, boolean onlyComparable, Fonts fonts) {
+        Lines lines = new Lines(fonts, onlyDifferences, onlyComparable, comparison.options());
         lines.addDocument(comparison.documentDifferences());
         for (StoryComparison story : comparison.stories()) {
             lines.addStory(story);
@@ -82,7 +96,7 @@ final class Lines {
                 continue;
             }
             if (row.left() != null && row.right() != null) {
-                add(Line.of(cell(row, true), cell(row, false)), lineOfRow, moved, r);
+                add(Line.of(cell(row, true), cell(row, false)), true, lineOfRow, moved, r);
                 r++;
                 continue;
             }
@@ -95,8 +109,20 @@ final class Lines {
             for (int k = 0; k < Math.max(lefts.size(), rights.size()); k++) {
                 int leftRow = k < lefts.size() ? lefts.get(k) : -1;
                 int rightRow = k < rights.size() ? rights.get(k) : -1;
+                boolean comparable = leftRow >= 0 && rows.get(leftRow).moved()
+                        || rightRow >= 0 && rows.get(rightRow).moved();
+                if (onlyComparable) {   // a moved one alone on its line: its neighbour may be one not comparable
+                    if (leftRow >= 0 && rows.get(leftRow).moved()) {
+                        add(Line.of(cell(rows.get(leftRow), true), null), true, lineOfRow, moved, leftRow);
+                    }
+                    if (rightRow >= 0 && rows.get(rightRow).moved()) {
+                        add(Line.of(null, cell(rows.get(rightRow), false)), true, lineOfRow, moved, rightRow);
+                    }
+                    continue;
+                }
                 add(Line.of(leftRow < 0 ? null : cell(rows.get(leftRow), true),
-                        rightRow < 0 ? null : cell(rows.get(rightRow), false)), lineOfRow, moved, leftRow, rightRow);
+                        rightRow < 0 ? null : cell(rows.get(rightRow), false)), comparable, lineOfRow, moved,
+                        leftRow, rightRow);
             }
         }
         moved.forEach((cell, line) -> {
@@ -111,8 +137,9 @@ final class Lines {
      * Adds a line, unless only differences are shown and it has none; the rows given are then on it, unless they are on
      * a line already (a table, on its first).
      */
-    private void add(Line line, Map<Integer, Integer> lineOfRow, Map<Cell, Integer> moved, int... rows) {
-        if (onlyDifferences && !line.differs()) {
+    private void add(Line line, boolean comparable, Map<Integer, Integer> lineOfRow, Map<Cell, Integer> moved,
+                     int... rows) {
+        if (onlyDifferences && !line.differs() || onlyComparable && !comparable) {
             return;
         }
         int index = lines.size();
@@ -139,12 +166,15 @@ final class Lines {
     private void addTable(Row row, int index, Map<Integer, Integer> lineOfRow, Map<Cell, Integer> moved) {
         TableComparison table = row.table();
         Cell.Look tableLook = look(row);
+        boolean comparable = row.left() != null && row.right() != null || row.moved();
         add(Line.of(row.left() == null ? null : tableHeader(row, true, tableLook),
-                row.right() == null ? null : tableHeader(row, false, tableLook)), lineOfRow, moved, index);
+                row.right() == null ? null : tableHeader(row, false, tableLook)), comparable, lineOfRow, moved, index);
         for (int r = 0; r < table.rows().size(); r++) {
             Slot slot = table.rows().get(r);
+            boolean rowComparable = comparable && (slot.left() >= 0 && slot.right() >= 0 || slot.moved());
             add(Line.of(slot.left() < 0 || row.left() == null ? null : tableRow(row, r, true),
-                    slot.right() < 0 || row.right() == null ? null : tableRow(row, r, false)), lineOfRow, moved, index);
+                    slot.right() < 0 || row.right() == null ? null : tableRow(row, r, false)), rowComparable,
+                    lineOfRow, moved, index);
         }
     }
 
@@ -157,13 +187,9 @@ final class Lines {
                 columns.add(null);
                 continue;
             }
-            Cell.Look columnLook = slot.moved() ? Cell.Look.MOVED
-                    : slot.left() < 0 || slot.right() < 0 ? Cell.Look.ORPHAN : Cell.Look.SAME;
-            String said = switch (columnLook) {
-                case MOVED -> " (moved)";
-                case ORPHAN -> onLeft ? " (removed)" : " (added)";
-                default -> "";
-            };
+            Cell.Look columnLook = look(slot);
+            String said = slot.moved() ? " (moved)" : slot.left() < 0 || slot.right() < 0
+                    ? (onLeft ? " (removed)" : " (added)") : "";
             columns.add(new Cell(columnLook, null, null, null,
                     TextBlock.plain(columnName(column) + said, fonts.small(), Palette.FAINT), null, null));
         }
@@ -176,8 +202,7 @@ final class Lines {
     private Cell tableRow(Row row, int r, boolean onLeft) {
         TableComparison table = row.table();
         Slot rowSlot = table.rows().get(r);
-        Cell.Look look = rowSlot.moved() ? Cell.Look.MOVED
-                : rowSlot.left() < 0 || rowSlot.right() < 0 ? Cell.Look.ORPHAN : Cell.Look.SAME;
+        Cell.Look look = look(rowSlot);
         List<Cell> columns = new ArrayList<>();
         for (int c = 0; c < table.columns().size(); c++) {
             Slot columnSlot = table.columns().get(c);
@@ -191,16 +216,20 @@ final class Lines {
                         TextBlock.plain("", fonts.text(), Palette.TEXT), null, null));   // covered by a merged cell
                 continue;
             }
-            Cell.Look cellLook = look(cell);
-            if (cellLook == Cell.Look.SAME && (columnSlot.moved() || rowSlot.moved())) {
-                cellLook = Cell.Look.MOVED;
-            }
+            Cell.Look cellLook = look(cell).stronger(look(columnSlot)).stronger(look(rowSlot));
             Cell shown = cell(cell, onLeft, cellLook);
             columns.add(shown);
             look = look.stronger(cellLook);
         }
         int number = (onLeft ? rowSlot.left() : rowSlot.right()) + 1;
-        return new Cell(look, row, String.valueOf(number), null, null, columns, null);
+        List<PropertyDifference> rowProperties = table.rowProperties().get(r);
+        if (!rowProperties.isEmpty()) {
+            look = look.stronger(Cell.Look.OTHERWISE);
+        }
+        String notes = String.join("  \u00B7  ", rowProperties.stream()
+                .map(d -> d.property() + ": " + (onLeft ? d.left() : d.right())).toList());
+        return new Cell(look, row, String.valueOf(number), null, null, columns,
+                notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), Palette.FAINT));
     }
 
     /** A column by its letters, as a spreadsheet names it: A to Z, then AA… */
@@ -213,15 +242,31 @@ final class Lines {
     }
 
     private static Cell.Look look(Row row) {
-        if (row.moved()) {
+        if (row.moved() && row.status() != Row.Status.SAME) {
             return Cell.Look.MOVED;
         }
         return switch (row.status()) {
             case SAME -> Cell.Look.SAME;
-            case SAME_TEXT -> Cell.Look.OTHERWISE;
+            case MOVED -> Cell.Look.MOVED;
+            case OTHERWISE -> Cell.Look.OTHERWISE;
             case CHANGED -> Cell.Look.CHANGED;
             case LEFT_ONLY, RIGHT_ONLY -> Cell.Look.ORPHAN;
         };
+    }
+
+    /**
+     * How a row or a column of a table looks: moved, with the table layout counted; on one side only, with the text or
+     * the table layout counted (it holds text, it changes the layout); the same otherwise.
+     */
+    private Cell.Look look(Slot slot) {
+        boolean layout = options.has(Aspect.TABLE_LAYOUT);
+        if (slot.moved()) {
+            return layout ? Cell.Look.MOVED : Cell.Look.SAME;
+        }
+        if (slot.left() < 0 || slot.right() < 0) {
+            return layout || options.text() ? Cell.Look.ORPHAN : Cell.Look.SAME;
+        }
+        return Cell.Look.SAME;
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -233,7 +278,9 @@ final class Lines {
 
     private Cell cell(Row row, boolean onLeft, Cell.Look look) {
         Item item = onLeft ? row.left() : row.right();
-        boolean alone = row.status() == Row.Status.LEFT_ONLY || row.status() == Row.Status.RIGHT_ONLY;
+        // alone: nothing on the other side compared with it (a moved row of a table is compared with its match)
+        boolean alone = (row.left() == null || row.right() == null) && !row.moved()
+                && (onLeft ? row.diff().right() : row.diff().left()).isEmpty();
         List<Span> spans = alone ? List.of() : onLeft ? row.diff().left() : row.diff().right();
         List<FormatSpan> formatting = onLeft ? row.diff().leftFormatting() : row.diff().rightFormatting();
         boolean heading = item.paragraph().headingLevel() > 0;

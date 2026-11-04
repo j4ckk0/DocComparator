@@ -2,6 +2,7 @@ package org.jtools.doccomparator.compare;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import java.util.Map;
 import java.util.TreeMap;
 import org.jtools.doccomparator.document.Formatting;
@@ -12,6 +13,9 @@ import org.jtools.doccomparator.document.Story;
 
 /** Paragraphs and units for a test, without a document. */
 final class Paragraphs {
+
+    /** Everything compared, but the blanks. */
+    static final CompareOptions FULL = CompareOptions.ALL.with(Aspect.BLANKS, false);
 
     private Paragraphs() {
     }

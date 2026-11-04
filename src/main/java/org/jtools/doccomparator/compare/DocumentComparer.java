@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Story;
@@ -42,7 +43,7 @@ public final class DocumentComparer {
     private Comparison compare() {
         List<StoryComparison> stories = new ArrayList<>();
         stories.add(compare("Body", List.of(left.body()), List.of(right.body())));
-        if (options.headersAndFooters()) {
+        if (options.has(Aspect.HEADERS_AND_FOOTERS)) {
             stories.add(compare("Headers and footers", left.headersAndFooters(), right.headersAndFooters()));
         }
         stories.add(compare("Footnotes and endnotes", left.notes(), right.notes()));
@@ -66,8 +67,9 @@ public final class DocumentComparer {
                     Row pair = pair(unit, r.get(slots.get(slot.counterpart()).right()), slot.counterpart());
                     rows.add(new Row(pair.left(), null, pair.status(), pair.counterpart(), pair.diff(), pair.table()));
                 } else {
-                    rows.add(new Row(unit.item(), null, Row.Status.LEFT_ONLY, -1, ParagraphDiff.alone(
-                            unit.isTable() ? "" : unit.text(), true), unit.isTable() ? TableComparer.alone(unit, true) : null));
+                    rows.add(new Row(unit.item(), null, alone(Row.Status.LEFT_ONLY), -1, ParagraphDiff.alone(
+                            unit.isTable() ? "" : unit.text(), true, options.text()),
+                            unit.isTable() ? tables.alone(unit, true) : null));
                 }
             } else {
                 Unit unit = r.get(slot.right());
@@ -75,23 +77,37 @@ public final class DocumentComparer {
                     Row pair = pair(l.get(slots.get(slot.counterpart()).left()), unit, slot.counterpart());
                     rows.add(new Row(null, pair.right(), pair.status(), pair.counterpart(), pair.diff(), pair.table()));
                 } else {
-                    rows.add(new Row(null, unit.item(), Row.Status.RIGHT_ONLY, -1, ParagraphDiff.alone(
-                            unit.isTable() ? "" : unit.text(), false), unit.isTable() ? TableComparer.alone(unit, false) : null));
+                    rows.add(new Row(null, unit.item(), alone(Row.Status.RIGHT_ONLY), -1, ParagraphDiff.alone(
+                            unit.isTable() ? "" : unit.text(), false, options.text()),
+                            unit.isTable() ? tables.alone(unit, false) : null));
                 }
             }
         }
         return new StoryComparison(title, rows);
     }
 
-    /** Two paragraphs, or two tables, compared. */
+    /** A paragraph or table alone counts as text: added, or removed. */
+    private Row.Status alone(Row.Status status) {
+        return options.text() ? status : Row.Status.SAME;
+    }
+
+    /** Two paragraphs, or two tables, compared; moved, the same otherwise, as moved, when the text counts. */
     private Row pair(Unit a, Unit b, int counterpart) {
+        Row.Status status;
+        ParagraphDiff diff;
+        TableComparison table = null;
         if (a.isTable()) {
-            TableComparison table = tables.compare(a, b);
-            ParagraphDiff properties = tables.properties(a, b, table);
-            return new Row(a.item(), b.item(), table.status(properties), counterpart, properties, table);
+            table = tables.compare(a, b);
+            diff = tables.properties(a, b);
+            status = tables.status(table, diff);
+        } else {
+            diff = paragraphs.compare(a, b);
+            status = Row.statusOf(diff);
         }
-        ParagraphDiff diff = paragraphs.compare(a, b);
-        return new Row(a.item(), b.item(), Row.statusOf(diff), counterpart, diff, null);
+        if (counterpart >= 0 && status == Row.Status.SAME && options.text()) {
+            status = Row.Status.MOVED;
+        }
+        return new Row(a.item(), b.item(), status, counterpart, diff, table);
     }
 
     /** The paragraphs to compare; with the blanks left out, empty ones are not. */
@@ -110,20 +126,14 @@ public final class DocumentComparer {
     // The documents themselves
 
     private List<PropertyDifference> documentDifferences() {
-        List<PropertyDifference> differences = new ArrayList<>();
-        if (options.template()) {
-            add(differences, PropertyDifference.of("attached template", left.template().attached(),
-                    right.template().attached()));
-            add(differences, PropertyDifference.of("template", left.template().named(), right.template().named()));
-        }
-        if (options.structure()) {
-            add(differences, PropertyDifference.of("sections", String.valueOf(sections(left)),
-                    String.valueOf(sections(right))));
-        }
-        if (options.styles()) {
+        Differences differences = new Differences(options);
+        differences.add(Aspect.TEMPLATE, "attached template", left.template().attached(), right.template().attached());
+        differences.add(Aspect.TEMPLATE, "template", left.template().named(), right.template().named());
+        differences.add(Aspect.SECTIONS, "sections", String.valueOf(sections(left)), String.valueOf(sections(right)));
+        if (options.has(Aspect.STYLES)) {
             styleDifferences(differences, left.styles(), right.styles());
         }
-        return differences;
+        return differences.list();
     }
 
     /** The sections of a body: one, and one more after each paragraph that ends one. */
@@ -137,11 +147,10 @@ public final class DocumentComparer {
         return sections;
     }
 
-    /** The defaults, then each style by name, as both documents define them. */
-    private static void styleDifferences(List<PropertyDifference> differences, StyleSheet a, StyleSheet b) {
-        ParagraphComparer.formattingDifferences(differences, "default paragraph ", a.defaultParagraph(),
-                b.defaultParagraph());
-        ParagraphComparer.formattingDifferences(differences, "default text ", a.defaultRun(), b.defaultRun());
+    /** The defaults, then each style by name, as both documents define them: all of it a matter of styles. */
+    private static void styleDifferences(Differences differences, StyleSheet a, StyleSheet b) {
+        differences.formattingAs(Aspect.STYLES, "default paragraph ", a.defaultParagraph(), b.defaultParagraph());
+        differences.formattingAs(Aspect.STYLES, "default text ", a.defaultRun(), b.defaultRun());
         Map<String, Style> stylesA = byName(a);
         Map<String, Style> stylesB = byName(b);
         TreeSet<String> names = new TreeSet<>(stylesA.keySet());
@@ -151,16 +160,14 @@ public final class DocumentComparer {
             Style styleB = stylesB.get(name);
             String style = "style \"" + name + "\"";
             if (styleA == null || styleB == null) {
-                add(differences, PropertyDifference.of(style, styleA == null ? null : "defined",
-                        styleB == null ? null : "defined"));
+                differences.add(Aspect.STYLES, style, styleA == null ? null : "defined", styleB == null ? null : "defined");
                 continue;
             }
-            add(differences, PropertyDifference.of(style + " type", styleA.type(), styleB.type()));
-            add(differences, PropertyDifference.of(style + " based on",
-                    ParagraphComparer.styleName(a, styleA.basedOn()), ParagraphComparer.styleName(b, styleB.basedOn())));
-            ParagraphComparer.formattingDifferences(differences, style + " paragraph ", styleA.paragraph(),
-                    styleB.paragraph());
-            ParagraphComparer.formattingDifferences(differences, style + " text ", styleA.run(), styleB.run());
+            differences.add(Aspect.STYLES, style + " type", styleA.type(), styleB.type());
+            differences.add(Aspect.STYLES, style + " based on", ParagraphComparer.styleName(a, styleA.basedOn()),
+                    ParagraphComparer.styleName(b, styleB.basedOn()));
+            differences.formattingAs(Aspect.STYLES, style + " paragraph ", styleA.paragraph(), styleB.paragraph());
+            differences.formattingAs(Aspect.STYLES, style + " text ", styleA.run(), styleB.run());
         }
     }
 
@@ -170,11 +177,5 @@ public final class DocumentComparer {
             byName.putIfAbsent(style.name() == null ? style.id() : style.name(), style);
         }
         return byName;
-    }
-
-    private static void add(List<PropertyDifference> differences, PropertyDifference difference) {
-        if (difference != null) {
-            differences.add(difference);
-        }
     }
 }

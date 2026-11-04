@@ -37,7 +37,7 @@ final class TableGrid {
                 if (!continued) {
                     row.add(new Item(table.story(), table.label(),
                             Items.within(table.places(), Item.Place.inCell(number, r + 1, row.size() + 1)),
-                            paragraph(cell), null));
+                            paragraph(cell), null, cell.formatting()));
                 } else {
                     row.add(null);
                 }
