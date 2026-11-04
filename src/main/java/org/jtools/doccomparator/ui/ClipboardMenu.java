@@ -36,7 +36,7 @@ final class ClipboardMenu extends JPopupMenu {
             public void mousePressed(MouseEvent e) {
                 if (SwingUtilities.isRightMouseButton(e)) {
                     int line = view.lineAt(e.getY());
-                    if (line >= 0) {
+                    if (line >= 0 && !view.onWaitingSide(e.getX())) {
                         view.setCurrent(line, false);
                     }
                 }

@@ -3,11 +3,16 @@ package org.jtools.doccomparator.ui;
 import java.awt.BorderLayout;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.GridLayout;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Insets;
+import java.awt.LayoutManager;
 import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
@@ -111,10 +116,16 @@ public final class ComparatorPanel extends JPanel {
         scroll.getVerticalScrollBar().setUnitIncrement(24);
         scroll.setBorder(BorderFactory.createEmptyBorder());
 
-        JPanel headers = new JPanel(new GridLayout(1, 2, 26, 0));
-        headers.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 16));
+        JPanel headers = new JPanel(new HeadsLayout());
+        headers.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
         headers.add(leftHeader);
         headers.add(rightHeader);
+        view.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                headers.revalidate();
+            }
+        });
         JPanel top = new JPanel(new BorderLayout());
         top.add(controls.ribbon(previous, next, swap), BorderLayout.NORTH);
         top.add(headers, BorderLayout.SOUTH);
@@ -508,5 +519,44 @@ public final class ComparatorPanel extends JPanel {
     @Override
     public Dimension getPreferredSize() {
         return new Dimension(1280, 820);
+    }
+
+    /**
+     * The heads of the sides, each over its side of the view, as wide as it: the one chosen, underlined, the width of
+     * its column.
+     */
+    private final class HeadsLayout implements LayoutManager {
+
+        @Override
+        public void layoutContainer(Container parent) {
+            Insets insets = parent.getInsets();
+            int width = view.getWidth() > 0 ? view.getWidth() : parent.getWidth() - scroll.getVerticalScrollBar()
+                    .getPreferredSize().width;
+            int left = Math.min(view.leftWidth(), width);
+            int height = parent.getHeight() - insets.top - insets.bottom;
+            leftHeader.setBounds(0, insets.top, left, height);
+            int right = left + ComparisonView.GUTTER;
+            rightHeader.setBounds(right, insets.top, Math.max(0, width - right), height);
+        }
+
+        @Override
+        public Dimension preferredLayoutSize(Container parent) {
+            Insets insets = parent.getInsets();
+            int height = Math.max(leftHeader.getPreferredSize().height, rightHeader.getPreferredSize().height);
+            return new Dimension(0, height + insets.top + insets.bottom);
+        }
+
+        @Override
+        public Dimension minimumLayoutSize(Container parent) {
+            return preferredLayoutSize(parent);
+        }
+
+        @Override
+        public void addLayoutComponent(String name, Component component) {
+        }
+
+        @Override
+        public void removeLayoutComponent(Component component) {
+        }
     }
 }

@@ -301,6 +301,27 @@ class ComparatorPanelTest {
         });
     }
 
+    /** One document shown, the other side waiting: a click there chooses it, and selects no line of the one shown. */
+    @Test
+    void aClickOnTheSideWaitingSelectsNoLine() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            ComparisonView view = new ComparisonView();
+            try {
+                view.setLines(Lines.alone(DocxReader.read(Path.of("samples", "procedure-revA.docx")), true,
+                        Lines.Shown.ALL, view.fonts(), Palette.LIGHT), -1, Palette.LIGHT);
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+            view.setWaitingSide(1);
+            view.setSize(1000, 600);
+            press(view, 800, MouseEvent.BUTTON1);
+            assertEquals(-1, view.current(), "no line selected from the side waiting");
+            assertFalse(view.leftChosen(), "the side waiting, chosen");
+            press(view, 200, MouseEvent.BUTTON1);
+            assertTrue(view.current() >= 0, "a line of the side shown, selected");
+        });
+    }
+
     private static List<DocumentHeader> headers(Container container) {
         List<DocumentHeader> found = new ArrayList<>();
         for (Component component : container.getComponents()) {

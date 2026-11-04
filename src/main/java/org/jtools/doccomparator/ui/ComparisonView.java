@@ -37,7 +37,7 @@ final class ComparisonView extends JComponent implements Scrollable {
     /** Told when another side is clicked: the one text pasted goes to (leftChosen). */
     static final String CHOSEN_SIDE = "chosenSide";
 
-    private static final int GUTTER = 26;
+    static final int GUTTER = 26;
     private static final int MARGIN = 28;
     private static final int RIGHT_PADDING = 8;
     private static final int TITLE_HEIGHT = 26;
@@ -214,6 +214,17 @@ final class ComparisonView extends JComponent implements Scrollable {
         return Math.max(60, (width - GUTTER) / 2);
     }
 
+    /** The width of the left side as the view is laid out, the gutter then the right side after it. */
+    int leftWidth() {
+        return columnWidth(width());
+    }
+
+    /** Whether this point is on the side waiting for its document, the gutter next to it included: no line there. */
+    boolean onWaitingSide(int x) {
+        int column = columnWidth(getWidth());
+        return waitingSide == 0 ? x < column + GUTTER : waitingSide == 1 && x >= column;
+    }
+
     private void layoutLines(int width) {
         if (width == laidOutWidth || width <= 0) {
             return;
@@ -347,9 +358,9 @@ final class ComparisonView extends JComponent implements Scrollable {
         int column = columnWidth(getWidth());
         int left = side == 0 ? 0 : column + GUTTER;
         int sideWidth = side == 0 ? column : getWidth() - column - GUTTER;
-        if (overLines) {
+        if (overLines) {   // the gutter too: the side shown ends where its column does
             g.setColor(palette.background);
-            g.fillRect(left, visible.y, sideWidth, visible.height);
+            g.fillRect(side == 0 ? 0 : column, visible.y, sideWidth + GUTTER, visible.height);
         }
         int x = left + 16;
         int y = visible.y + 16;
@@ -528,7 +539,7 @@ final class ComparisonView extends JComponent implements Scrollable {
 
     private void clicked(MouseEvent e) {
         int index = lineAt(e.getY());
-        if (index < 0) {
+        if (index < 0 || onWaitingSide(e.getX())) {
             return;
         }
         LineSide side = sideAt(lines.get(index), e.getX());
