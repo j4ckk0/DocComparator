@@ -28,8 +28,8 @@ for %%a in (releases\doccomparator-*-windows.zip releases\doccomparator-*-linux.
 rem What each archive must carry: a distribution runs with nothing installed.
 set "WINDOWS=releases\doccomparator-%VERSION%-windows.zip"
 set "LINUX=releases\doccomparator-%VERSION%-linux.tar.gz"
-for %%f in (doccomparator.jar DocComparator.exe doccomparator.bat README.md jre/bin/java.exe) do call :holds "%WINDOWS%" %%f || exit /b 1
-for %%f in (doccomparator.jar doccomparator.sh README.md jre/bin/java) do call :holds "%LINUX%" %%f || exit /b 1
+for %%f in (doccomparator.jar DocComparator.exe doccomparator.bat README.md licenses/FlatLaf-LICENSE.txt jre/bin/java.exe) do call :holds "%WINDOWS%" %%f || exit /b 1
+for %%f in (doccomparator.jar doccomparator.sh README.md licenses/FlatLaf-LICENSE.txt jre/bin/java) do call :holds "%LINUX%" %%f || exit /b 1
 echo == releases\ checked: %WINDOWS%, %LINUX%
 exit /b 0
 

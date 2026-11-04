@@ -22,6 +22,11 @@
       <lineEnding>crlf</lineEnding>
     </file>
     <file>
+      <!-- the licence of FlatLaf, whose classes doccomparator.jar holds -->
+      <source>src/dist/licenses/FlatLaf-LICENSE.txt</source>
+      <outputDirectory>licenses</outputDirectory>
+    </file>
+    <file>
       <source>README.md</source>
       <lineEnding>crlf</lineEnding>
     </file>

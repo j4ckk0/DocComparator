@@ -16,11 +16,20 @@
     <revision>1.0</revision>
     <!-- The same version in the four parts Windows wants of an .exe (launch4j refuses anything else). -->
     <windowsVersion>1.0.0.0</windowsVersion>
+    <!-- The one library shipped, a decision taken knowingly (README, "No network"): its classes read by
+         NoNetworkTest at each build. Another version is another decision: the enforcer rule names this one. -->
+    <flatlaf.version>3.7.2</flatlaf.version>
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
   <dependencies>
+    <dependency>
+      <!-- The window's looks, a dark one among them -->
+      <groupId>com.formdev</groupId>
+      <artifactId>flatlaf</artifactId>
+      <version>${flatlaf.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
@@ -52,7 +61,11 @@
                     <exclude>*:*:*:*:runtime</exclude>
                     <exclude>*:*:*:*:system</exclude>
                   </excludes>
-                  <message>DocComparator ships no library: one would carry code NoNetworkTest does not read (README, "No network").</message>
+                  <includes>
+                    <!-- read by NoNetworkTest, this version only -->
+                    <include>com.formdev:flatlaf:${flatlaf.version}</include>
+                  </includes>
+                  <message>DocComparator ships no library but FlatLaf, this version: another would carry code NoNetworkTest does not read (README, "No network").</message>
                 </bannedDependencies>
               </rules>
             </configuration>
@@ -81,6 +94,43 @@
             </manifest>
           </archive>
         </configuration>
+      </plugin>
+      <plugin>
+        <!-- doccomparator.jar holds FlatLaf's classes too: one jar, the launchers as they are. Not its native
+             libraries, which it would unpack in a temporary directory: the program does without them. -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <filters>
+                <filter>
+                  <artifact>com.formdev:flatlaf</artifact>
+                  <excludes>
+                    <exclude>com/formdev/flatlaf/natives/**</exclude>
+                    <exclude>module-info.class</exclude>
+                    <exclude>META-INF/versions/*/module-info.class</exclude>
+                    <exclude>META-INF/MANIFEST.MF</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <manifestEntries>
+                    <!-- FlatLaf's classes for later Javas, in META-INF/versions -->
+                    <Multi-Release>true</Multi-Release>
+                  </manifestEntries>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

@@ -43,9 +43,15 @@ Two checks run with every build, so a change that breaks the rule does not build
   class files, not the sources, so that a fully qualified name, a method reference or a class named for reflection is
   seen as well as an import. A second test checks that it does find each of these. The exemptions are two, each limited
   to what it names: `NoNetworkResolver` names the resolver types it implements, `XmlCursor` makes its parser.
-- **The enforcer rule of `pom.xml`** fails the build when a library would ship with the program: the test reads only the
-  program's own classes. Adding one is a decision to take knowingly, checking what that library does, before lifting
-  the rule for it.
+- **The enforcer rule of `pom.xml`** fails the build when a library would ship with the program, but one, by name and
+  version: **FlatLaf** (3.7.2, Apache License 2.0), the window's looks, a decision taken knowingly. Its classes are in
+  `doccomparator.jar`, and `NoNetworkTest` reads every one of them, at each build, as it reads the program's, with two
+  allowances, each the narrowest found to hold: java.net's `URL` and `URI` (FlatLaf reads its themes and fonts from
+  its own jar by the addresses `Class.getResource` gives; no socket, no connection, no name looked up), and loading
+  native code in its two classes that do it. FlatLaf is told to load none (`flatlaf.useNativeLibrary=false`, as the
+  program starts), and none is shipped: its native libraries, which it would unpack in a temporary directory for the
+  system's window decorations, are left out of the jar. Another version of it, or another library, is another decision:
+  it does not build until `pom.xml` names it, and it does not pass until the test has read it.
 
 What stays outside these checks:
 
@@ -148,8 +154,11 @@ paragraph beside its match, as high as the taller.
 - **Tables** take a line for their columns, lettered A, B, C… on each side, a column added, removed or moved said so,
   then a line for each row, its cells under their columns, an empty narrow place where a side has not got a column.
 - **The map** at the right shows every difference at its height in the documents; a click goes there.
-- **The look**, in *View ▸ Look*: the looks Java has — Nimbus, the default, the same on every system; the system's
-  (Windows, GTK on Linux); Metal… —, the window shown in it at once. The one chosen is kept for the next time in
+- **The look**, in *View ▸ Look*: FlatLaf's — Light, the default, Dark, IntelliJ, Darcula, macOS Light and Dark —, and
+  those Java has (the system's: Windows, GTK on Linux; Nimbus; Metal…), the window shown in it at once. *Dark*, in the
+  ribbon's *View* and the *View* menu, turns the look dark or light: FlatLaf's other self of it. In a dark look the
+  diff view is dark too; the document view keeps its white page, as a document printed. The one chosen is kept for the
+  next time in
   `doccomparator.properties`, beside the program: in its folder, never in the registry or the user's folder; written
   only when the look is changed, and not at all where the folder cannot be written in.
 - **The ribbon**, as Word has it: groups side by side, each its name under its buttons — *Go*, *Text*, *Structure*,
@@ -292,13 +301,14 @@ installing where they are unpacked:
 | `doccomparator-<version>-linux.tar.gz` | `doccomparator.sh` |
 | `doccomparator-<version>-windows.zip` | `doccomparator.bat` (the signed `javaw.exe`, no console), or `DocComparator.exe` (not signed) |
 
-Both are built from either system. Previous versions' archives are removed from `releases/` once the new one is built.
+Both are built from either system, and hold, in `licenses/`, the licence of FlatLaf, whose classes `doccomparator.jar`
+holds. Previous versions' archives are removed from `releases/` once the new one is built.
 
 ## Layout
 
 | Path | What it holds |
 |---|---|
-| `src/main/java/org/jtools/doccomparator/` | `Launcher` (the entry point, given two documents or none), `MainWindow` (the window, its menus, its look), `Settings` (kept beside the program), `NoNetworkResolver` (see "No network") |
+| `src/main/java/org/jtools/doccomparator/` | `Launcher` (the entry point, given two documents or none), `MainWindow` (the window, its menus, its look), `Settings` (kept beside the program), `Looks` (FlatLaf's looks, light and dark, its native libraries off), `NoNetworkResolver` (see "No network") |
 | `…/document/` | what a Word document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
 | `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `StylesReader`, `Numbering`, `FormattingReader`, `Pictures` (a part's pictures, through its relationships, nothing outside fetched) |
 | `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Row`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `PropertyNames` |
@@ -306,5 +316,5 @@ Both are built from either system. Previous versions' archives are removed from 
 | `src/main/resources/META-INF/services/` | what installs `NoNetworkResolver` |
 | `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `compare/`: each step, tables, and `SamplesTest`; `ui/LinesTest`, the view, drawn without a screen |
 | `samples/` | the sample documents, and the script that writes them (see "Samples") |
-| `src/dist/`, `src/assembly/` | the launchers of the distributions, and what goes in them |
+| `src/dist/`, `src/assembly/` | the launchers of the distributions, FlatLaf's licence, and what goes in them |
 | `scripts/` | the scripts above |

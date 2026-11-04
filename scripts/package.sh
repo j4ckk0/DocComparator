@@ -38,6 +38,6 @@ check() {   # archive, its entries, what it must hold
 }
 windows=releases/doccomparator-$version-windows.zip
 linux=releases/doccomparator-$version-linux.tar.gz
-check "$windows" "$(unzip -Z1 "$windows")" doccomparator.jar DocComparator.exe doccomparator.bat README.md jre/bin/java.exe
-check "$linux" "$(tar tzf "$linux")" doccomparator.jar doccomparator.sh README.md jre/bin/java
+check "$windows" "$(unzip -Z1 "$windows")" doccomparator.jar DocComparator.exe doccomparator.bat README.md licenses/FlatLaf-LICENSE.txt jre/bin/java.exe
+check "$linux" "$(tar tzf "$linux")" doccomparator.jar doccomparator.sh README.md licenses/FlatLaf-LICENSE.txt jre/bin/java
 echo "== releases/ checked: $windows, $linux"

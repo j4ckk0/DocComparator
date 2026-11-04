@@ -4,13 +4,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.formdev.flatlaf.FlatLaf;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -54,6 +59,10 @@ class NoNetworkTest {
     /** Methods of classes that are otherwise allowed. */
     private static final List<String> FORBIDDEN_METHODS = List.of(
             "java/lang/Runtime.exec",                          // as ProcessBuilder
+            "java/lang/System.load",                           // native code, which this test cannot read
+            "java/lang/System.loadLibrary",
+            "java/lang/Runtime.load",
+            "java/lang/Runtime.loadLibrary",
             "javax/xml/stream/XMLInputFactory.newInstance",    // an XML parser, as above
             "javax/xml/stream/XMLInputFactory.newFactory",
             "javax/xml/stream/XMLInputFactory.newDefaultFactory");
@@ -97,6 +106,70 @@ class NoNetworkTest {
             uses.addAll(networkUses(name, ClassFileNames.read(classFile)));
         }
         assertEquals(List.of(), uses, "what reaches the network (README, \"No network\")");
+    }
+
+    /**
+     * The one library shipped (pom.xml), FlatLaf, read as the program's own classes, every one of them, with two
+     * allowances, each the narrowest found to hold:
+     * <ul>
+     * <li>java.net's URL and URI, their exceptions, and nothing else of java.net: FlatLaf reads its themes and fonts
+     * from its own jar, by the URLs Class.getResource gives (UIDefaultsLoader derives a variant's from its theme's,
+     * beside it); no socket, no connection, no name looked up.</li>
+     * <li>Loading native code, in its two classes that do it only: FlatLaf is told to load none
+     * (flatlaf.useNativeLibrary, Looks), and none is shipped (pom.xml).</li>
+     * </ul>
+     * Another version of it is read here before it can be built: the enforcer rule names this one.
+     */
+    @Test
+    void theLibraryShippedReachesNoNetwork() throws Exception {
+        Path jar = Path.of(FlatLaf.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+        List<String> uses = new ArrayList<>();
+        int read = 0;
+        try (JarFile classes = new JarFile(jar.toFile())) {
+            for (JarEntry entry : Collections.list(classes.entries())) {
+                if (entry.getName().endsWith(".class") && !entry.getName().endsWith("module-info.class")) {
+                    try (InputStream in = classes.getInputStream(entry)) {
+                        uses.addAll(libraryUses(entry.getName(), ClassFileNames.read(in, entry.getName())));
+                    }
+                    read++;
+                }
+            }
+        }
+        assertTrue(read > 300, jar + ": " + read + " classes read: the test would pass reading nothing");
+        assertEquals(List.of(), uses, "what of FlatLaf reaches the network (README, \"No network\")");
+    }
+
+    /** The library's allowances let nothing else through: a socket is still found. */
+    @Test
+    void theLibrarysAllowancesCoverWhatTheyNameOnly() throws IOException {
+        String uses = String.join("\n", libraryUses("com/formdev/flatlaf/util/NativeLibrary.class",
+                ClassFileNames.read(OFFENDER)));
+        assertTrue(uses.contains("java/net/Socket"), uses);
+        assertTrue(uses.contains("calls java/lang/Runtime.exec"), uses);
+    }
+
+    /** java.net's names FlatLaf may use: those of a resource's address, nothing that connects. */
+    private static final Pattern LIBRARY_NET_NAMES =
+            Pattern.compile("java/net/(URL|URI|URISyntaxException|MalformedURLException)(?![\\w$])");
+
+    /** FlatLaf's classes that load native code, which it is told not to. */
+    private static final List<String> LIBRARY_NATIVE_LOADERS = List.of(
+            "com/formdev/flatlaf/util/NativeLibrary", "com/formdev/flatlaf/ui/FlatNativeLibrary");
+
+    private static final List<String> NATIVE_LOADING = List.of("java/lang/System.load", "java/lang/System.loadLibrary",
+            "java/lang/Runtime.load", "java/lang/Runtime.loadLibrary");
+
+    /** As networkUses, the library's allowances made. */
+    private static List<String> libraryUses(String classFile, ClassFileNames names) {
+        List<String> constants = names.constants().stream()
+                .map(constant -> LIBRARY_NET_NAMES.matcher(constant.replace('.', '/')).replaceAll(""))
+                .toList();
+        boolean loadsNatives = LIBRARY_NATIVE_LOADERS.stream().anyMatch(loader -> classFile.equals(loader + ".class")
+                || classFile.startsWith(loader + "$") || classFile.endsWith("/" + loader + ".class"));
+        List<String> methods = names.calledMethods().stream()
+                .filter(method -> !(loadsNatives && NATIVE_LOADING.contains(method)))
+                .toList();
+        return networkUses(classFile, new ClassFileNames(constants, methods));
     }
 
     /** The check finds each kind of use: a test that cannot fail would prove nothing. */
@@ -157,7 +230,14 @@ class NoNetworkTest {
     private record ClassFileNames(List<String> constants, List<String> calledMethods) {
 
         static ClassFileNames read(Path classFile) throws IOException {
-            try (DataInputStream in = new DataInputStream(new BufferedInputStream(Files.newInputStream(classFile)))) {
+            try (InputStream in = Files.newInputStream(classFile)) {
+                return read(in, classFile.toString());
+            }
+        }
+
+        static ClassFileNames read(InputStream stream, String classFile) throws IOException {
+            {
+                DataInputStream in = new DataInputStream(new BufferedInputStream(stream));
                 if (in.readInt() != 0xCAFEBABE) {
                     throw new IOException(classFile + ": not a class file");
                 }

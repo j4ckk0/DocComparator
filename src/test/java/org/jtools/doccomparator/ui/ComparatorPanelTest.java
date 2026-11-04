@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.formdev.flatlaf.FlatDarkLaf;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Font;
@@ -14,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.Action;
 import javax.swing.JButton;
+import javax.swing.JRadioButton;
 import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -82,6 +85,49 @@ class ComparatorPanelTest {
         } finally {
             UIManager.setLookAndFeel(before);
         }
+    }
+
+    /** A dark look: the diff view in dark colours; the document view on its white page still. */
+    @Test
+    void aDarkLookDarkensTheDiffViewNotThePage() throws Exception {
+        LookAndFeel before = UIManager.getLookAndFeel();
+        System.setProperty("flatlaf.useNativeLibrary", "false");
+        try {
+            UIManager.setLookAndFeel(new FlatDarkLaf());
+            SwingUtilities.invokeAndWait(() -> {
+                ComparatorPanel panel = new ComparatorPanel();
+                try {
+                    panel.show(DocumentComparer.compare(DocxReader.read(Path.of("samples", "procedure-revA.docx")),
+                            DocxReader.read(Path.of("samples", "procedure-revB.docx")), CompareOptions.DEFAULT));
+                } catch (IOException e) {
+                    throw new IllegalStateException(e);
+                }
+                assertTrue(Palette.isDark(), "the diff view, dark");
+                buttons(panel);   // the panel made, its parts there
+                for (Component radio : radios(panel)) {
+                    if (radio instanceof JRadioButton button && button.getText().equals("Document")) {
+                        button.doClick();
+                    }
+                }
+                assertFalse(Palette.isDark(), "the document view: a white page");
+            });
+        } finally {
+            UIManager.setLookAndFeel(before);
+            Palette.use(false);
+        }
+    }
+
+    private static List<Component> radios(Container container) {
+        List<Component> found = new ArrayList<>();
+        for (Component component : container.getComponents()) {
+            if (component instanceof JRadioButton) {
+                found.add(component);
+            }
+            if (component instanceof Container inner) {
+                found.addAll(radios(inner));
+            }
+        }
+        return found;
     }
 
     private static Component find(Container container, Class<?> type) {

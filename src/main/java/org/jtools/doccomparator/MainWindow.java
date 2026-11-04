@@ -9,6 +9,7 @@ import java.util.List;
 import javax.swing.Action;
 import javax.swing.ButtonGroup;
 import javax.swing.JFrame;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -21,11 +22,11 @@ import org.jtools.doccomparator.ui.ComparatorPanel;
 final class MainWindow extends JFrame {
 
     static final String APP_NAME = "DocComparator";
-    /** The look until one is chosen: Swing's most modern, the same on every system. */
-    static final String DEFAULT_LOOK = "javax.swing.plaf.nimbus.NimbusLookAndFeel";
-
     private final ComparatorPanel panel = new ComparatorPanel();
     private final Settings settings;
+    private final JCheckBoxMenuItem darkMode = new JCheckBoxMenuItem("Dark mode");
+    private final ButtonGroup looks = new ButtonGroup();
+    private final List<JRadioButtonMenuItem> lookItems = new ArrayList<>();
 
     MainWindow(Settings settings) {
         super(title());
@@ -36,6 +37,8 @@ final class MainWindow extends JFrame {
         add(panel, BorderLayout.CENTER);
         String version = title();
         panel.onTitle(title -> setTitle(title.replace(APP_NAME, version)));
+        panel.onDarkMode(dark -> applyLook(Looks.inMode(currentLook(), dark)));
+        panel.showDarkMode(Looks.isDark());
         pack();
         setLocationRelativeTo(null);
     }
@@ -46,31 +49,46 @@ final class MainWindow extends JFrame {
     }
 
     /**
-     * View ▸ Look: the looks Java has here — the system's, Nimbus, Metal… —, the one chosen kept for the next time
+     * View ▸ Look: FlatLaf's looks, light and dark, and those Java has here — the system's, Nimbus, Metal… —, the one
+     * chosen kept for the next time
      * (Settings), the window shown in it at once.
      */
     private JMenu lookMenu() {
         JMenu menu = new JMenu("Look");
         menu.setMnemonic(KeyEvent.VK_L);
-        ButtonGroup group = new ButtonGroup();
-        String current = UIManager.getLookAndFeel().getClass().getName();
+        String current = currentLook();
         String system = UIManager.getSystemLookAndFeelClassName();
-        List<UIManager.LookAndFeelInfo> looks = new ArrayList<>(List.of(UIManager.getInstalledLookAndFeels()));
-        // the system's first, then Nimbus, then the others as Java lists them
-        looks.sort(Comparator.comparingInt((UIManager.LookAndFeelInfo look) -> look.getClassName().equals(system) ? 0
-                : look.getClassName().equals(DEFAULT_LOOK) ? 1 : 2));
-        for (UIManager.LookAndFeelInfo look : looks) {
+        List<UIManager.LookAndFeelInfo> installed = new ArrayList<>(List.of(UIManager.getInstalledLookAndFeels()));
+        // FlatLaf's first, then the system's, then the others as Java lists them
+        installed.sort(Comparator.comparingInt((UIManager.LookAndFeelInfo look) ->
+                look.getClassName().startsWith("com.formdev.flatlaf") ? 0 : look.getClassName().equals(system) ? 1 : 2));
+        for (UIManager.LookAndFeelInfo look : installed) {
             String name = look.getName() + (look.getClassName().equals(system) ? " (the system's)" : "");
             JRadioButtonMenuItem item = new JRadioButtonMenuItem(name, look.getClassName().equals(current));
-            item.addActionListener(e -> {
-                Launcher.useLook(look.getClassName());
-                SwingUtilities.updateComponentTreeUI(this);
-                settings.set(Settings.LOOK, look.getClassName());
-            });
-            group.add(item);
+            item.putClientProperty("look", look.getClassName());
+            item.addActionListener(e -> applyLook(look.getClassName()));
+            looks.add(item);
+            lookItems.add(item);
             menu.add(item);
         }
         return menu;
+    }
+
+    private static String currentLook() {
+        return UIManager.getLookAndFeel().getClass().getName();
+    }
+
+    /** Shows the window in this look, keeps it for the next time, and says so in the menu and the ribbon. */
+    private void applyLook(String className) {
+        Looks.use(className);
+        SwingUtilities.updateComponentTreeUI(this);
+        settings.set(Settings.LOOK, currentLook());
+        boolean dark = Looks.isDark();
+        darkMode.setSelected(dark);
+        panel.showDarkMode(dark);
+        for (JRadioButtonMenuItem item : lookItems) {
+            item.setSelected(currentLook().equals(item.getClientProperty("look")));
+        }
     }
 
     /** The name and the version, which the jar's manifest holds; the name alone when run from the classes. */
@@ -98,6 +116,10 @@ final class MainWindow extends JFrame {
         bar.add(file);
         JMenu view = panel.viewMenu();
         view.addSeparator();
+        darkMode.setMnemonic(KeyEvent.VK_D);
+        darkMode.setSelected(Looks.isDark());
+        darkMode.addActionListener(e -> applyLook(Looks.inMode(currentLook(), darkMode.isSelected())));
+        view.add(darkMode);
         view.add(lookMenu());
         bar.add(view);
         bar.add(panel.compareMenu());

@@ -59,6 +59,7 @@ import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.TransferHandler;
+import javax.swing.border.MatteBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.CompareOptions.Aspect;
@@ -108,6 +109,9 @@ public final class ComparatorPanel extends JPanel {
     private Comparison comparison;
     private SwingWorker<?, ?> running;
     private Consumer<String> titleListener = title -> { };
+    private Consumer<Boolean> darkModeListener = dark -> { };
+    private final JCheckBox darkBox = new JCheckBox("Dark");
+    private boolean showingDarkMode;
     private File lastDirectory;
 
     public ComparatorPanel() {
@@ -150,6 +154,21 @@ public final class ComparatorPanel extends JPanel {
     public void onTitle(Consumer<String> listener) {
         titleListener = listener;
         listener.accept(title());
+    }
+
+    /** Told when the Dark box of the ribbon is ticked or not: the window changes its look. */
+    public void onDarkMode(Consumer<Boolean> listener) {
+        darkModeListener = listener;
+    }
+
+    /** Shows whether the look is dark in the ribbon's Dark box, telling no one. */
+    public void showDarkMode(boolean dark) {
+        showingDarkMode = true;
+        try {
+            darkBox.setSelected(dark);
+        } finally {
+            showingDarkMode = false;
+        }
     }
 
     public List<Action> fileActions() {
@@ -218,6 +237,7 @@ public final class ComparatorPanel extends JPanel {
             running = null;
             setCursor(null);
         }
+        Palette.use(Palette.lookIsDark() && !documentView);
         showEmptySides();
         if (leftPath == null && rightPath == null) {
             comparison = null;
@@ -306,6 +326,7 @@ public final class ComparatorPanel extends JPanel {
                         rightDocument = document;
                         rightHeader.show(path, document);
                     }
+                    Palette.use(Palette.lookIsDark() && !documentView);
                     view.setLines(Lines.alone(document, onLeft, documentView, view.fonts()), -1);
                     view.setWaitingSide(onLeft ? 1 : 0);
                     status.setText("Open the other document to compare.");
@@ -354,6 +375,7 @@ public final class ComparatorPanel extends JPanel {
         rightHeader.show(rightPath, result.right());
         Point at = scroll.getViewport().getViewPosition();
         view.setWaitingSide(-1);
+        Palette.use(Palette.lookIsDark() && !documentView);   // a page is white: the document view keeps light colours
         view.setLines(Lines.of(result, onlyDifferences, onlyComparable, documentView, view.fonts()), -1);
         SwingUtilities.invokeLater(() -> scroll.getViewport().setViewPosition(new Point(0, Math.min(at.y,
                 Math.max(0, view.getHeight() - scroll.getViewport().getHeight())))));
@@ -411,8 +433,7 @@ public final class ComparatorPanel extends JPanel {
     private JPanel ribbon() {
         JPanel ribbon = new JPanel();
         ribbon.setLayout(new BoxLayout(ribbon, BoxLayout.X_AXIS));
-        ribbon.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, Palette.GRID),
+        ribbon.setBorder(BorderFactory.createCompoundBorder(new LookLine(0, 0, 1, 0),
                 BorderFactory.createEmptyBorder(4, 4, 2, 4)));
         ribbon.add(group("Go", 3, button(previous), button(next), button(swap)));
         ButtonGroup views = new ButtonGroup();
@@ -422,7 +443,13 @@ public final class ComparatorPanel extends JPanel {
                 "Each paragraph as Word lays it out: fonts, sizes, colours, alignment, indents, spacing, shading");
         views.add(diff);
         views.add(document);
-        ribbon.add(group("View", 3, diff, document));
+        darkBox.setToolTipText("The window dark, or light: FlatLaf's dark look, or its light one (View ▸ Look)");
+        darkBox.addItemListener(e -> {
+            if (!showingDarkMode) {
+                darkModeListener.accept(darkBox.isSelected());
+            }
+        });
+        ribbon.add(group("View", 3, diff, document, darkBox));
         ribbon.add(group("Text", 3, aspectBox(Aspect.TEXT), aspectBox(Aspect.BLANKS)));
         for (Map.Entry<String, List<Aspect>> layout : LAYOUT) {
             ribbon.add(group(layout.getKey(), 3,
@@ -520,16 +547,16 @@ public final class ComparatorPanel extends JPanel {
                 button.setMargin(new Insets(1, 4, 1, 4));
             }
         }
-        JLabel title = new JLabel(name, JLabel.CENTER);
+        JLabel title = new FaintLabel(name, JLabel.CENTER);
         title.setFont(title.getFont().deriveFont(title.getFont().getSize2D() - 1));
-        title.setForeground(Palette.FAINT);
+
         JPanel group = new JPanel(new BorderLayout(0, 2)) {
             @Override
             public Dimension getMaximumSize() {   // as wide as it needs in the look of the time, as high as the highest
                 return new Dimension(getPreferredSize().width, Integer.MAX_VALUE);
             }
         };
-        group.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Palette.GRID),
+        group.setBorder(BorderFactory.createCompoundBorder(new LookLine(0, 0, 0, 1),
                 BorderFactory.createEmptyBorder(0, 5, 0, 5)));
         group.add(grid, BorderLayout.CENTER);
         group.add(title, BorderLayout.SOUTH);
@@ -709,7 +736,7 @@ public final class ComparatorPanel extends JPanel {
 
         private final boolean onLeft;
         private final JTextField path = new JTextField();
-        private final JLabel about = new JLabel(" ");
+        private final JLabel about = new FaintLabel(" ", JLabel.LEADING);
 
         DocumentHeader(boolean onLeft) {
             super(new BorderLayout(4, 2));
@@ -721,7 +748,6 @@ public final class ComparatorPanel extends JPanel {
             choose.setText("Open\u2026");
             choose.setFocusable(false);
             about.setFont(about.getFont().deriveFont(about.getFont().getSize2D() - 1));
-            about.setForeground(Palette.FAINT);
             add(path, BorderLayout.CENTER);
             add(choose, BorderLayout.EAST);
             add(about, BorderLayout.SOUTH);
@@ -868,6 +894,34 @@ public final class ComparatorPanel extends JPanel {
         @Override
         public int getSourceActions(JComponent component) {
             return otherwise != null ? otherwise.getSourceActions(component) : NONE;
+        }
+    }
+
+    /** A label in the look's greyed text colour, which it takes again when the look changes. */
+    private static final class FaintLabel extends JLabel {
+
+        FaintLabel(String text, int alignment) {
+            super(text, alignment);
+        }
+
+        @Override
+        public void updateUI() {
+            super.updateUI();
+            setForeground(Palette.ofLook("Label.disabledForeground", Color.GRAY));
+        }
+    }
+
+    /** A line on some sides, in the look's separator colour of the time. */
+    private static final class LookLine extends MatteBorder {
+
+        LookLine(int top, int left, int bottom, int right) {
+            super(top, left, bottom, right, Color.GRAY);
+        }
+
+        @Override
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            color = Palette.ofLook("Separator.foreground", Color.GRAY);
+            super.paintBorder(c, g, x, y, width, height);
         }
     }
 
