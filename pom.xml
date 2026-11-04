@@ -10,7 +10,7 @@
   <packaging>jar</packaging>
 
   <name>DocComparator</name>
-  <description>Compares two Word documents (.docx), their text first, side by side; a desktop program with its own Java runtime that never reaches the network.</description>
+  <description>See what changed between two Word documents (.docx): side by side, paragraph by paragraph, the text first and each kind of layout on its own switch. A desktop program with its own Java runtime that never reaches the network.</description>
   <url>https://github.com/j4ckk0/DocComparator</url>
   <inceptionYear>2026</inceptionYear>
 

@@ -1,13 +1,56 @@
 # DocComparator
 
-Compares two Word documents (`.docx`): two versions of one file, or two different documents, one of which took
-paragraphs from the other and changed pieces of their sentences. The text comes first; each kind of layout — heading
-levels, lists, styles, indentation, spacing, tables' layout, cells' shading and borders… — can be compared as well,
-each on its own switch, and the text itself can be left out to compare the layout alone. Paragraphs that nearly match are
-shown side by side, their differences marked within them; tables are compared row by row and column by column.
+[![Licence: Apache 2.0](https://img.shields.io/badge/licence-Apache%202.0-blue)](LICENSE)
+![Java 21](https://img.shields.io/badge/Java-21-orange)
+![Windows | Linux](https://img.shields.io/badge/runs%20on-Windows%20%7C%20Linux-lightgrey)
 
-DocComparator is a desktop program that runs on its own: each distribution carries its Java runtime, so nothing needs
-installing where it is unpacked, and it **never reaches the network** (see "No network").
+**See what changed between two Word documents.** DocComparator puts two `.docx` files side by side, paragraph beside
+paragraph, and marks what differs: the words and letters changed, the paragraphs added, removed or moved, the tables
+row by row and column by column. It compares the text first. Each kind of layout (headings, lists, styles, indents,
+spacing, table layout, cell shading…) has its own switch and is compared only when you ask for it. It compares two
+versions of one file. It also compares two different documents, where one took paragraphs from the other and changed
+pieces of them.
+
+It is a desktop program that runs on its own: each distribution carries its Java runtime, so nothing needs installing
+where it is unpacked, and it **never reaches the network**: no update check, no telemetry, no name lookup (see
+[No network](#no-network)). It speaks French and English.
+
+| | |
+|---|---|
+| You compare documents | [**Screenshots**](#screenshots), then [**The window**](#the-window): what it shows and how to use it |
+| You want it on your machine | [**Build and run**](#build-and-run) and [**Packaging**](#packaging): self-contained archives for Windows and Linux |
+| You read or change the code | [**How it compares**](#how-it-compares) and [**Layout**](#layout) |
+| Your security team asks | [**No network**](#no-network): what the program does not do, and the checks that keep it so |
+
+## Screenshots
+
+**The diff view**: revision A of the sample procedure on the left, revision B on the right, 23 differences in the
+body.
+- **Red** marks text that differs, with the words or letters changed shown darker; a `≠` sign sits in the gutter.
+- **Purple** marks a paragraph on one side only.
+- **Teal** marks a moved paragraph: the *Safety* section, swapped with the next one, says where its match is. Click it
+  to go there.
+- The redrawn figure is a picture that differs.
+- The map at the right shows every difference at its height; a click goes there.
+
+![The diff view](screenshots/diff-view.png)
+
+**The document view**: the same comparison, with each paragraph as Word lays it out through its styles. You see
+headings in their font and colour, the redrawn figure framed in red, and the caption in italics. The paragraphs stay
+paired and their differences stay marked.
+
+![The document view](screenshots/document-view.png)
+
+**A dark look**: the ribbon's *Dark* box turns the window and the diff view dark. The document view keeps its white
+page.
+
+![The diff view in a dark look](screenshots/diff-view-dark.png)
+
+**Before the documents**: each side says how to fill it. You can drop a Word document on it, choose one with
+*Open…*, type its path, or click the side and paste a text (Ctrl+V). The side clicked, where the paste goes, shows in
+blue.
+
+![The window before the documents](screenshots/empty.png)
 
 ## No network
 
@@ -352,7 +395,7 @@ to be published; the distributions, with their JREs, are never uploaded there.
 | `…/text/` | `TextReader` (text pasted into a `WordDocument`, a paragraph a line) |
 | `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `DrawingReader` (a drawing's pictures and text boxes), `StylesReader`, `Numbering`, `FormattingReader`, `Pictures` (a part's pictures, through its relationships, nothing outside fetched) |
 | `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Pairing`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `PropertyNames` |
-| `…/ui/` | `ComparatorPanel` (the documents, read and compared in the background), `OptionControls` (the ribbon and the Compare and View menus, kept in step), `DocumentSource` (what a side compares: a file, or text pasted), `DocumentHeader` and `DropHandler` (a side's head, documents and text dropped or pasted), `StatusLine`, `ClipboardMenu` (the right-click menu: copy a line, paste on its side), `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `ListNumbers` (list items numbered as Word does), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux) |
+| `…/ui/` | `ComparatorPanel` (the documents, read and compared in the background), `OptionControls` (the ribbon and the Compare and View menus, kept in step), `DocumentSource` (what a side compares: a file, or text pasted), `DocumentHeader` and `DropHandler` (a side's head, documents and text dropped or pasted), `StatusLine`, `ClipboardMenu` (the right-click menu: copy a line, paste on its side), `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `ListNumbers` (list items numbered as Word does), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux); the small ones: `Line` and `LineSide` (a line of the view, and each side of it), `Palette` (the colours), `Fonts`, `DocumentOpener`, `RibbonEdge`, `FaintLabel`, `LookLine` |
 | `…/i18n/` | the languages (see "Languages"): `I18nLanguage`, `I18n`, `I18nLabels`, `I18nLanguageBox` |
 | `src/main/resources/org/jtools/doccomparator/i18n/` | the texts, one file per language |
 | `src/main/resources/META-INF/services/` | what installs `NoNetworkResolver` |
