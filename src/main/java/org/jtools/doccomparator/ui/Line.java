@@ -29,19 +29,19 @@ final class Line {
         return title != null;
     }
 
-    /** The stronger look of its sides. */
-    LineSide.Look look() {
-        LineSide.Look look = LineSide.Look.SAME;
+    /** The stronger marking of its sides. */
+    LineSide.Marking marking() {
+        LineSide.Marking marking = LineSide.Marking.SAME;
         if (left != null) {
-            look = look.stronger(left.look);
+            marking = marking.stronger(left.marking);
         }
         if (right != null) {
-            look = look.stronger(right.look);
+            marking = marking.stronger(right.marking);
         }
-        return look;
+        return marking;
     }
 
     boolean differs() {
-        return !isTitle() && look() != LineSide.Look.SAME;
+        return !isTitle() && marking() != LineSide.Marking.SAME;
     }
 }

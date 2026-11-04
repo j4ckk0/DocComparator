@@ -221,10 +221,10 @@ final class Lines {
      */
     private void addTable(Pairing pairing, int index, Map<Integer, Integer> lineOfPairing, Map<LineSide, Integer> moved) {
         TableComparison table = pairing.table();
-        LineSide.Look tableLook = look(pairing);
+        LineSide.Marking tableMarking = marking(pairing);
         boolean comparable = pairing.left() != null && pairing.right() != null || pairing.moved();
-        add(Line.of(pairing.left() == null ? null : tableHeader(pairing, true, tableLook),
-                pairing.right() == null ? null : tableHeader(pairing, false, tableLook)), comparable, lineOfPairing, moved, index);
+        add(Line.of(pairing.left() == null ? null : tableHeader(pairing, true, tableMarking),
+                pairing.right() == null ? null : tableHeader(pairing, false, tableMarking)), comparable, lineOfPairing, moved, index);
         for (int r = 0; r < table.rows().size(); r++) {
             Slot slot = table.rows().get(r);
             boolean rowComparable = comparable && (slot.left() >= 0 && slot.right() >= 0 || slot.moved());
@@ -234,7 +234,7 @@ final class Lines {
         }
     }
 
-    private LineSide tableHeader(Pairing pairing, boolean onLeft, LineSide.Look look) {
+    private LineSide tableHeader(Pairing pairing, boolean onLeft, LineSide.Marking marking) {
         TableComparison table = pairing.table();
         List<LineSide> columns = new ArrayList<>();
         for (int c : shownColumns(table)) {
@@ -244,22 +244,22 @@ final class Lines {
                 columns.add(null);
                 continue;
             }
-            LineSide.Look columnLook = look(slot);
+            LineSide.Marking columnMarking = marking(slot);
             String said = slot.moved() ? " (moved)" : slot.left() < 0 || slot.right() < 0
                     ? (onLeft ? " (removed)" : " (added)") : "";
-            columns.add(new LineSide(columnLook, null, null, null,
+            columns.add(new LineSide(columnMarking, null, null, null,
                     TextBlock.plain(columnName(column) + said, fonts.small(), palette.faint, palette), null, null));
         }
         Item item = onLeft ? pairing.left() : pairing.right();
         String notes = notes(pairing, onLeft, List.of());
-        return new LineSide(look, pairing, null, TextBlock.plain(location(item, true), fonts.small(), palette.faint, palette),
+        return new LineSide(marking, pairing, null, TextBlock.plain(location(item, true), fonts.small(), palette.faint, palette),
                 null, columns, notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), palette.faint, palette));
     }
 
     private LineSide tableRow(Pairing pairing, int r, boolean onLeft) {
         TableComparison table = pairing.table();
         Slot rowSlot = table.rows().get(r);
-        LineSide.Look look = look(rowSlot);
+        LineSide.Marking marking = marking(rowSlot);
         List<LineSide> columns = new ArrayList<>();
         for (int c : shownColumns(table)) {
             Slot columnSlot = table.columns().get(c);
@@ -269,26 +269,26 @@ final class Lines {
             }
             Pairing cell = table.cell(r, c);
             if (cell == null || (onLeft ? cell.left() : cell.right()) == null) {
-                columns.add(new LineSide(LineSide.Look.SAME, null, null, null,
+                columns.add(new LineSide(LineSide.Marking.SAME, null, null, null,
                         TextBlock.plain("", fonts.text(), palette.text, palette), null, null));   // under a merged cell
                 continue;
             }
-            LineSide.Look cellLook = look(cell).stronger(look(columnSlot)).stronger(look(rowSlot));
-            LineSide shown = side(cell, onLeft, cellLook);
+            LineSide.Marking cellMarking = marking(cell).stronger(marking(columnSlot)).stronger(marking(rowSlot));
+            LineSide shown = side(cell, onLeft, cellMarking);
             if (styles != null) {
                 shown.shading = DocumentLook.shading((onLeft ? cell.left() : cell.right()).cell());
             }
             columns.add(shown);
-            look = look.stronger(cellLook);
+            marking = marking.stronger(cellMarking);
         }
         int number = (onLeft ? rowSlot.left() : rowSlot.right()) + 1;
         List<PropertyDifference> rowProperties = table.rowProperties().get(r);
         if (!rowProperties.isEmpty()) {
-            look = look.stronger(LineSide.Look.OTHERWISE);
+            marking = marking.stronger(LineSide.Marking.OTHERWISE);
         }
         String notes = String.join("  \u00B7  ", rowProperties.stream()
                 .map(d -> d.property() + ": " + (onLeft ? d.left() : d.right())).toList());
-        return new LineSide(look, pairing, String.valueOf(number), null, null, columns,
+        return new LineSide(marking, pairing, String.valueOf(number), null, null, columns,
                 notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), palette.faint, palette));
     }
 
@@ -313,16 +313,16 @@ final class Lines {
         return name.toString();
     }
 
-    private static LineSide.Look look(Pairing pairing) {
+    private static LineSide.Marking marking(Pairing pairing) {
         if (pairing.moved() && pairing.status() != Pairing.Status.SAME) {
-            return LineSide.Look.MOVED;
+            return LineSide.Marking.MOVED;
         }
         return switch (pairing.status()) {
-            case SAME -> LineSide.Look.SAME;
-            case MOVED -> LineSide.Look.MOVED;
-            case OTHERWISE -> LineSide.Look.OTHERWISE;
-            case CHANGED -> LineSide.Look.CHANGED;
-            case LEFT_ONLY, RIGHT_ONLY -> LineSide.Look.ORPHAN;
+            case SAME -> LineSide.Marking.SAME;
+            case MOVED -> LineSide.Marking.MOVED;
+            case OTHERWISE -> LineSide.Marking.OTHERWISE;
+            case CHANGED -> LineSide.Marking.CHANGED;
+            case LEFT_ONLY, RIGHT_ONLY -> LineSide.Marking.ORPHAN;
         };
     }
 
@@ -330,25 +330,25 @@ final class Lines {
      * How a row or a column of a table looks: moved, with the table layout counted; on one side only, with the text or
      * the table layout counted (it holds text, it changes the layout); the same otherwise.
      */
-    private LineSide.Look look(Slot slot) {
+    private LineSide.Marking marking(Slot slot) {
         boolean layout = options.has(Aspect.TABLE_LAYOUT);
         if (slot.moved()) {
-            return layout ? LineSide.Look.MOVED : LineSide.Look.SAME;
+            return layout ? LineSide.Marking.MOVED : LineSide.Marking.SAME;
         }
         if (slot.left() < 0 || slot.right() < 0) {
-            return layout || options.text() ? LineSide.Look.ORPHAN : LineSide.Look.SAME;
+            return layout || options.text() ? LineSide.Marking.ORPHAN : LineSide.Marking.SAME;
         }
-        return LineSide.Look.SAME;
+        return LineSide.Marking.SAME;
     }
 
     // -----------------------------------------------------------------------------------------------------------------
     // Paragraphs
 
     private LineSide side(Pairing pairing, boolean onLeft) {
-        return side(pairing, onLeft, look(pairing));
+        return side(pairing, onLeft, marking(pairing));
     }
 
-    private LineSide side(Pairing pairing, boolean onLeft, LineSide.Look look) {
+    private LineSide side(Pairing pairing, boolean onLeft, LineSide.Marking marking) {
         Item item = onLeft ? pairing.left() : pairing.right();
         // alone: nothing on the other side compared with it (a moved row of a table is compared with its match)
         boolean alone = (pairing.left() == null || pairing.right() == null) && !pairing.moved()
@@ -374,7 +374,7 @@ final class Lines {
         String location = inTable ? null : location(item, false);
         TextBlock caption = location == null ? null : TextBlock.plain(location, fonts.small(), palette.faint, palette);
         String notes = notes(pairing, onLeft, formatting);
-        return new LineSide(look, inTable ? null : pairing, marker, caption, text, null,
+        return new LineSide(marking, inTable ? null : pairing, marker, caption, text, null,
                 notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), palette.faint, palette));
     }
 
@@ -383,7 +383,7 @@ final class Lines {
         String text = property + ": " + value;
         List<Span> spans = List.of(new Span(0, property.length() + 2, Span.Kind.SAME),
                 new Span(property.length() + 2, text.length(), Span.Kind.CHANGED));
-        return new LineSide(LineSide.Look.CHANGED, null, null, null,
+        return new LineSide(LineSide.Marking.CHANGED, null, null, null,
                 new TextBlock(text, fonts.text(), palette.text, palette, spans, List.of(), " "), null, null);
     }
 

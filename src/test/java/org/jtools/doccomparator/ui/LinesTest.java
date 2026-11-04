@@ -56,7 +56,7 @@ class LinesTest {
         int line = lineWith(lines, "Document KP-MP-012", true);
         assertEquals("Trainer: J. Petit. Duration: half a day, on the bench, in groups of four.",
                 lines.get(line).right.text.text());
-        assertEquals(LineSide.Look.ORPHAN, lines.get(line).look());
+        assertEquals(LineSide.Marking.ORPHAN, lines.get(line).marking());
     }
 
     @Test
@@ -124,7 +124,7 @@ class LinesTest {
         assertEquals(List.of("Body", "Headers and footers", "Footnotes and endnotes"),
                 lines.stream().filter(Line::isTitle).map(line -> line.title).toList(), "no difference counted");
         assertTrue(lines.stream().filter(line -> !line.isTitle())
-                .allMatch(line -> line.left == null && line.right != null && line.look() == LineSide.Look.SAME));
+                .allMatch(line -> line.left == null && line.right != null && line.marking() == LineSide.Marking.SAME));
         assertEquals("Maintenance Procedure \u2014 KP-40 Hydraulic Pump", lines.get(1).right.text.text());
         assertTrue(lines.stream().anyMatch(line -> line.right != null && line.right.columns != null), "its table");
     }
@@ -260,7 +260,7 @@ class LinesTest {
     /** The differences marked in the left text of the line starting so: none, "". */
     private static String lines(List<Line> lines, String start) {
         Line line = lines.get(lineWith(lines, start, true));
-        assertEquals(LineSide.Look.SAME, line.look());
+        assertEquals(LineSide.Marking.SAME, line.marking());
         return line.left.text.text().equals(line.right.text.text()) ? "" : "differs";
     }
 

@@ -369,7 +369,7 @@ final class ComparisonView extends JComponent implements Scrollable {
             hatch(g, x, y, width, height);
             return;
         }
-        g.setColor(palette.line(side.look));
+        g.setColor(palette.line(side.marking));
         g.fillRect(x, y, width, height);
         if (side.marker != null) {
             g.setColor(palette.faint);
@@ -415,8 +415,8 @@ final class ComparisonView extends JComponent implements Scrollable {
             if (column == null) {
                 hatch(g, left, top, right - left, height);
             } else {
-                g.setColor(column.look == LineSide.Look.SAME && column.shading != null ? column.shading
-                        : palette.line(column.look));
+                g.setColor(column.marking == LineSide.Marking.SAME && column.shading != null ? column.shading
+                        : palette.line(column.marking));
                 g.fillRect(left, top, right - left, height);
                 paintContent(g, column, left + LineSide.PADDING, top);
             }
@@ -438,24 +438,24 @@ final class ComparisonView extends JComponent implements Scrollable {
 
     /** Between the sides, a sign of how the line compares: ≠ changed, ≈ the same text otherwise, arrows for the rest. */
     private void paintGutter(Graphics2D g, Line line, int x, int y, int height) {
-        LineSide.Look look = line.look();
-        if (look == LineSide.Look.SAME) {
+        LineSide.Marking marking = line.marking();
+        if (marking == LineSide.Marking.SAME) {
             g.setColor(palette.background);
             g.fillRect(x, y, GUTTER, height);
             return;
         }
-        Color mark = palette.mark(look);
-        g.setColor(palette.line(look));
+        Color mark = palette.mark(marking);
+        g.setColor(palette.line(marking));
         g.fillRect(x, y, GUTTER, height);
         g.setColor(mark);
         g.fillRect(x, y, 3, height);
         g.fillRect(x + GUTTER - 3, y, 3, height);
         int cx = x + GUTTER / 2;
         int cy = y + Math.min(height / 2, 14);
-        switch (look) {
+        switch (marking) {
             case CHANGED, OTHERWISE -> {
                 g.setFont(fonts.heading());
-                String sign = look == LineSide.Look.CHANGED ? "≠" : "≈";
+                String sign = marking == LineSide.Marking.CHANGED ? "≠" : "≈";
                 g.drawString(sign, cx - g.getFontMetrics().stringWidth(sign) / 2, cy + g.getFontMetrics().getAscent() / 2 - 1);
             }
             case MOVED -> {
@@ -464,10 +464,10 @@ final class ComparisonView extends JComponent implements Scrollable {
                 g.fill(arrow(cx, cy, down ? 1 : -1, true));
             }
             case ORPHAN -> {
-                if (line.left != null && line.left.look == LineSide.Look.ORPHAN) {
+                if (line.left != null && line.left.marking == LineSide.Marking.ORPHAN) {
                     g.fill(arrow(cx - 3, cy, -1, false));
                 }
-                if (line.right != null && line.right.look == LineSide.Look.ORPHAN) {
+                if (line.right != null && line.right.marking == LineSide.Marking.ORPHAN) {
                     g.fill(arrow(cx + 3, cy, 1, false));
                 }
             }
@@ -509,10 +509,10 @@ final class ComparisonView extends JComponent implements Scrollable {
         Line line = lines.get(index);
         LineSide side = sideAt(line, e.getX());
         if (side == null) {
-            return line.left == null && line.right == null ? null : describe(line.look());
+            return line.left == null && line.right == null ? null : describe(line.marking());
         }
         if (side.columns != null) {
-            return side.moved() ? "Moved: click to go to its match" : describe(side.look);
+            return side.moved() ? "Moved: click to go to its match" : describe(side.marking);
         }
         int column = columnWidth(getWidth());
         int x = e.getX() - (side == line.left ? 0 : column + GUTTER) - MARGIN;
@@ -522,11 +522,11 @@ final class ComparisonView extends JComponent implements Scrollable {
             return "<html>Formatted otherwise:<br>" + formatting.stream().map(d -> escape(d.toString()))
                     .collect(Collectors.joining("<br>")) + "</html>";
         }
-        return side.moved() ? "Moved: click to go to its match" : describe(side.look);
+        return side.moved() ? "Moved: click to go to its match" : describe(side.marking);
     }
 
-    private static String describe(LineSide.Look look) {
-        return switch (look) {
+    private static String describe(LineSide.Marking marking) {
+        return switch (marking) {
             case SAME -> null;
             case CHANGED -> "The text differs";
             case OTHERWISE -> "The same text; its structure or style differs";

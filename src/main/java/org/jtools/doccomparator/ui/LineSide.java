@@ -14,11 +14,11 @@ import org.jtools.doccomparator.compare.Pairing;
 final class LineSide {
 
     /** How the paragraph compares, the colour it is shown in. */
-    enum Look {
+    enum Marking {
         SAME, OTHERWISE, MOVED, ORPHAN, CHANGED;
 
-        /** The look that says more of two: a line shows its stronger side. */
-        Look stronger(Look other) {
+        /** The marking that says more of two: a line shows its stronger side. */
+        Marking stronger(Marking other) {
             return other.ordinal() > ordinal() ? other : this;
         }
     }
@@ -28,7 +28,7 @@ final class LineSide {
     /** The share of a table's width a column has on the side that has not got it. */
     static final float MISSING_COLUMN = 0.3f;
 
-    final Look look;
+    final Marking marking;
     /** The pairing it shows (for a row of a table, the table's); null for a property of the document. */
     final Pairing pairing;
     /** A short sign in the margin: the heading level ("H2"), a list item's mark, a table row's number. */
@@ -49,8 +49,8 @@ final class LineSide {
     private float[] columnWidth = new float[0];
     private int gridHeight;
 
-    LineSide(Look look, Pairing pairing, String marker, TextBlock caption, TextBlock text, List<LineSide> columns, TextBlock notes) {
-        this.look = look;
+    LineSide(Marking marking, Pairing pairing, String marker, TextBlock caption, TextBlock text, List<LineSide> columns, TextBlock notes) {
+        this.marking = marking;
         this.pairing = pairing;
         this.marker = marker;
         this.caption = caption;
@@ -60,7 +60,7 @@ final class LineSide {
     }
 
     boolean differs() {
-        return look != Look.SAME;
+        return marking != Marking.SAME;
     }
 
     boolean moved() {

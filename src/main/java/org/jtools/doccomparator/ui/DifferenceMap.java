@@ -76,7 +76,7 @@ final class DifferenceMap extends JComponent {
         }
         for (Line line : view.lines()) {
             if (line.differs()) {
-                g.setColor(palette.mark(line.look()));
+                g.setColor(palette.mark(line.marking()));
                 int y = INSET + (int) (line.top * scale);
                 g.fillRect(INSET + 1, y, getWidth() - 2 * INSET - 2, Math.max(2, (int) Math.ceil(line.height * scale)));
             }

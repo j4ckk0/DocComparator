@@ -93,8 +93,8 @@ final class Palette {
         return new Color(color.getRed(), color.getGreen(), color.getBlue(), 150);
     }
 
-    Color line(LineSide.Look look) {
-        return switch (look) {
+    Color line(LineSide.Marking marking) {
+        return switch (marking) {
             case SAME -> background;
             case CHANGED -> changedLine;
             case ORPHAN -> orphanLine;
@@ -103,8 +103,8 @@ final class Palette {
         };
     }
 
-    Color mark(LineSide.Look look) {
-        return switch (look) {
+    Color mark(LineSide.Marking marking) {
+        return switch (marking) {
             case SAME -> background;
             case CHANGED -> CHANGED_MARK;
             case ORPHAN -> ORPHAN_MARK;
