@@ -116,6 +116,17 @@ class LinesTest {
     }
 
     @Test
+    void aDocumentAloneIsShownOnItsSideAsItIs() throws IOException {
+        List<Line> lines = Lines.alone(DocxReader.read(Path.of("samples", "procedure-revA.docx")), false, FONTS);
+        assertEquals(List.of("Body", "Headers and footers", "Footnotes and endnotes"),
+                lines.stream().filter(Line::isTitle).map(line -> line.title).toList(), "no difference counted");
+        assertTrue(lines.stream().filter(line -> !line.isTitle())
+                .allMatch(line -> line.left == null && line.right != null && line.look() == Cell.Look.SAME));
+        assertEquals("Maintenance Procedure \u2014 KP-40 Hydraulic Pump", lines.get(1).right.text.text());
+        assertTrue(lines.stream().anyMatch(line -> line.right != null && line.right.columns != null), "its table");
+    }
+
+    @Test
     void theViewIsDrawnWithoutAScreen() throws IOException {
         ComparisonView view = new ComparisonView();
         view.setLines(Lines.of(compare("training-handbook.docx"), false, view.fonts()), 3);

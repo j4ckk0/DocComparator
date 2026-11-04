@@ -206,15 +206,22 @@ public final class ComparatorPanel extends JPanel {
         rightHeader.show(rightPath, null);
         titleListener.accept(title());
         updateActions();
-        if (leftPath == null || rightPath == null) {
-            comparison = null;
-            view.setLines(List.of(), -1);
-            status.setText(leftPath == null && rightPath == null ? " " : "Open the other document to compare.");
-            showEmptySides();
-            return;
-        }
         if (running != null) {
             running.cancel(false);
+            running = null;
+            setCursor(null);
+        }
+        showEmptySides();
+        if (leftPath == null && rightPath == null) {
+            comparison = null;
+            view.setLines(List.of(), -1);
+            view.setWaitingSide(-1);
+            status.setText(" ");
+            return;
+        }
+        if (leftPath == null || rightPath == null) {
+            showAlone(leftPath != null);
+            return;
         }
         Path left = leftPath;
         Path right = rightPath;
@@ -257,6 +264,56 @@ public final class ComparatorPanel extends JPanel {
         worker.execute();
     }
 
+    /**
+     * One document open, the other not yet: the one shown on its side as it is, nothing compared; the other side a
+     * place for its document — as Beyond Compare shows a file before the other.
+     */
+    private void showAlone(boolean onLeft) {
+        comparison = null;
+        Path path = onLeft ? leftPath : rightPath;
+        WordDocument known = onLeft ? leftDocument : rightDocument;
+        status.setText("Reading\u2026");
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        SwingWorker<WordDocument, Void> worker = new SwingWorker<>() {
+            @Override
+            protected WordDocument doInBackground() throws IOException {
+                return known != null ? known : read(path);
+            }
+
+            @Override
+            protected void done() {
+                if (isCancelled() || running != this) {
+                    return;
+                }
+                running = null;
+                setCursor(null);
+                try {
+                    WordDocument document = get();
+                    if (onLeft) {
+                        leftDocument = document;
+                        leftHeader.show(path, document);
+                    } else {
+                        rightDocument = document;
+                        rightHeader.show(path, document);
+                    }
+                    view.setLines(Lines.alone(document, onLeft, view.fonts()), -1);
+                    view.setWaitingSide(onLeft ? 1 : 0);
+                    status.setText("Open the other document to compare.");
+                    updateActions();
+                } catch (ExecutionException e) {
+                    Throwable cause = e.getCause();
+                    status.setText("Not read: " + cause.getMessage());
+                    JOptionPane.showMessageDialog(ComparatorPanel.this, cause.getMessage(), "Cannot read",
+                            JOptionPane.ERROR_MESSAGE);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        };
+        running = worker;
+        worker.execute();
+    }
+
     /** While a side has no document: what goes there, and how to open it; the side opened, its document's name. */
     private void showEmptySides() {
         view.setEmptySides(emptySide(leftPath, "Left", "Ctrl+O"), emptySide(rightPath, "Right", "Ctrl+Shift+O"));
@@ -286,6 +343,7 @@ public final class ComparatorPanel extends JPanel {
         leftHeader.show(leftPath, result.left());
         rightHeader.show(rightPath, result.right());
         Point at = scroll.getViewport().getViewPosition();
+        view.setWaitingSide(-1);
         view.setLines(Lines.of(result, onlyDifferences, onlyComparable, view.fonts()), -1);
         SwingUtilities.invokeLater(() -> scroll.getViewport().setViewPosition(new Point(0, Math.min(at.y,
                 Math.max(0, view.getHeight() - scroll.getViewport().getHeight())))));

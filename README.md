@@ -86,7 +86,7 @@ doccomparator.sh old.docx new.docx               # the same, from a distribution
 ```
 
 Until both are open, the window shows the two sides, each a place framed with dashes saying which document goes there
-and how to open it; the side opened, its document's name. Each side has its head, as in Beyond Compare: the path of its document — type one and press Enter — and *Open…* to
+and how to open it; one document opened, it is shown on its side as it is, nothing compared, the other side waiting. Each side has its head, as in Beyond Compare: the path of its document — type one and press Enter — and *Open…* to
 choose it (Ctrl+O on the left, Ctrl+Shift+O on the right, or the File menu); under them, its template and whether it
 had tracked changes. Documents dropped on the window open too: two at once, left and right; one, on the side it is
 dropped on, its head included. Dropping works from Windows' Explorer and from Linux desktops (which drop files as

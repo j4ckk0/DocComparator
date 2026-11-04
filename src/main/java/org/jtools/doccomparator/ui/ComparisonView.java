@@ -100,6 +100,18 @@ final class ComparisonView extends JComponent implements Scrollable {
         repaint();
     }
 
+    /** The side waiting for its document while the other's is shown (0 left, 1 right); -1 for none. */
+    private int waitingSide = -1;
+
+    void setWaitingSide(int side) {
+        waitingSide = side;
+        if (getParent() instanceof JViewport viewport) {
+            // the waiting side stays where it is as the other scrolls: the view drawn anew, not shifted, at each step
+            viewport.setScrollMode(side >= 0 ? JViewport.SIMPLE_SCROLL_MODE : JViewport.BLIT_SCROLL_MODE);
+        }
+        repaint();
+    }
+
     int current() {
         return current;
     }
@@ -247,6 +259,9 @@ final class ComparisonView extends JComponent implements Scrollable {
             for (int i = first; i < lines.size() && lines.get(i).top < clip.y + clip.height; i++) {
                 paintLine(g, lines.get(i), i == current);
             }
+            if (waitingSide >= 0) {
+                paintSide(g, waitingSide, true);   // over its empty half, where it stays as the other scrolls
+            }
         } finally {
             g.dispose();
         }
@@ -257,34 +272,43 @@ final class ComparisonView extends JComponent implements Scrollable {
      * to open it — two documents, side by side, as they will be compared.
      */
     private void paintEmpty(Graphics2D g) {
+        paintSide(g, 0, false);
+        paintSide(g, 1, false);
+    }
+
+    /** A side waiting for its document, or opened: a place framed with dashes, saying so. */
+    private void paintSide(Graphics2D g, int side, boolean overLines) {
         Rectangle visible = getVisibleRect();
         int column = columnWidth(getWidth());
-        int[][] sides = {{0, column}, {column + GUTTER, getWidth() - column - GUTTER}};
+        int left = side == 0 ? 0 : column + GUTTER;
+        int sideWidth = side == 0 ? column : getWidth() - column - GUTTER;
+        if (overLines) {
+            g.setColor(Palette.BACKGROUND);
+            g.fillRect(left, visible.y, sideWidth, visible.height);
+        }
+        int x = left + 16;
+        int y = visible.y + 16;
+        int width = sideWidth - 32;
+        int height = Math.max(120, visible.height - 32);
+        EmptySide says = emptySides[side];
+        boolean opened = says.opened();
+        g.setColor(opened ? Palette.BACKGROUND : Palette.NO_SIDE);
+        g.fillRoundRect(x, y, width, height, 16, 16);
+        g.setColor(opened ? Palette.GRID : Palette.FAINT);
+        g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1, new float[] {8, 6}, 0));
+        g.drawRoundRect(x, y, width, height, 16, 16);
+        g.setStroke(new BasicStroke(1));
         Font title = fonts.heading().deriveFont(fonts.heading().getSize2D() + 4);
-        for (int side = 0; side < 2; side++) {
-            int x = sides[side][0] + 16;
-            int y = visible.y + 16;
-            int width = sides[side][1] - 32;
-            int height = Math.max(120, visible.height - 32);
-            EmptySide says = emptySides[side];
-            boolean opened = says.opened();
-            g.setColor(opened ? Palette.BACKGROUND : Palette.NO_SIDE);
-            g.fillRoundRect(x, y, width, height, 16, 16);
-            g.setColor(opened ? Palette.GRID : Palette.FAINT);
-            g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1, new float[] {8, 6}, 0));
-            g.drawRoundRect(x, y, width, height, 16, 16);
-            g.setStroke(new BasicStroke(1));
-            int lineY = y + height / 2 - ((says.lines().size() + 1) * g.getFontMetrics(fonts.text()).getHeight()) / 2;
-            g.setFont(title);
-            g.setColor(Palette.TEXT);
-            g.drawString(says.title(), x + Math.max(8, (width - g.getFontMetrics().stringWidth(says.title())) / 2), lineY);
-            lineY += g.getFontMetrics().getHeight() + 8;
-            g.setFont(fonts.text());
-            g.setColor(Palette.FAINT);
-            for (String line : says.lines()) {
-                g.drawString(line, x + Math.max(8, (width - g.getFontMetrics().stringWidth(line)) / 2), lineY);
-                lineY += g.getFontMetrics().getHeight();
-            }
+        int lineY = y + height / 2 - ((says.lines().size() + 1) * g.getFontMetrics(fonts.text()).getHeight()) / 2;
+        g.setFont(title);
+        g.setColor(Palette.TEXT);
+        g.drawString(says.title(), x + Math.max(8, (width - g.getFontMetrics().stringWidth(says.title())) / 2), lineY);
+        lineY += g.getFontMetrics().getHeight() + 8;
+        g.setFont(fonts.text());
+        g.setColor(Palette.FAINT);
+        for (String line : says.lines()) {
+            g.drawString(line, x + Math.max(8, (width - g.getFontMetrics().stringWidth(line)) / 2), lineY);
+            lineY += g.getFontMetrics().getHeight();
         }
     }
 

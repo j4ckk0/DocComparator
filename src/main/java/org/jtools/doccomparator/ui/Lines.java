@@ -10,6 +10,7 @@ import java.util.Set;
 import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import org.jtools.doccomparator.compare.Comparison;
+import org.jtools.doccomparator.compare.DocumentComparer;
 import org.jtools.doccomparator.compare.FormatSpan;
 import org.jtools.doccomparator.compare.Item;
 import org.jtools.doccomparator.compare.PropertyDifference;
@@ -20,6 +21,7 @@ import org.jtools.doccomparator.compare.StoryComparison;
 import org.jtools.doccomparator.compare.TableComparison;
 import org.jtools.doccomparator.document.ListItem;
 import org.jtools.doccomparator.document.Story;
+import org.jtools.doccomparator.document.WordDocument;
 
 /**
  * A comparison into the lines of the view: a title for each part, then its rows. Rows with a paragraph on one side
@@ -50,6 +52,25 @@ final class Lines {
 
     static List<Line> of(Comparison comparison, boolean onlyDifferences, Fonts fonts) {
         return of(comparison, onlyDifferences, false, fonts);
+    }
+
+    /**
+     * The lines of one document alone, on its side, the other empty: its parts, paragraphs and tables as they are,
+     * nothing compared — until the other document is there.
+     */
+    static List<Line> alone(WordDocument document, boolean onLeft, Fonts fonts) {
+        Comparison itself = DocumentComparer.compare(document, document,
+                CompareOptions.TEXT_ONLY.with(Aspect.HEADERS_AND_FOOTERS, true));
+        List<Line> lines = new ArrayList<>();
+        for (Line line : of(itself, false, fonts)) {
+            if (line.isTitle()) {
+                int dash = line.title.indexOf(" \u2014 ");
+                lines.add(Line.title(dash < 0 ? line.title : line.title.substring(0, dash)));
+            } else {
+                lines.add(onLeft ? Line.of(line.left, null) : Line.of(null, line.right));
+            }
+        }
+        return lines;
     }
 
     /**
