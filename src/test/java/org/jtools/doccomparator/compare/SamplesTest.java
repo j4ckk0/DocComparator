@@ -62,11 +62,17 @@ class SamplesTest {
         assertEquals(List.of(new PropertyDifference("b", "true", "(none)"), new PropertyDifference("u", "(none)", "single")),
                 underlined.diff().rightFormatting().getFirst().differences());
 
-        Row row = rowOnRight(body, "Drain valve seal");
-        assertEquals(Row.Status.RIGHT_ONLY, row.status(), "a table row added");
-        assertEquals("table cell (row 4, cell 1)", row.right().placeInStructure());
-        Row quantity = rowOnRight(body, "3 litres");
+        Row table = body.stream().filter(r -> r.table() != null).findFirst().orElseThrow();
+        assertEquals(Row.Status.CHANGED, table.status());
+        assertTrue(table.diff().properties().contains(new PropertyDifference("rows", "4", "5")));
+        TableComparison cells = table.table();
+        assertEquals(List.of(new Slot(0, 0, -1), new Slot(1, 1, -1), new Slot(2, 2, -1)), cells.columns());
+        assertEquals(new Slot(-1, 3, -1), cells.rows().get(3), "a row added");
+        assertEquals("Drain valve seal", cells.cell(3, 0).right().text());
+        assertEquals(Row.Status.RIGHT_ONLY, cells.cell(3, 0).status());
+        Row quantity = cells.cell(4, 2);
         assertEquals("{2} litres", marked(quantity.left().text(), quantity.diff().left()).replace("|", ""));
+        assertEquals(Row.Status.SAME, cells.cell(4, 0).status(), "the rows after the one added are in place");
 
         assertTrue(comparison.documentDifferences().contains(new PropertyDifference("template",
                 "Keldar-Procedure.dotx", "Keldar-Procedure-2026.dotx")));
@@ -128,6 +134,10 @@ class SamplesTest {
         assertCopiedFrom(body, "Fit a new element (reference", "Fit a new element, reference", false);
         assertCopiedFrom(body, "Record the date", "Record the date", false);
         assertCopiedFrom(body, "The module does not cover", "Repairs of the motor", true);
+
+        TableComparison table = body.stream().filter(r -> r.table() != null).findFirst().orElseThrow().table();
+        assertEquals(new Slot(2, -1, -1), table.columns().get(2), "the quantities left behind");
+        assertEquals(new Slot(3, -1, -1), table.rows().get(3), "and the oil");
 
         Row padlock = rowOnRight(body, "Before any operation");
         assertEquals("Before any operation, the pump must be stopped, isolated and locked out with |{your own}| padlock.",

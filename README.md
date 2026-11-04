@@ -3,8 +3,7 @@
 Compares two Word documents (`.docx`): two versions of one file, or two different documents, one of which took
 paragraphs from the other and changed pieces of their sentences. The text comes first; the structure, the blanks, the
 template, the headers and footers and the styles can each be compared or left out. Paragraphs that nearly match are
-shown side by side, their differences marked within them. *(To come: the window, still empty; the comparison itself
-is done — see "How it compares".)*
+shown side by side, their differences marked within them; tables are compared row by row and column by column.
 
 DocComparator is a desktop program that runs on its own: each distribution carries its Java runtime, so nothing needs
 installing where it is unpacked, and it **never reaches the network** (see "No network").
@@ -49,8 +48,9 @@ What stays outside these checks:
 - **`DocComparator.exe`**, should its `jre\` folder be removed, falls back to a message offering Java's download page.
   It stays out of the way while the distribution is whole.
 - **The system.** Windows may check a program downloaded from the internet (SmartScreen) the first time it is opened;
-  a distribution copied by other means is not marked so. A file dialog that lists the network drives the system has
-  mapped reads them: something to keep in mind when DocComparator opens files. And a document chosen on a network drive
+  a distribution copied by other means is not marked so. The file dialog of *Open left…* and *Open right…* lists the drives
+  the system has mapped, and reads those it is shown, network ones included: dropping the files on the window, or
+  giving them at the start, opens no dialog at all. And a document chosen on a network drive
   is read over the network, by the system: the program reads only the files it is given.
 
 The **build**, not the program, uses the network: `scripts/setup.sh` downloads the externals, and the first Maven build
@@ -76,12 +76,36 @@ downloads its plugins into `~/.m2`. After that, `mvn -o` builds offline.
 Not read yet: comments, pictures (but the text boxes they hold), the numbers a list shows (its format is read), what an
 abstract list borrows from a numbering style.
 
+## The window
+
+```bash
+scripts/run.sh                                   # then open the two documents
+scripts/run.sh old.docx new.docx                 # or compare them at once
+doccomparator.sh old.docx new.docx               # the same, from a distribution (DocComparator.exe old.docx new.docx)
+```
+
+Documents are opened from the toolbar (Ctrl+O on the left, Ctrl+Shift+O on the right), or dropped on the window: two
+at once, or each on its side. The two sides scroll as one, each paragraph beside its match, as high as the taller.
+
+- **Colours**, after Beyond Compare's: red, the text differs, the very words or letters marked darker; purple, on one
+  side only; teal, moved; amber, the same text but its structure or style differs; blue, blanks that differ but do not
+  count. A red bar marks where the other side has text this one has not; a dotted line, text formatted otherwise (its
+  tooltip says how). A sign between the sides says the same at a glance.
+- **Moved paragraphs** are shown where they are on each side; a click on one goes to its match.
+- **Tables** take a line for their columns, lettered A, B, C… on each side, a column added, removed or moved said so,
+  then a line for each row, its cells under their columns, an empty narrow place where a side has not got a column.
+- **The map** at the right shows every difference at its height in the documents; a click goes there.
+- **Previous and next difference**: F7 and Shift+F7, or the toolbar. *Only differences* hides the lines that are the
+  same.
+- **The options** in the toolbar compare again at once; the documents are not read again.
+- What is said under a paragraph: what else differs (heading, list, style, formatting), on each side its own value.
+  A right click copies a side's text.
+
 ## How it compares
 
 `DocumentComparer` compares two `WordDocument`s, with the JDK alone, in two steps, then lays out the rows of a
-side-by-side view (`Comparison`): the body, the headers and footers, the footnotes and endnotes, each on its own. Tables
-and text boxes are opened into their paragraphs, each knowing its place (table, row, cell): a paragraph that left a
-table is still found.
+side-by-side view (`Comparison`): the body, the headers and footers, the footnotes and endnotes, each on its own. Text
+boxes are opened into their paragraphs and tables; a table is compared as a whole (see "Tables").
 
 **Step one, pairing the paragraphs** (`Pairer`). Two paragraphs go together when their text is the same, or close: their
 *similarity* is the share of their words they keep in order, from 0 to 1.
@@ -102,11 +126,27 @@ Then, where a word was replaced by one close to it (`colour` → `color`, `bench
 numbers stay whole (`2025` → `2026`). Each side gets its spans: the same, changed, only on this side, absent here
 (where the other side has text), unimportant (blanks, when they are left out).
 
+**Tables** (`TableComparer`): their layout, then their content, whatever their styles.
+
+1. Tables are paired as paragraphs are, by the text of their cells, a table with a table only: added, removed, moved,
+   changed.
+2. Their **columns** are paired, each as the text of its cells top to bottom: added, removed, moved. Columns left over
+   whose header (first cell) is alike are paired in place: a column whose values were all rewritten under the same
+   header is still that column.
+3. Their **rows** are paired the same way, each as the text of its cells: added, removed, moved, changed.
+4. Where a row meets a column, the two **cells** are compared as two paragraphs; a cell of a moved row or column with
+   its match.
+
+Cells are placed on the table's grid, as Word lays it out: a cell spanning columns (`gridSpan`) at the first of them, a
+cell merged with the one above (`vMerge`) at the top one. A cell's paragraphs are one text, a line break between them;
+a table within a cell is read as text. Styles count only with the styles: the table's style, the paragraphs' and the
+text's in its cells.
+
 **The options** (`CompareOptions`): the text is always compared; the rest can each be left out.
 
 | Option | Compared |
 |---|---|
-| structure | heading levels, lists, a paragraph's place (text, table cell, text box), the number of sections |
+| structure | heading levels, lists, a paragraph's place (text, text box), tables' numbers of rows and columns, the number of sections |
 | blanks | spaces, tabs and breaks as they are, and empty paragraphs; left out, a difference of blanks alone is shown, but does not count |
 | template | the template attached, the one named |
 | headers and footers | their paragraphs, as a story of their own |
@@ -176,12 +216,13 @@ Both are built from either system. Previous versions' archives are removed from 
 
 | Path | What it holds |
 |---|---|
-| `src/main/java/org/jtools/doccomparator/` | `Launcher` (the entry point), `MainWindow` (the window), `NoNetworkResolver` (see "No network") |
+| `src/main/java/org/jtools/doccomparator/` | `Launcher` (the entry point, given two documents or none), `MainWindow` (the window, its menus), `NoNetworkResolver` (see "No network") |
 | `…/document/` | what a Word document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
 | `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `StylesReader`, `Numbering`, `FormattingReader` |
-| `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Row`s), `Pairer` (step one), `ParagraphComparer` (step two), `Diff` (Myers' algorithm), `CompareOptions` |
+| `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Row`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` |
+| `…/ui/` | `ComparatorPanel` (the toolbar, the sides, the status line), `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked) |
 | `src/main/resources/META-INF/services/` | what installs `NoNetworkResolver` |
-| `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `compare/`: each step, and `SamplesTest` |
+| `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `compare/`: each step, tables, and `SamplesTest`; `ui/LinesTest`, the view, drawn without a screen |
 | `samples/` | the sample documents, and the script that writes them (see "Samples") |
 | `src/dist/`, `src/assembly/` | the launchers of the distributions, and what goes in them |
 | `scripts/` | the scripts above |

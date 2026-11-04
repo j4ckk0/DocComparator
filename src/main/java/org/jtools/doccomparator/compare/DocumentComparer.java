@@ -14,8 +14,9 @@ import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.WordDocument;
 
 /**
- * Compares two Word documents: their paragraphs paired (Pairer), the pairs compared (ParagraphComparer), then laid out
- * in rows for a side-by-side view, kind of story by kind of story; and the documents themselves.
+ * Compares two Word documents: their paragraphs and tables paired (Pairer), the pairs compared (ParagraphComparer,
+ * TableComparer), then laid out in rows for a side-by-side view, kind of story by kind of story; and the documents
+ * themselves.
  */
 public final class DocumentComparer {
 
@@ -24,12 +25,14 @@ public final class DocumentComparer {
     private final CompareOptions options;
     private final Vocabulary vocabulary = new Vocabulary();
     private final ParagraphComparer paragraphs;
+    private final TableComparer tables;
 
     private DocumentComparer(WordDocument left, WordDocument right, CompareOptions options) {
         this.left = left;
         this.right = right;
         this.options = options;
         this.paragraphs = new ParagraphComparer(options, vocabulary, left.styles(), right.styles());
+        this.tables = new TableComparer(options, paragraphs);
     }
 
     public static Comparison compare(WordDocument left, WordDocument right, CompareOptions options) {
@@ -52,61 +55,43 @@ public final class DocumentComparer {
     private StoryComparison compare(String title, List<Story> leftStories, List<Story> rightStories) {
         List<Unit> l = units(leftStories);
         List<Unit> r = units(rightStories);
-        List<Pairer.Match> matches = Pairer.pair(l, r);
-
-        Map<Integer, Pairer.Match> movedFromLeft = new TreeMap<>();
-        Map<Integer, Pairer.Match> movedFromRight = new TreeMap<>();
-        Map<Pairer.Match, ParagraphDiff> movedDiffs = new HashMap<>();
-        List<Pairer.Match> inOrder = new ArrayList<>();
-        for (Pairer.Match match : matches) {
-            if (match.moved()) {
-                movedFromLeft.put(match.left(), match);
-                movedFromRight.put(match.right(), match);
-                movedDiffs.put(match, paragraphs.compare(l.get(match.left()), r.get(match.right())));
-            } else {
-                inOrder.add(match);
-            }
-        }
-        inOrder.add(new Pairer.Match(l.size(), r.size(), 0, false));   // past the end: what is left of both sides
-
+        List<Slot> slots = Slot.align(l.size(), r.size(), Pairer.pair(l, r));
         List<Row> rows = new ArrayList<>();
-        int[] leftRows = new int[l.size()];
-        int[] rightRows = new int[r.size()];
-        int i = 0;
-        int j = 0;
-        for (Pairer.Match match : inOrder) {
-            for (; i < match.left(); i++) {
-                leftRows[i] = rows.size();
-                Pairer.Match moved = movedFromLeft.get(i);
-                rows.add(moved == null
-                        ? new Row(l.get(i).item(), null, Row.Status.LEFT_ONLY, -1,
-                                ParagraphDiff.alone(l.get(i).text(), true))
-                        : new Row(l.get(i).item(), null, Row.statusOf(movedDiffs.get(moved)), -1, movedDiffs.get(moved)));
+        for (Slot slot : slots) {
+            if (slot.left() >= 0 && slot.right() >= 0) {
+                rows.add(pair(l.get(slot.left()), r.get(slot.right()), -1));
+            } else if (slot.left() >= 0) {
+                Unit unit = l.get(slot.left());
+                if (slot.moved()) {
+                    Row pair = pair(unit, r.get(slots.get(slot.counterpart()).right()), slot.counterpart());
+                    rows.add(new Row(pair.left(), null, pair.status(), pair.counterpart(), pair.diff(), pair.table()));
+                } else {
+                    rows.add(new Row(unit.item(), null, Row.Status.LEFT_ONLY, -1, ParagraphDiff.alone(
+                            unit.isTable() ? "" : unit.text(), true), unit.isTable() ? TableComparer.alone(unit, true) : null));
+                }
+            } else {
+                Unit unit = r.get(slot.right());
+                if (slot.moved()) {
+                    Row pair = pair(l.get(slots.get(slot.counterpart()).left()), unit, slot.counterpart());
+                    rows.add(new Row(null, pair.right(), pair.status(), pair.counterpart(), pair.diff(), pair.table()));
+                } else {
+                    rows.add(new Row(null, unit.item(), Row.Status.RIGHT_ONLY, -1, ParagraphDiff.alone(
+                            unit.isTable() ? "" : unit.text(), false), unit.isTable() ? TableComparer.alone(unit, false) : null));
+                }
             }
-            for (; j < match.right(); j++) {
-                rightRows[j] = rows.size();
-                Pairer.Match moved = movedFromRight.get(j);
-                rows.add(moved == null
-                        ? new Row(null, r.get(j).item(), Row.Status.RIGHT_ONLY, -1,
-                                ParagraphDiff.alone(r.get(j).text(), false))
-                        : new Row(null, r.get(j).item(), Row.statusOf(movedDiffs.get(moved)), -1, movedDiffs.get(moved)));
-            }
-            if (i < l.size() && j < r.size()) {
-                ParagraphDiff diff = paragraphs.compare(l.get(i), r.get(j));
-                rows.add(new Row(l.get(i).item(), r.get(j).item(), Row.statusOf(diff), -1, diff));
-                i++;
-                j++;
-            }
-        }
-        for (Pairer.Match moved : movedFromLeft.values()) {   // each row of a moved pair names the other's
-            int leftRow = leftRows[moved.left()];
-            int rightRow = rightRows[moved.right()];
-            Row l0 = rows.get(leftRow);
-            Row r0 = rows.get(rightRow);
-            rows.set(leftRow, new Row(l0.left(), null, l0.status(), rightRow, l0.diff()));
-            rows.set(rightRow, new Row(null, r0.right(), r0.status(), leftRow, r0.diff()));
         }
         return new StoryComparison(title, rows);
+    }
+
+    /** Two paragraphs, or two tables, compared. */
+    private Row pair(Unit a, Unit b, int counterpart) {
+        if (a.isTable()) {
+            TableComparison table = tables.compare(a, b);
+            ParagraphDiff properties = tables.properties(a, b, table);
+            return new Row(a.item(), b.item(), table.status(properties), counterpart, properties, table);
+        }
+        ParagraphDiff diff = paragraphs.compare(a, b);
+        return new Row(a.item(), b.item(), Row.statusOf(diff), counterpart, diff, null);
     }
 
     /** The paragraphs to compare; with the blanks left out, empty ones are not. */

@@ -33,7 +33,7 @@ final class Paragraphs {
     }
 
     static Item item(Paragraph paragraph) {
-        return new Item(Story.Kind.BODY, "Body", List.of(), paragraph);
+        return new Item(Story.Kind.BODY, "Body", List.of(), paragraph, null);
     }
 
     static Unit unit(Paragraph paragraph, boolean blanks, Vocabulary vocabulary) {

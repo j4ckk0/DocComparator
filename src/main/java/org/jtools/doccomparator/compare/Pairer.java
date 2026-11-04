@@ -144,9 +144,9 @@ final class Pairer {
                 similarity * (a.size() + b.size()) / 2 + (samePlace(a, b) ? SAME_PLACE : 0));
     }
 
+    /** In the same place: the same story, the same text box, table, row or column, each by its number. */
     private static boolean samePlace(Unit a, Unit b) {
-        return a.item().placeInStructure().equals(b.item().placeInStructure())
-                && a.item().label().equals(b.item().label());
+        return a.item().places().equals(b.item().places()) && a.item().label().equals(b.item().label());
     }
 
     /** The same text in the same place: paired at once at the start and the end, where the documents are alike. */
@@ -161,6 +161,9 @@ final class Pairer {
 
     /** How similar two paragraphs are, from 0 to 1: 1 for the same text, 0 below least. */
     static double similarity(Unit a, Unit b, double least) {
+        if (a.isTable() != b.isTable()) {
+            return 0;   // a table goes with a table only
+        }
         if (a.key().equals(b.key())) {
             return 1;
         }

@@ -344,6 +344,14 @@ final class ParagraphComparer {
         }
     }
 
+    String leftStyleName(String id) {
+        return styleName(leftStyles, id);
+    }
+
+    String rightStyleName(String id) {
+        return styleName(rightStyles, id);
+    }
+
     /** A style by its name, which is the same in two documents when its id may not be ("Heading1", "Titre1"). */
     static String styleName(StyleSheet styles, String id) {
         if (id == null) {
