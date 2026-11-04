@@ -29,9 +29,11 @@ final class Palette {
     final Color separator;
     final Color grid;
     final Color current;
-    /** The side text pasted goes to: its frame, dashed while it waits, and the inside of that frame. */
+    /** The side text pasted goes to: its frame while it waits, and its head's underline; their inside. */
     final Color chosenSide;
     final Color chosenSideInside;
+    /** The gutter between the sides, where nothing is marked. */
+    final Color gutter;
     final Color title;
     final Color titleText;
     final Color noSide;
@@ -59,6 +61,7 @@ final class Palette {
         current = dark ? new Color(0x4C8DFF) : new Color(0x2F6FDD);
         chosenSide = dark ? new Color(0x5B95F5) : new Color(0x5A8FE6);
         chosenSideInside = dark ? new Color(0x232B38) : new Color(0xEDF3FD);
+        gutter = dark ? new Color(0x2A2C30) : new Color(0xF1F2F4);
         title = dark ? new Color(0x393D45) : new Color(0x4A5568);
         titleText = Color.WHITE;
         noSide = dark ? new Color(0x27292D) : new Color(0xF2F2F2);

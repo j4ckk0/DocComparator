@@ -130,8 +130,9 @@ paragraph beside its match, as high as the taller.
 
 Text can be compared too, without a document: copy it anywhere, click the side it goes to and paste it (Ctrl+V, or
 *Paste here* in the right-click menu, on the side right-clicked; the left until a side is clicked), or choose the side
-in the File menu (*Paste left*, *Paste right*), or drop it there. The side clicked shows in blue: its frame, tinted,
-while it has no document; a frame a little inside its edges once it has, the gutter between the sides left to both. Each line is a paragraph, without style or
+in the File menu (*Paste left*, *Paste right*), or drop it there. The side clicked shows in blue: its head tinted and
+underlined, as a tab chosen, and, while it has no document, its frame. The gutter between the sides runs down to the
+bottom of the view, in its own shade, keeping them apart where they have no lines. Each line is a paragraph, without style or
 formatting, so text pasted against a Word document is best compared with *Text only*: the other switches would show
 the document's styles and template as differences. A pasted side can face another pasted text or a document; a
 document copied in Explorer opens as if dropped.

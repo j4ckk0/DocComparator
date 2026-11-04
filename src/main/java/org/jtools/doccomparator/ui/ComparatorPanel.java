@@ -112,7 +112,7 @@ public final class ComparatorPanel extends JPanel {
         scroll.setBorder(BorderFactory.createEmptyBorder());
 
         JPanel headers = new JPanel(new GridLayout(1, 2, 26, 0));
-        headers.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4 + 16));
+        headers.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 16));
         headers.add(leftHeader);
         headers.add(rightHeader);
         JPanel top = new JPanel(new BorderLayout());
@@ -127,6 +127,8 @@ public final class ComparatorPanel extends JPanel {
         add(statusLine, BorderLayout.SOUTH);
 
         view.addPropertyChangeListener(ComparisonView.CURRENT_LINE, e -> updatePosition());
+        view.addPropertyChangeListener(ComparisonView.CHOSEN_SIDE, e -> showChosenSide());
+        showChosenSide();
         view.setComponentPopupMenu(new ClipboardMenu(view, pasteHere, labels));
         TransferHandler drop = new DropHandler(opener, this, null);
         view.setTransferHandler(drop);
@@ -370,6 +372,12 @@ public final class ComparatorPanel extends JPanel {
         };
         running = worker;
         worker.execute();
+    }
+
+    /** The head of the side text pasted goes to, shown so. */
+    private void showChosenSide() {
+        leftHeader.setChosen(view.leftChosen());
+        rightHeader.setChosen(!view.leftChosen());
     }
 
     /** No document open: the two empty sides, in the colours of the look in use. */

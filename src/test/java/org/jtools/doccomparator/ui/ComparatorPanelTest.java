@@ -284,6 +284,35 @@ class ComparatorPanelTest {
         assertTrue(menu.contains("Paste here"), String.valueOf(menu));
     }
 
+    /** The head of the side text pasted goes to shows it: the left's at first, the right's once the right is clicked. */
+    @Test
+    void theChosenSidesHeadShowsIt() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            ComparatorPanel panel = new ComparatorPanel();
+            panel.setSize(1000, 700);
+            panel.doLayout();
+            List<DocumentHeader> heads = headers(panel);
+            assertEquals(2, heads.size());
+            assertTrue(heads.get(0).chosen() && !heads.get(1).chosen(), "the left's at first");
+            ComparisonView view = view(panel);
+            view.setSize(1000, 600);
+            press(view, 800, MouseEvent.BUTTON1);
+            assertTrue(!heads.get(0).chosen() && heads.get(1).chosen(), "the right's, once clicked");
+        });
+    }
+
+    private static List<DocumentHeader> headers(Container container) {
+        List<DocumentHeader> found = new ArrayList<>();
+        for (Component component : container.getComponents()) {
+            if (component instanceof DocumentHeader head) {
+                found.add(head);
+            } else if (component instanceof Container inner) {
+                found.addAll(headers(inner));
+            }
+        }
+        return found;
+    }
+
     private static void press(Component component, int x, int button) {
         component.dispatchEvent(new MouseEvent(component, MouseEvent.MOUSE_PRESSED, 0, 0, x, 10, 1,
                 button == MouseEvent.BUTTON3, button));

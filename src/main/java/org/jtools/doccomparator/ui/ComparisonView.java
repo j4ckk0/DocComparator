@@ -34,11 +34,10 @@ final class ComparisonView extends JComponent implements Scrollable {
 
     static final String CURRENT_LINE = "currentLine";
     static final String LINES = "lines";
+    /** Told when another side is clicked: the one text pasted goes to (leftChosen). */
+    static final String CHOSEN_SIDE = "chosenSide";
 
     private static final int GUTTER = 26;
-    /** The frame of the side chosen: its line's width, and how far in from the side's edges, the gutter's included. */
-    private static final int CHOSEN_LINE = 2;
-    private static final int CHOSEN_INSET = 4;
     private static final int MARGIN = 28;
     private static final int RIGHT_PADDING = 8;
     private static final int TITLE_HEIGHT = 26;
@@ -75,6 +74,7 @@ final class ComparisonView extends JComponent implements Scrollable {
                 if (left != leftChosen) {
                     leftChosen = left;
                     repaint();
+                    firePropertyChange(CHOSEN_SIDE, !left, left);
                 }
                 clicked(e);
             }
@@ -146,17 +146,11 @@ final class ComparisonView extends JComponent implements Scrollable {
 
     void setWaitingSide(int side) {
         waitingSide = side;
-        repaint();
-    }
-
-    @Override
-    public void addNotify() {
-        super.addNotify();
         if (getParent() instanceof JViewport viewport) {
-            // the frame of the side chosen, and a side waiting, stay where they are as the lines scroll: the view drawn
-            // anew, not shifted, at each step
-            viewport.setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
+            // the waiting side stays where it is as the other scrolls: the view drawn anew, not shifted, at each step
+            viewport.setScrollMode(side >= 0 ? JViewport.SIMPLE_SCROLL_MODE : JViewport.BLIT_SCROLL_MODE);
         }
+        repaint();
     }
 
     int current() {
@@ -308,7 +302,7 @@ final class ComparisonView extends JComponent implements Scrollable {
             for (int i = first; i < lines.size() && lines.get(i).top < clip.y + clip.height; i++) {
                 paintLine(g, lines.get(i), i == current);
             }
-            paintChosenSide(g);
+            paintGutterBelow(g, clip);
             if (waitingSide >= 0) {
                 paintSide(g, waitingSide, true);   // over its empty half, where it stays as the other scrolls
             }
@@ -326,19 +320,22 @@ final class ComparisonView extends JComponent implements Scrollable {
         paintSide(g, 1, false);
     }
 
-    /**
-     * The side text pasted goes to, framed where it is seen, a little inside its edges: the gutter between the sides
-     * left to both.
-     */
-    private void paintChosenSide(Graphics2D g) {
-        Rectangle visible = getVisibleRect();
-        int column = columnWidth(getWidth());
-        int x = (leftChosen ? 0 : column + GUTTER) + CHOSEN_INSET;
-        int width = (leftChosen ? column : getWidth() - column - GUTTER) - 2 * CHOSEN_INSET;
-        g.setColor(palette.chosenSide);
-        g.setStroke(new BasicStroke(CHOSEN_LINE));
-        g.drawRoundRect(x, visible.y + CHOSEN_INSET, width, visible.height - 2 * CHOSEN_INSET, 10, 10);
-        g.setStroke(new BasicStroke(1));
+    /** The gutter under the last line, down to the bottom: the two sides kept apart where they have no lines. */
+    private void paintGutterBelow(Graphics2D g, Rectangle clip) {
+        Line last = lines.getLast();
+        int top = Math.max(clip.y, last.top + last.height);
+        if (top < clip.y + clip.height) {
+            paintBlankGutter(g, columnWidth(getWidth()), top, clip.y + clip.height - top);
+        }
+    }
+
+    /** The gutter where nothing is marked: its own shade between two lines, setting the sides apart. */
+    private void paintBlankGutter(Graphics2D g, int x, int y, int height) {
+        g.setColor(palette.gutter);
+        g.fillRect(x, y, GUTTER, height);
+        g.setColor(palette.grid);
+        g.fillRect(x, y, 1, height);
+        g.fillRect(x + GUTTER - 1, y, 1, height);
     }
 
     /**
@@ -483,8 +480,7 @@ final class ComparisonView extends JComponent implements Scrollable {
     private void paintGutter(Graphics2D g, Line line, int x, int y, int height) {
         LineSide.Marking marking = line.marking();
         if (marking == LineSide.Marking.SAME) {
-            g.setColor(palette.background);
-            g.fillRect(x, y, GUTTER, height);
+            paintBlankGutter(g, x, y, height);
             return;
         }
         Color mark = palette.mark(marking);
