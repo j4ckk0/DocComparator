@@ -24,7 +24,12 @@ import java.awt.BasicStroke;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.util.ArrayList;
 import java.util.List;
+import javax.swing.KeyStroke;
+import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * What a side says while there are no lines: whether its document is open, a title, then lines of text — which
@@ -32,6 +37,39 @@ import java.util.List;
  * dashes; the side chosen, where text pasted goes, framed in its colour.
  */
 record EmptySide(boolean opened, String title, List<String> lines) {
+
+    /** Between a shortcut's keys, as the menus show it: "Ctrl+O". */
+    private static final String BETWEEN_KEYS = "+";
+    /** The empty line between the ways to open a side and the word on dropping two at once. */
+    private static final String SPACER = "";
+
+    /** A side whose document is open, waiting for the other: its document's name. */
+    static EmptySide opened(String name) {
+        return new EmptySide(true, name, List.of(I18n.text("empty.opened")));
+    }
+
+    /**
+     * A side without its document: its name (the text of nameKey), then the ways to open it — its shortcut, open,
+     * said — or to paste a text there (paste).
+     */
+    static EmptySide waiting(String nameKey, KeyStroke open, KeyStroke paste) {
+        return new EmptySide(false, I18n.text(nameKey), List.of(I18n.text("empty.drop"),
+                I18n.text("empty.choose", said(open)), I18n.text("empty.type"), I18n.text("empty.paste", said(paste)),
+                SPACER, I18n.text("empty.two")));
+    }
+
+    /** A shortcut, its keys named in the language in use: "Ctrl+Shift+O"; "Ctrl+Maj+O" in French. */
+    static String said(KeyStroke key) {
+        List<String> keys = new ArrayList<>();
+        if ((key.getModifiers() & InputEvent.CTRL_DOWN_MASK) != 0) {
+            keys.add(I18n.text("key.ctrl"));
+        }
+        if ((key.getModifiers() & InputEvent.SHIFT_DOWN_MASK) != 0) {
+            keys.add(I18n.text("key.shift"));
+        }
+        keys.add(KeyEvent.getKeyText(key.getKeyCode()));   // a letter, a function key: the same in every language
+        return String.join(BETWEEN_KEYS, keys);
+    }
 
     /** Draws it in this place: its frame, then its title and its lines, centred. */
     void paint(Graphics2D g, Rectangle place, boolean chosen, Palette palette, Fonts fonts) {

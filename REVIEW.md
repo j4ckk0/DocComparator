@@ -55,7 +55,7 @@ it is a data type for deferred text, nor that it belongs with `ComparisonWords`.
 one helper (`Paragraphs.said`), and the 16 screenshots in two languages can check the view pixel for pixel, as they
 did for the first review.
 
-### 2. `ComparatorPanel` is the one file over 500 lines (593)
+### 2. `ComparatorPanel` is the one file over 500 lines (593) — done (`EmptySide.waiting`/`opened`, `HeadsLayout`, `BackgroundWork`; the panel at 482 lines)
 
 **Where:** `ui/ComparatorPanel.java`.
 

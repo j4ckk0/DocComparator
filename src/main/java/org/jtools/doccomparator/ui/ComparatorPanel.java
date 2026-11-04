@@ -21,12 +21,7 @@ package org.jtools.doccomparator.ui;
  */
 
 import java.awt.BorderLayout;
-import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Component;
-import java.awt.Container;
-import java.awt.Insets;
-import java.awt.LayoutManager;
 import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Transferable;
@@ -37,24 +32,19 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.JFileChooser;
 import javax.swing.JMenu;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker;
 import javax.swing.TransferHandler;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import org.jtools.doccomparator.compare.CompareOptions;
@@ -78,16 +68,13 @@ public final class ComparatorPanel extends JPanel {
     private static final String BETWEEN_NAMES = " ↔ ";
     /** The name of a side without its document yet. */
     private static final String NO_NAME = "…";
-    /** Between a shortcut's keys, as the menus show it: "Ctrl+O". */
-    private static final String BETWEEN_KEYS = "+";
-    /** The empty line between the ways to open a side and the word on dropping two at once. */
-    private static final String SPACER = "";
 
     private final ComparisonView view = new ComparisonView();
     private final JScrollPane scroll = new JScrollPane(view);
     /** The labels of the panel and of its parts, which it gives them: set again together when the language changes. */
     private final I18nLabels labels = new I18nLabels();
     private final StatusLine statusLine = new StatusLine(labels);
+    private final BackgroundWork work = new BackgroundWork(this, statusLine);
     private final Action openLeft = action("action.openLeft", "action.openLeft.tip",
             KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK), () -> choose(Side.LEFT));
     private final Action openRight = action("action.openRight", "action.openRight.tip",
@@ -134,7 +121,6 @@ public final class ComparatorPanel extends JPanel {
     private final Map<Side, SideState> sides = new EnumMap<>(Map.of(Side.LEFT, SideState.EMPTY,
             Side.RIGHT, SideState.EMPTY));
     private Comparison comparison;
-    private SwingWorker<?, ?> running;
     private Consumer<String> namesListener = names -> { };
     private File lastDirectory;
 
@@ -146,7 +132,7 @@ public final class ComparatorPanel extends JPanel {
         scroll.getVerticalScrollBar().setUnitIncrement(24);
         scroll.setBorder(BorderFactory.createEmptyBorder());
 
-        JPanel headers = new JPanel(new HeadsLayout());
+        JPanel headers = new JPanel(new HeadsLayout(view, scroll, heads));
         headers.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
         headers.add(heads.get(Side.LEFT));
         headers.add(heads.get(Side.RIGHT));
@@ -306,11 +292,7 @@ public final class ComparatorPanel extends JPanel {
         sides.forEach((side, state) -> heads.get(side).show(state.source(), null));
         namesListener.accept(documentNames());
         updateActions();
-        if (running != null) {
-            running.cancel(false);
-            running = null;
-            setCursor(null);
-        }
+        work.cancel();
         showEmptySides();
         SideState left = sides.get(Side.LEFT);
         SideState right = sides.get(Side.RIGHT);
@@ -326,7 +308,7 @@ public final class ComparatorPanel extends JPanel {
             return;
         }
         CompareOptions options = controls.options();
-        inBackground("status.comparing", () -> {
+        work.start("status.comparing", () -> {
             WordDocument a = left.document();
             WordDocument b = right.document();
             PictureImages.prepare(a, b);   // decoded here, away from the window's thread
@@ -345,7 +327,7 @@ public final class ComparatorPanel extends JPanel {
     private void showAlone(Side side) {
         comparison = null;
         SideState state = sides.get(side);
-        inBackground("status.reading", () -> {
+        work.start("status.reading", () -> {
             WordDocument document = state.document();
             PictureImages.prepare(document);
             return document;
@@ -361,43 +343,6 @@ public final class ComparatorPanel extends JPanel {
         }, "status.notRead", "dialog.cannotRead");
     }
 
-    /**
-     * Runs work away from the window's thread, the status saying so (the text of saying) and the cursor waiting, then
-     * gives its result to done on the window's thread — unless other work has replaced it. A failure is said in the
-     * status line (failed's text, why as its argument) and a message, under title's text.
-     */
-    private <T> void inBackground(String saying, Callable<T> work, Consumer<T> done, String failed, String title) {
-        statusLine.say(I18n.text(saying));
-        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-        SwingWorker<T, Void> worker = new SwingWorker<>() {
-            @Override
-            protected T doInBackground() throws Exception {
-                return work.call();
-            }
-
-            @Override
-            protected void done() {
-                if (isCancelled() || running != this) {
-                    return;
-                }
-                running = null;
-                setCursor(null);
-                try {
-                    done.accept(get());
-                } catch (ExecutionException e) {
-                    Throwable cause = e.getCause();
-                    statusLine.say(I18n.text(failed, cause.getMessage()));
-                    JOptionPane.showMessageDialog(ComparatorPanel.this, cause.getMessage(), I18n.text(title),
-                            JOptionPane.ERROR_MESSAGE);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-        };
-        running = worker;
-        worker.execute();
-    }
-
     /** The head of the side text pasted goes to, shown so. */
     private void showChosenSide() {
         heads.forEach((side, head) -> head.setChosen(side == view.chosenSide()));
@@ -410,35 +355,18 @@ public final class ComparatorPanel extends JPanel {
 
     /** While a side has no document: what goes there, and how to open it; the side opened, its document's name. */
     private void showEmptySides() {
-        view.setEmptySides(emptySide(sides.get(Side.LEFT).source(), "empty.left", shortcut(openLeft)),
-                emptySide(sides.get(Side.RIGHT).source(), "empty.right", shortcut(openRight)));
+        view.setEmptySides(emptySide(Side.LEFT, "empty.left", openLeft),
+                emptySide(Side.RIGHT, "empty.right", openRight));
     }
 
-    /**
-     * A side without its document: its name (the text of side), then how to open it, its shortcut said, or paste a
-     * text there; or opened.
-     */
-    private EmptySide emptySide(DocumentSource source, String side, String open) {
-        if (source != null) {
-            return new EmptySide(true, source.name(), List.of(I18n.text("empty.opened")));
-        }
-        return new EmptySide(false, I18n.text(side), List.of(I18n.text("empty.drop"),
-                I18n.text("empty.choose", open), I18n.text("empty.type"), I18n.text("empty.paste", shortcut(pasteHere)),
-                SPACER, I18n.text("empty.two")));
+    private EmptySide emptySide(Side side, String nameKey, Action open) {
+        DocumentSource source = sides.get(side).source();
+        return source != null ? EmptySide.opened(source.name())
+                : EmptySide.waiting(nameKey, shortcut(open), shortcut(pasteHere));
     }
 
-    /** An action's shortcut, its keys named in the language in use: "Ctrl+Shift+O"; "Ctrl+Maj+O" in French. */
-    private static String shortcut(Action action) {
-        KeyStroke key = (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);
-        List<String> keys = new ArrayList<>();
-        if ((key.getModifiers() & InputEvent.CTRL_DOWN_MASK) != 0) {
-            keys.add(I18n.text("key.ctrl"));
-        }
-        if ((key.getModifiers() & InputEvent.SHIFT_DOWN_MASK) != 0) {
-            keys.add(I18n.text("key.shift"));
-        }
-        keys.add(KeyEvent.getKeyText(key.getKeyCode()));   // a letter, a function key: the same in every language
-        return String.join(BETWEEN_KEYS, keys);
+    private static KeyStroke shortcut(Action action) {
+        return (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);
     }
 
     /** Shows a comparison, keeping the place the view was at. */
@@ -550,44 +478,5 @@ public final class ComparatorPanel extends JPanel {
     @Override
     public Dimension getPreferredSize() {
         return new Dimension(1280, 820);
-    }
-
-    /**
-     * The heads of the sides, each over its side of the view, as wide as it: the one chosen, underlined, the width of
-     * its column.
-     */
-    private final class HeadsLayout implements LayoutManager {
-
-        @Override
-        public void layoutContainer(Container parent) {
-            Insets insets = parent.getInsets();
-            int width = view.getWidth() > 0 ? view.getWidth() : parent.getWidth() - scroll.getVerticalScrollBar()
-                    .getPreferredSize().width;
-            int left = Math.min(view.leftWidth(), width);
-            int height = parent.getHeight() - insets.top - insets.bottom;
-            heads.get(Side.LEFT).setBounds(0, insets.top, left, height);
-            int right = left + ComparisonView.GUTTER;
-            heads.get(Side.RIGHT).setBounds(right, insets.top, Math.max(0, width - right), height);
-        }
-
-        @Override
-        public Dimension preferredLayoutSize(Container parent) {
-            Insets insets = parent.getInsets();
-            int height = heads.values().stream().mapToInt(head -> head.getPreferredSize().height).max().orElse(0);
-            return new Dimension(0, height + insets.top + insets.bottom);
-        }
-
-        @Override
-        public Dimension minimumLayoutSize(Container parent) {
-            return preferredLayoutSize(parent);
-        }
-
-        @Override
-        public void addLayoutComponent(String name, Component component) {
-        }
-
-        @Override
-        public void removeLayoutComponent(Component component) {
-        }
     }
 }
