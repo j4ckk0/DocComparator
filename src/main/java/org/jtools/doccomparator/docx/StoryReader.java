@@ -292,17 +292,13 @@ final class StoryReader {
             case "softHyphen" -> append(xml, text, "­");
             case "sym" -> append(xml, text, symbol(xml.wordAttribute("char")));
             case "drawing", "pict", "object" -> {
-                Drawing drawing = new Drawing();
-                scanDrawing(xml, content, drawing);
-                if (drawing.pictures.isEmpty() && drawing.unsupported != null) {
-                    drawing.pictures.add(Pictures.unsupported(drawing.unsupported, drawing.description, drawing.width,
-                            drawing.height));
-                }
-                if (!drawing.pictures.isEmpty()) {   // the text before it, a run; the picture, one of its own
+                List<Picture> found = DrawingReader.read(xml, pictures,
+                        box -> content.textBoxes.add(new TextBox(readBlocks(box))));
+                if (!found.isEmpty()) {   // the text before it, a run; the picture, one of its own
                     Formatting formatting = new Formatting(properties);
                     content.addRun(text.toString(), formatting.get("rStyle"), formatting.without("rStyle"));
                     text.setLength(0);
-                    for (Picture picture : drawing.pictures) {
+                    for (Picture picture : found) {
                         content.addPicture(picture, formatting.get("rStyle"), formatting.without("rStyle"));
                     }
                 }
@@ -324,108 +320,6 @@ final class StoryReader {
         } catch (IllegalArgumentException e) {
             return "";
         }
-    }
-
-    /** What a drawing holds, as it is found: its pictures, its size, its description; what cannot be shown in it. */
-    private static final class Drawing {
-        final List<Picture> pictures = new ArrayList<>();
-        float width;
-        float height;
-        String description;
-        String unsupported;
-    }
-
-    /** EMUs, DrawingML's lengths: 12700 to the point. */
-    private static final float EMUS_PER_POINT = 12700;
-
-    /**
-     * A drawing, a VML picture or an object, all of it: its text boxes, wherever they are in it; its pictures (a:blip,
-     * the bitmap Word keeps beside an SVG included; v:imagedata), at the size (wp:extent, a VML shape's style) and with
-     * the description (wp:docPr) it gives; a chart or a diagram, which cannot be shown.
-     */
-    private void scanDrawing(XmlCursor xml, ParagraphContent content, Drawing drawing) throws DocxException {
-        xml.forChildren(child -> {
-            if (child.isWord("txbxContent")) {
-                content.textBoxes.add(new TextBox(readBlocks(child)));
-                return;
-            }
-            if (child.isMarkupCompatibility("AlternateContent")) {
-                child.firstChoice(choice -> scanDrawing(choice, content, drawing));
-                return;
-            }
-            switch (child.localName()) {
-                case "extent" -> {
-                    drawing.width = emus(child.plainAttribute("cx"));
-                    drawing.height = emus(child.plainAttribute("cy"));
-                }
-                case "docPr" -> drawing.description = first(child.plainAttribute("descr"),
-                        child.plainAttribute("title"), child.plainAttribute("name"));
-                case "graphicData" -> {
-                    String uri = child.plainAttribute("uri");
-                    if (uri != null && (uri.contains("/chart") || uri.contains("/diagram"))) {   // chartex too
-                        drawing.unsupported = uri.contains("/chart") ? "chart" : "diagram";
-                    }
-                }
-                case "blip" -> drawing.pictures.add(pictures.image(child.relationshipAttribute("embed"),
-                        child.relationshipAttribute("link"), drawing.description, drawing.width, drawing.height));
-                case "shape", "rect" -> vmlSize(child.plainAttribute("style"), drawing);
-                case "imagedata" -> drawing.pictures.add(pictures.image(child.relationshipAttribute("id"), null,
-                        drawing.description, drawing.width, drawing.height));
-                default -> {
-                }
-            }
-            scanDrawing(child, content, drawing);
-        });
-    }
-
-    private static float emus(String value) {
-        try {
-            return value == null ? 0 : Long.parseLong(value.trim()) / EMUS_PER_POINT;
-        } catch (NumberFormatException e) {
-            return 0;
-        }
-    }
-
-    /** A VML shape's size, from its style: "width:120pt;height:80pt" (in points, or inches, or pixels). */
-    private static void vmlSize(String style, Drawing drawing) {
-        if (style == null) {
-            return;
-        }
-        for (String declaration : style.split(";")) {
-            String[] pair = declaration.split(":", 2);
-            if (pair.length == 2 && (pair[0].trim().equals("width") || pair[0].trim().equals("height"))) {
-                float points = vmlPoints(pair[1].trim());
-                if (pair[0].trim().equals("width")) {
-                    drawing.width = points;
-                } else {
-                    drawing.height = points;
-                }
-            }
-        }
-    }
-
-    private static float vmlPoints(String length) {
-        try {
-            if (length.endsWith("pt")) {
-                return Float.parseFloat(length.substring(0, length.length() - 2));
-            } else if (length.endsWith("in")) {
-                return Float.parseFloat(length.substring(0, length.length() - 2)) * 72;
-            } else if (length.endsWith("px")) {
-                return Float.parseFloat(length.substring(0, length.length() - 2)) * 0.75f;
-            }
-            return Float.parseFloat(length);
-        } catch (NumberFormatException e) {
-            return 0;
-        }
-    }
-
-    private static String first(String... values) {
-        for (String value : values) {
-            if (value != null && !value.isBlank()) {
-                return value;
-            }
-        }
-        return null;
     }
 
     /** An equation's text: its m:t, in order. */
