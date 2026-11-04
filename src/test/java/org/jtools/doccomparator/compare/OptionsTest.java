@@ -73,9 +73,8 @@ class OptionsTest {
         Comparison comparison = DocumentComparer.compare(REVISION_A, REVISION_B, layout);
         Row changed = row(comparison, "This procedure describes");
         assertEquals(Row.Status.SAME, changed.status(), "its words differ, but they do not count");
-        assertEquals("This procedure describes the periodic maintenance of the KP-40 hydraulic pump installed on the "
-                + "test benches of building|(s)| C|( and D)|.", marked(changed.right().text(), changed.diff().right()),
-                "they are shown, as blanks left out are");
+        assertEquals(changed.right().text(), marked(changed.right().text(), changed.diff().right()),
+                "nor shown: nothing marked in it");
         assertEquals(Row.Status.SAME, row(comparison, "It replaces revision A").status(), "added: text");
         Row moved = row(comparison, "Safety");
         assertTrue(moved.moved(), "still linked to its match");

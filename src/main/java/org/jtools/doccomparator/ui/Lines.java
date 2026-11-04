@@ -148,7 +148,9 @@ final class Lines {
         }
         moved.forEach((cell, line) -> {
             int target = lineOfRow.get(cell.row.counterpart());
-            cell.linkTo(target, target > line, cell.caption == null && cell.columns != null ? null : fonts.small());
+            // the way to its match, said unless the text is left out: a move is a matter of text
+            boolean said = options.text() && !(cell.caption == null && cell.columns != null);
+            cell.linkTo(target, target > line, said ? fonts.small() : null);
         });
         long differences = lines.subList(titleLine, lines.size()).stream().filter(Line::differs).count();
         lines.set(titleLine, Line.title(story.title() + " \u2014 " + count(differences)));

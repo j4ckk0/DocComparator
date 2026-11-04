@@ -556,7 +556,6 @@ public final class ComparatorPanel extends JPanel {
         legend.add(legend("one side only", Palette.ORPHAN_MARK));
         legend.add(legend("moved", Palette.MOVED_MARK));
         legend.add(legend("layout", Palette.OTHERWISE_MARK));
-        legend.add(legend("not counted", new Color(0x7FA6F0)));
         bar.add(legend, BorderLayout.EAST);
         return bar;
     }

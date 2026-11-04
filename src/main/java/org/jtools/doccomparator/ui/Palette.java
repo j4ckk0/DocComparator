@@ -4,7 +4,7 @@ import java.awt.Color;
 
 /**
  * The colours of the view, after Beyond Compare's: red for text that differs, purple for a paragraph on one side only,
- * blue for differences that do not count, and two of the program's own — teal for a moved paragraph, amber for one
+ * and two of the program's own — teal for a moved paragraph, amber for one
  * whose text is the same but whose structure or style is not.
  */
 final class Palette {
@@ -29,7 +29,6 @@ final class Palette {
 
     /** Behind the text that differs, within a paragraph. */
     static final Color CHANGED_TEXT = new Color(0xFFADAD);
-    static final Color UNIMPORTANT_TEXT = new Color(0xD3E2FF);
     static final Color ABSENT_MARK = new Color(0xD01010);
     static final Color FORMATTING_MARK = new Color(0x9B30D9);
 

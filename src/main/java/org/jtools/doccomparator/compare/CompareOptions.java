@@ -4,16 +4,17 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * What the comparison takes into account: the text and each kind of layout, each counted or left out on its own. Left
- * out, a difference is not shown, but for the blanks, which are shown and do not count. The text left out, paragraphs
- * are still paired by it — their layout can only be compared so — but what differs in it is not shown.
+ * What the comparison takes into account: the text and each kind of layout, each compared or left out on its own. Left
+ * out, a kind of difference is neither counted nor shown. The text left out, paragraphs are still paired by it — their
+ * layout can only be compared so — but nothing of it is shown as differing: no word marked, no paragraph added,
+ * removed or moved.
  */
 public record CompareOptions(Set<Aspect> aspects) {
 
     /** A kind of difference. */
     public enum Aspect {
         TEXT("Text", "The words of paragraphs and cells; paragraphs added, removed or moved"),
-        BLANKS("Blanks", "Spaces, tabs, breaks and empty paragraphs; left out, they are shown but do not count"),
+        BLANKS("Blanks", "Spaces, tabs, breaks and empty paragraphs"),
         HEADINGS("Headings", "Heading levels: a title's depth"),
         LISTS("Lists", "List items, their level and numbering"),
         SECTIONS("Sections", "Section breaks and their number; paragraphs in text boxes"),

@@ -43,11 +43,23 @@ Two checks run with every build, so a change that breaks the rule does not build
 What stays outside these checks:
 
 - **The JRE.** The bundled Java runtime holds the JDK's networking code like any other; nothing in the program calls it.
-  Traced on Linux (`strace`, 2026-11-04), the packaged program opens the display's local socket and nothing towards
-  the network: the one TCP socket the JRE creates as its networking library loads, to learn whether IPv6 is there, is
-  closed unused — no address, no packet.
-- **`DocComparator.exe`**, should its `jre\` folder be removed, falls back to a message offering Java's download page.
-  It stays out of the way while the distribution is whole.
+  Traced on Linux (`strace`, 2026-11-04, reading, comparing and drawing the samples): no connection, no address bound,
+  no packet. What the trace does show, all on the machine itself:
+  - three sockets the JRE opens and closes as its networking library loads, to learn whether IPv6 is there — never
+    connected, nothing sent. The library loads because the JDK's Linux font code asks for the machine's name, to name
+    its font cache (`NoNetworkResolver` answers, so no name is looked up). The JDK's Windows code has no such path;
+  - that font cache, `~/.java/fonts/<version>/`, written once by the JDK on Linux, the only file written outside the
+    program's folder. Shipping fonts of our own would avoid both, at the price of the system's fonts: a document in a
+    script those fonts lack would show empty boxes;
+  - the C library asking the local name service cache (`/var/run/nscd/socket`) for the user's name.
+
+  The JVM's performance counters are kept in memory (`-XX:-UsePerfData` in every launcher), not in a file of `/tmp` or
+  `%TEMP%`.
+- **What runs on Windows.** `doccomparator.bat` starts the program with the bundled `javaw.exe`, signed by the Eclipse
+  Foundation, without a console: no executable of ours, unsigned, that a security policy (AppLocker, an antivirus'
+  heuristics) might refuse. `DocComparator.exe`, the same without a script, is not signed; signing it takes a
+  code-signing certificate, the company's own. Should its `jre\` folder be removed, it falls back to a message offering
+  Java's download page; it stays out of the way while the distribution is whole.
 - **The system.** Windows may check a program downloaded from the internet (SmartScreen) the first time it is opened;
   a distribution copied by other means is not marked so. The file dialog of *Open left…* and *Open right…* lists the drives
   the system has mapped, and reads those it is shown, network ones included: dropping the files on the window, or
@@ -94,8 +106,7 @@ dropped on, its head included. Dropping works from Windows' Explorer and from Li
 paragraph beside its match, as high as the taller.
 
 - **Colours**, after Beyond Compare's: red, the text differs, the very words or letters marked darker; purple, on one
-  side only; teal, moved; amber, the same text but its structure or style differs; blue, blanks that differ but do not
-  count. A red bar marks where the other side has text this one has not; a dotted line, text formatted otherwise (its
+  side only; teal, moved; amber, the same text but its structure or style differs. A red bar marks where the other side has text this one has not; a dotted line, text formatted otherwise (its
   tooltip says how). A sign between the sides says the same at a glance.
 - **Moved paragraphs** are shown where they are on each side; a click on one goes to its match.
 - **Tables** take a line for their columns, lettered A, B, C… on each side, a column added, removed or moved said so,
@@ -159,8 +170,8 @@ headers and footers: the content; the layout is there to switch on when it matte
 
 | Switch | Compared |
 |---|---|
-| Text | the words of paragraphs and cells; paragraphs added, removed, moved. Off: paragraphs are still paired by their text, the only way to compare their layout, and what differs in it is shown, but does not count |
-| Blanks | spaces, tabs and breaks as they are, and empty paragraphs; off, a difference of blanks alone is shown, but does not count |
+| Text | the words of paragraphs and cells; paragraphs added, removed, moved. Off: paragraphs are still paired by their text, the only way to compare their layout, but nothing of their text is shown as differing |
+| Blanks | spaces, tabs and breaks as they are, and empty paragraphs; off, a difference of blanks alone is none |
 | Headings | heading levels: a title's depth |
 | Lists | list items, their level and numbering |
 | Sections | section breaks and their number; paragraphs in text boxes |
@@ -238,7 +249,7 @@ installing where they are unpacked:
 | Archive | Start it with |
 |---|---|
 | `doccomparator-<version>-linux.tar.gz` | `doccomparator.sh` |
-| `doccomparator-<version>-windows.zip` | `DocComparator.exe` (no console) or `doccomparator.bat` (console) |
+| `doccomparator-<version>-windows.zip` | `doccomparator.bat` (the signed `javaw.exe`, no console), or `DocComparator.exe` (not signed) |
 
 Both are built from either system. Previous versions' archives are removed from `releases/` once the new one is built.
 

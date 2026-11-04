@@ -16,6 +16,7 @@ import java.util.List;
 import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.Comparison;
 import org.jtools.doccomparator.compare.DocumentComparer;
+import org.jtools.doccomparator.compare.Span;
 import org.jtools.doccomparator.docx.DocxReader;
 import org.junit.jupiter.api.Test;
 
@@ -124,6 +125,25 @@ class LinesTest {
                 .allMatch(line -> line.left == null && line.right != null && line.look() == Cell.Look.SAME));
         assertEquals("Maintenance Procedure \u2014 KP-40 Hydraulic Pump", lines.get(1).right.text.text());
         assertTrue(lines.stream().anyMatch(line -> line.right != null && line.right.columns != null), "its table");
+    }
+
+    /** Every switch off: the documents aligned, and nothing marked anywhere — no word, no space, no move said. */
+    @Test
+    void withNothingComparedNothingIsMarked() throws IOException {
+        Comparison comparison = DocumentComparer.compare(DocxReader.read(Path.of("samples", "procedure-revA.docx")),
+                DocxReader.read(Path.of("samples", "procedure-revB.docx")), CompareOptions.TEXT_ONLY.with(
+                        CompareOptions.Aspect.TEXT, false));
+        assertTrue(comparison.same());
+        for (Line line : Lines.of(comparison, false, FONTS)) {
+            assertFalse(line.differs(), String.valueOf(line.title));
+            for (Cell cell : new Cell[] {line.left, line.right}) {
+                if (cell != null && cell.text != null) {
+                    assertNull(cell.link(), "no move said: " + cell.text.text());
+                    assertTrue(cell.row == null || (cell.row.left() == null ? List.<Span>of() : cell.row.diff().left())
+                            .stream().noneMatch(Span::differs), cell.text.text());
+                }
+            }
+        }
     }
 
     @Test

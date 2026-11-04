@@ -104,7 +104,6 @@ final class TextBlock {
         for (Span span : spans) {
             Color behind = switch (span.kind()) {
                 case CHANGED, ONLY_HERE -> Palette.CHANGED_TEXT;
-                case UNIMPORTANT -> Palette.UNIMPORTANT_TEXT;
                 default -> null;
             };
             if (behind != null && span.start() < end && span.end() > start) {

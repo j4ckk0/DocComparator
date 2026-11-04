@@ -11,9 +11,7 @@ public record Span(int start, int end, Kind kind) {
         /** Nothing in its place on the other side: removed, or added. */
         ONLY_HERE,
         /** Empty: where the other side has text this one has not (ONLY_HERE there). */
-        ABSENT,
-        /** Blanks that differ from the other side's, the blanks being left out of the comparison. */
-        UNIMPORTANT
+        ABSENT
     }
 
     /** Whether it is a difference that counts. */

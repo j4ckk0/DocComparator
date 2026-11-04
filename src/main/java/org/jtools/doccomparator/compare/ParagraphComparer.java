@@ -53,18 +53,12 @@ final class ParagraphComparer {
                 properties(a.item().paragraph(), b.item().paragraph(), a.item(), b.item()));
     }
 
-    /** The spans as the options count them: the text left out, what differs in it is shown, as blanks are, and does not count. */
+    /** The spans as the options compare them: the text left out, nothing in it differs — the whole of it the same. */
     private List<Span> counted(List<Span> spans) {
-        if (options.text()) {
+        if (options.text() || spans.isEmpty()) {
             return spans;
         }
-        List<Span> shown = new ArrayList<>();
-        for (Span span : spans) {
-            if (span.kind() != Span.Kind.ABSENT) {
-                shown.add(span.differs() ? new Span(span.start(), span.end(), Span.Kind.UNIMPORTANT) : span);
-            }
-        }
-        return shown;
+        return List.of(new Span(0, spans.getLast().end(), Span.Kind.SAME));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -138,9 +132,9 @@ final class ParagraphComparer {
                         Token y = tb.get(fromB + k);
                         if (x.text(a.text()).equals(y.text(b.text()))) {
                             same(x.start(), x.end(), y.start(), y.end());
-                        } else {   // blanks, which the code took as the same
-                            left.add(x.start(), x.end(), Span.Kind.UNIMPORTANT);
-                            right.add(y.start(), y.end(), Span.Kind.UNIMPORTANT);
+                        } else {   // blanks, which the code took as the same: left out, they are
+                            left.add(x.start(), x.end(), Span.Kind.SAME);
+                            right.add(y.start(), y.end(), Span.Kind.SAME);
                         }
                     }
                 } else {
@@ -177,11 +171,10 @@ final class ParagraphComparer {
             return codes;
         }
 
-        /** Blanks before the first token compared, or after the last: left out of the comparison, so unimportant if they differ. */
+        /** Blanks before the first token compared, or after the last: left out of the comparison, the same. */
         private void edge(int startA, int endA, int startB, int endB) {
-            boolean same = a.text().substring(startA, endA).equals(b.text().substring(startB, endB));
-            left.add(startA, endA, same ? Span.Kind.SAME : Span.Kind.UNIMPORTANT);
-            right.add(startB, endB, same ? Span.Kind.SAME : Span.Kind.UNIMPORTANT);
+            left.add(startA, endA, Span.Kind.SAME);
+            right.add(startB, endB, Span.Kind.SAME);
         }
 
         /**
@@ -192,9 +185,9 @@ final class ParagraphComparer {
             String x = a.text().substring(startA, endA);
             String y = b.text().substring(startB, endB);
             boolean blanksOnly = !options.blanks() && isBlank(x) && isBlank(y);
-            if (blanksOnly) {
-                left.add(startA, endA, Span.Kind.UNIMPORTANT);
-                right.add(startB, endB, Span.Kind.UNIMPORTANT);
+            if (blanksOnly) {   // blanks left out: no difference
+                left.add(startA, endA, Span.Kind.SAME);
+                right.add(startB, endB, Span.Kind.SAME);
             } else if (x.isEmpty()) {
                 left.add(startA, startA, Span.Kind.ABSENT);
                 right.add(startB, endB, Span.Kind.ONLY_HERE);

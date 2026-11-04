@@ -53,7 +53,7 @@ class ParagraphComparerTest {
         String right = "covered by this document;  they are described ";
         ParagraphDiff diff = compare(left, right);
         assertFalse(diff.textDiffers());
-        assertEquals("covered by this document;|(  )|they are described|( )", marked(right, diff.right()));
+        assertEquals(right, marked(right, diff.right()), "nothing marked");
         assertFalse(compare("foo, bar", "foo,bar").textDiffers(), "a blank added is no difference either");
         assertFalse(compare("tighten to 25 N", "tighten to 25 N").textDiffers(), "nor a no-break space");
     }
@@ -147,7 +147,6 @@ class ParagraphComparerTest {
                 case CHANGED -> "{" + part + "}";
                 case ONLY_HERE -> "[" + part + "]";
                 case ABSENT -> "^";
-                case UNIMPORTANT -> "(" + part + ")";
             });
             previous = span.kind();
         }
