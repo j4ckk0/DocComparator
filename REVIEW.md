@@ -58,7 +58,7 @@ would start with `ui` only.
 **Effort / risk:** medium. About 40 call sites in `ui` and their tests. It is a mechanical change with no behaviour
 change, and the compiler finds every site.
 
-### 2. `ComparatorPanel` keeps the two sides in parallel fields
+### 2. `ComparatorPanel` keeps the two sides in parallel fields — done (`SideState`, the heads kept apart so that a swap leaves them in place)
 
 **Where:** `ComparatorPanel.java`.
 - Six fields come in left/right pairs: `left`/`right`, `leftDocument`/`rightDocument`, `leftHeader`/`rightHeader`.

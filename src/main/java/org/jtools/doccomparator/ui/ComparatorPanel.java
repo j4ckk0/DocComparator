@@ -37,7 +37,9 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.nio.file.Path;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
@@ -121,13 +123,10 @@ public final class ComparatorPanel extends JPanel {
             statusLine.say(why);
         }
     };
-    private final DocumentHeader leftHeader;
-    private final DocumentHeader rightHeader;
-
-    private DocumentSource left;
-    private DocumentSource right;
-    private WordDocument leftDocument;
-    private WordDocument rightDocument;
+    /** The head of each side: its own, whatever the side is given (swapping the sides keeps the heads in place). */
+    private final Map<Side, DocumentHeader> heads = new EnumMap<>(Side.class);
+    private final Map<Side, SideState> sides = new EnumMap<>(Map.of(Side.LEFT, SideState.EMPTY,
+            Side.RIGHT, SideState.EMPTY));
     private Comparison comparison;
     private SwingWorker<?, ?> running;
     private Consumer<String> namesListener = names -> { };
@@ -135,16 +134,16 @@ public final class ComparatorPanel extends JPanel {
 
     public ComparatorPanel() {
         super(new BorderLayout());
-        leftHeader = new DocumentHeader(Side.LEFT, openLeft, opener, this, labels);
-        rightHeader = new DocumentHeader(Side.RIGHT, openRight, opener, this, labels);
+        heads.put(Side.LEFT, new DocumentHeader(Side.LEFT, openLeft, opener, this, labels));
+        heads.put(Side.RIGHT, new DocumentHeader(Side.RIGHT, openRight, opener, this, labels));
         showEmptySides();
         scroll.getVerticalScrollBar().setUnitIncrement(24);
         scroll.setBorder(BorderFactory.createEmptyBorder());
 
         JPanel headers = new JPanel(new HeadsLayout());
         headers.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
-        headers.add(leftHeader);
-        headers.add(rightHeader);
+        headers.add(heads.get(Side.LEFT));
+        headers.add(heads.get(Side.RIGHT));
         view.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -184,8 +183,7 @@ public final class ComparatorPanel extends JPanel {
      */
     public void languageChanged() {
         labels.apply();
-        leftDocument = null;
-        rightDocument = null;
+        sides.replaceAll((side, state) -> state.unread());
         compare();
     }
 
@@ -238,10 +236,8 @@ public final class ComparatorPanel extends JPanel {
 
     /** Opens these two documents and compares them. */
     public void open(Path left, Path right) {
-        this.left = left == null ? null : new DocumentSource.File(left);
-        this.right = right == null ? null : new DocumentSource.File(right);
-        leftDocument = null;
-        rightDocument = null;
+        sides.put(Side.LEFT, left == null ? SideState.EMPTY : SideState.of(new DocumentSource.File(left)));
+        sides.put(Side.RIGHT, right == null ? SideState.EMPTY : SideState.of(new DocumentSource.File(right)));
         compare();
     }
 
@@ -255,13 +251,7 @@ public final class ComparatorPanel extends JPanel {
     }
 
     private void put(Side side, DocumentSource source) {
-        if (side == Side.LEFT) {
-            left = source;
-            leftDocument = null;
-        } else {
-            right = source;
-            rightDocument = null;
-        }
+        sides.put(side, SideState.of(source));
         compare();
     }
 
@@ -292,12 +282,9 @@ public final class ComparatorPanel extends JPanel {
     }
 
     private void swap() {
-        DocumentSource source = left;
-        left = right;
-        right = source;
-        WordDocument document = leftDocument;
-        leftDocument = rightDocument;
-        rightDocument = document;
+        SideState left = sides.get(Side.LEFT);
+        sides.put(Side.LEFT, sides.get(Side.RIGHT));
+        sides.put(Side.RIGHT, left);
         compare();
     }
 
@@ -306,8 +293,7 @@ public final class ComparatorPanel extends JPanel {
      * for while another runs replaces it.
      */
     private void compare() {
-        leftHeader.show(left, null);
-        rightHeader.show(right, null);
+        sides.forEach((side, state) -> heads.get(side).show(state.source(), null));
         namesListener.accept(documentNames());
         updateActions();
         if (running != null) {
@@ -316,30 +302,28 @@ public final class ComparatorPanel extends JPanel {
             setCursor(null);
         }
         showEmptySides();
-        if (left == null && right == null) {
+        SideState left = sides.get(Side.LEFT);
+        SideState right = sides.get(Side.RIGHT);
+        if (!left.isOpen() && !right.isOpen()) {
             comparison = null;
             showEmptyView();
             view.setWaitingSide(null);
             statusLine.say("");
             return;
         }
-        if (left == null || right == null) {
-            showAlone(left != null ? Side.LEFT : Side.RIGHT);
+        if (!left.isOpen() || !right.isOpen()) {
+            showAlone(left.isOpen() ? Side.LEFT : Side.RIGHT);
             return;
         }
-        DocumentSource leftSource = left;
-        DocumentSource rightSource = right;
-        WordDocument knownLeft = leftDocument;
-        WordDocument knownRight = rightDocument;
         CompareOptions options = controls.options();
         inBackground("status.comparing", () -> {
-            WordDocument a = knownLeft != null ? knownLeft : leftSource.read();
-            WordDocument b = knownRight != null ? knownRight : rightSource.read();
+            WordDocument a = left.document();
+            WordDocument b = right.document();
             PictureImages.prepare(a, b);   // decoded here, away from the window's thread
             return DocumentComparer.compare(a, b, options);
         }, result -> {
-            leftDocument = result.left();
-            rightDocument = result.right();
+            sides.put(Side.LEFT, left.withRead(result.left()));
+            sides.put(Side.RIGHT, right.withRead(result.right()));
             show(result);
         }, "status.notCompared", "dialog.cannotCompare");
     }
@@ -350,20 +334,14 @@ public final class ComparatorPanel extends JPanel {
      */
     private void showAlone(Side side) {
         comparison = null;
-        DocumentSource source = side.of(left, right);
-        WordDocument known = side.of(leftDocument, rightDocument);
+        SideState state = sides.get(side);
         inBackground("status.reading", () -> {
-            WordDocument document = known != null ? known : source.read();
+            WordDocument document = state.document();
             PictureImages.prepare(document);
             return document;
         }, document -> {
-            if (side == Side.LEFT) {
-                leftDocument = document;
-                leftHeader.show(source, document);
-            } else {
-                rightDocument = document;
-                rightHeader.show(source, document);
-            }
+            sides.put(side, state.withRead(document));
+            heads.get(side).show(state.source(), document);
             Lines.Shown shown = controls.shown();
             Palette palette = Palette.of(shown.documentView());
             view.setLines(Lines.alone(document, side, shown, view.fonts(), palette), -1, palette);
@@ -412,8 +390,7 @@ public final class ComparatorPanel extends JPanel {
 
     /** The head of the side text pasted goes to, shown so. */
     private void showChosenSide() {
-        leftHeader.setChosen(view.chosenSide() == Side.LEFT);
-        rightHeader.setChosen(view.chosenSide() == Side.RIGHT);
+        heads.forEach((side, head) -> head.setChosen(side == view.chosenSide()));
     }
 
     /** No document open: the two empty sides, in the colours of the look in use. */
@@ -423,7 +400,8 @@ public final class ComparatorPanel extends JPanel {
 
     /** While a side has no document: what goes there, and how to open it; the side opened, its document's name. */
     private void showEmptySides() {
-        view.setEmptySides(emptySide(left, "empty.left", "Ctrl+O"), emptySide(right, "empty.right", "Ctrl+Shift+O"));
+        view.setEmptySides(emptySide(sides.get(Side.LEFT).source(), "empty.left", "Ctrl+O"),
+                emptySide(sides.get(Side.RIGHT).source(), "empty.right", "Ctrl+Shift+O"));
     }
 
     /**
@@ -442,8 +420,7 @@ public final class ComparatorPanel extends JPanel {
     /** Shows a comparison, keeping the place the view was at. */
     public void show(Comparison result) {
         comparison = result;
-        leftHeader.show(left, result.left());
-        rightHeader.show(right, result.right());
+        sides.forEach((side, state) -> heads.get(side).show(state.source(), state.read()));
         Point at = scroll.getViewport().getViewPosition();
         view.setWaitingSide(null);
         Lines.Shown shown = controls.shown();
@@ -461,21 +438,26 @@ public final class ComparatorPanel extends JPanel {
     private void shownChanged(boolean viewChanged) {
         if (comparison != null) {
             show(comparison);
-        } else if (viewChanged && (left != null || right != null)) {
+        } else if (viewChanged && anyOpen()) {
             compare();
         }
     }
 
     /** The documents' names, left then right: "a.docx ↔ b.docx", "a.docx ↔ …"; empty when none is open. */
     String documentNames() {
-        if (left == null && right == null) {
+        if (!anyOpen()) {
             return "";
         }
-        return name(left) + BETWEEN_NAMES + name(right);
+        return name(sides.get(Side.LEFT)) + BETWEEN_NAMES + name(sides.get(Side.RIGHT));
     }
 
-    private static String name(DocumentSource source) {
-        return source == null ? NO_NAME : source.name();
+    private static String name(SideState side) {
+        return side.isOpen() ? side.source().name() : NO_NAME;
+    }
+
+    /** Whether either side has something to compare. */
+    private boolean anyOpen() {
+        return sides.values().stream().anyMatch(SideState::isOpen);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -500,7 +482,7 @@ public final class ComparatorPanel extends JPanel {
         boolean compared = comparison != null;
         previous.setEnabled(compared && view.difference(false) >= 0);
         next.setEnabled(compared && view.difference(true) >= 0);
-        swap.setEnabled(left != null || right != null);
+        swap.setEnabled(anyOpen());
     }
 
     /** An action named by the text of nameKey, its tooltip tipKey's. */
@@ -533,7 +515,7 @@ public final class ComparatorPanel extends JPanel {
             }
             if (comparison != null) {
                 show(comparison);
-            } else if (left != null || right != null) {
+            } else if (anyOpen()) {
                 compare();
             } else {
                 showEmptyView();
@@ -559,15 +541,15 @@ public final class ComparatorPanel extends JPanel {
                     .getPreferredSize().width;
             int left = Math.min(view.leftWidth(), width);
             int height = parent.getHeight() - insets.top - insets.bottom;
-            leftHeader.setBounds(0, insets.top, left, height);
+            heads.get(Side.LEFT).setBounds(0, insets.top, left, height);
             int right = left + ComparisonView.GUTTER;
-            rightHeader.setBounds(right, insets.top, Math.max(0, width - right), height);
+            heads.get(Side.RIGHT).setBounds(right, insets.top, Math.max(0, width - right), height);
         }
 
         @Override
         public Dimension preferredLayoutSize(Container parent) {
             Insets insets = parent.getInsets();
-            int height = Math.max(leftHeader.getPreferredSize().height, rightHeader.getPreferredSize().height);
+            int height = heads.values().stream().mapToInt(head -> head.getPreferredSize().height).max().orElse(0);
             return new Dimension(0, height + insets.top + insets.bottom);
         }
 
