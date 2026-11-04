@@ -83,6 +83,22 @@ class SamplesTest {
         assertEquals(1, comparison.stories().get(2).differences(), "the footnote");
     }
 
+    /** A figure redrawn: paired with the one it replaces, the picture changed; one copied as it is: the same. */
+    @Test
+    void picturesAreComparedByTheirImages() {
+        List<Row> body = DocumentComparer.compare(REVISION_A, REVISION_B, Paragraphs.FULL).stories().getFirst().rows();
+        Row figure = body.stream().filter(row -> row.left() != null && row.right() != null
+                && row.left().text().equals("\uFFFC")).findFirst().orElseThrow();
+        assertEquals(Row.Status.CHANGED, figure.status());
+        assertEquals("{\uFFFC}", marked(figure.right().text(), figure.diff().right()));
+        assertEquals(Row.Status.SAME, rowOnRight(body, "Figure 1").status(), "its caption");
+
+        List<Row> handbook = DocumentComparer.compare(REVISION_A, HANDBOOK, CompareOptions.DEFAULT).stories().getFirst()
+                .rows();
+        assertTrue(handbook.stream().anyMatch(row -> row.left() != null && row.right() != null
+                && row.left().text().equals("\uFFFC") && row.status() == Row.Status.SAME), "copied as it is");
+    }
+
     @Test
     void theSwappedSectionIsMovedOnBothSides() {
         List<Row> body = DocumentComparer.compare(REVISION_A, REVISION_B, Paragraphs.FULL)

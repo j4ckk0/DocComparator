@@ -1,5 +1,6 @@
 package org.jtools.doccomparator.docx;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -17,6 +18,7 @@ import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.ListItem;
 import org.jtools.doccomparator.document.Paragraph;
+import org.jtools.doccomparator.document.Picture;
 import org.jtools.doccomparator.document.Run;
 import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.Table;
@@ -157,6 +159,91 @@ class DocxReaderTest {
         assertEquals(3, second.size());
         Table within = assertInstanceOf(Table.class, second.get(1));
         assertEquals(List.of("within"), texts(paragraphs(within.rows().getFirst().cells().getFirst().blocks())));
+    }
+
+    /** A picture as Word writes one, its size in EMUs (12700 to the point), its description, its image's id. */
+    private static String drawing(String id, String description) {
+        return "<w:r><w:drawing><wp:inline><wp:extent cx=\"2286000\" cy=\"1270000\"/>"
+                + "<wp:docPr id=\"1\" name=\"Picture 1\" descr=\"" + description + "\"/>"
+                + "<a:graphic><a:graphicData uri=\"http://schemas.openxmlformats.org/drawingml/2006/picture\">"
+                + "<pic:pic xmlns:pic=\"http://schemas.openxmlformats.org/drawingml/2006/picture\"><pic:blipFill>"
+                + "<a:blip r:embed=\"" + id + "\"/></pic:blipFill></pic:pic></a:graphicData></a:graphic>"
+                + "</wp:inline></w:drawing></w:r>";
+    }
+
+    private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n', 1, 2, 3};
+
+    /** A picture: a run of its own, its character in the text, its size, description, image and digest kept. */
+    @Test
+    void aPictureIsReadWithItsSizeAndImage() throws IOException {
+        WordDocument document = read(TestDocx.body("<w:p><w:r><w:t xml:space=\"preserve\">See </w:t></w:r>"
+                + drawing("rIdPicture", "The pump") + "<w:r><w:t>here.</w:t></w:r></w:p>")
+                .binary("word/media/image1.png", PNG)
+                .link("word/document.xml", "rIdPicture", "image", "media/image1.png", false));
+        Paragraph paragraph = paragraphs(document.body()).getFirst();
+        assertEquals("See \uFFFChere.", paragraph.text());
+        Picture picture = paragraph.runs().get(1).picture();
+        assertEquals(Picture.Kind.IMAGE, picture.kind());
+        assertEquals(180, picture.width(), 0.01);
+        assertEquals(100, picture.height(), 0.01);
+        assertEquals("The pump", picture.description());
+        assertEquals("png", picture.format());
+        assertArrayEquals(PNG, picture.bytes());
+        assertEquals(64, picture.digest().length(), "SHA-256 in hexadecimal");
+    }
+
+    /** Word writes a picture twice for older versions of itself, as it does a text box: read once. */
+    @Test
+    void aPictureForOlderWordsIsReadOnce() throws IOException {
+        WordDocument document = read(TestDocx.body("<w:p><w:r><mc:AlternateContent><mc:Choice Requires=\"wps\">"
+                + drawing("rIdPicture", "new").replace("<w:r>", "").replace("</w:r>", "")
+                + "</mc:Choice><mc:Fallback><w:pict><v:shape style=\"width:180pt;height:100pt\">"
+                + "<v:imagedata r:id=\"rIdPicture\"/></v:shape></w:pict></mc:Fallback></mc:AlternateContent>"
+                + "</w:r></w:p>")
+                .binary("word/media/image1.png", PNG)
+                .link("word/document.xml", "rIdPicture", "image", "media/image1.png", false));
+        Paragraph paragraph = paragraphs(document.body()).getFirst();
+        assertEquals("\uFFFC", paragraph.text());
+        assertEquals("new", paragraph.runs().getFirst().picture().description());
+    }
+
+    /** A picture outside the document — embedded by its word, or linked — is never fetched. */
+    @Test
+    void aPictureOutsideTheDocumentIsNeverFetched() throws IOException {
+        WordDocument document = read(TestDocx.body("<w:p>" + drawing("rIdOutside", "on a share") + "</w:p>")
+                .link("word/document.xml", "rIdOutside", "image", "file:///\\\\fileserver\\pictures\\pump.png", true));
+        Picture picture = paragraphs(document.body()).getFirst().runs().getFirst().picture();
+        assertEquals(Picture.Kind.LINKED, picture.kind());
+        assertNull(picture.bytes());
+        assertEquals("link:file:///\\\\fileserver\\pictures\\pump.png", picture.digest());
+    }
+
+    /** A header's picture is found through the header's own relationships, not the body's. */
+    @Test
+    void aHeadersPictureIsTheHeadersOwn() throws IOException {
+        WordDocument document = read(TestDocx.body("<w:p/><w:sectPr><w:headerReference w:type=\"default\" "
+                + "r:id=\"rIdHeader\"/></w:sectPr>")
+                .wordPart("rIdHeader", "header", "header1.xml", "w:hdr",
+                        "<w:p>" + drawing("rIdLogo", "logo") + "</w:p>")
+                .binary("word/media/logo.png", PNG)
+                .link("word/header1.xml", "rIdLogo", "image", "media/logo.png", false));
+        Picture logo = paragraphs(document.headersAndFooters().getFirst()).getFirst().runs().getFirst().picture();
+        assertEquals(Picture.Kind.IMAGE, logo.kind());
+        assertArrayEquals(PNG, logo.bytes());
+    }
+
+    /** A chart cannot be shown: a picture saying so stands in its place. */
+    @Test
+    void aChartIsAPictureSayingSo() throws IOException {
+        WordDocument document = read(TestDocx.body("<w:p><w:r><w:drawing><wp:inline><wp:extent cx=\"1270000\" "
+                + "cy=\"1270000\"/><wp:docPr id=\"2\" name=\"Chart 2\"/><a:graphic><a:graphicData "
+                + "uri=\"http://schemas.openxmlformats.org/drawingml/2006/chart\"><c:chart "
+                + "xmlns:c=\"http://schemas.openxmlformats.org/drawingml/2006/chart\" r:id=\"rIdChart\"/>"
+                + "</a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>"));
+        Picture chart = paragraphs(document.body()).getFirst().runs().getFirst().picture();
+        assertEquals(Picture.Kind.UNSUPPORTED, chart.kind());
+        assertEquals("chart", chart.format());
+        assertEquals(100, chart.width(), 0.01);
     }
 
     /** Where Word's pages began at its last layout: kept, as offsets in the text; after a page break, once. */

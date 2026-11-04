@@ -21,6 +21,8 @@ import org.jtools.doccomparator.compare.StoryComparison;
 import org.jtools.doccomparator.compare.TableComparison;
 import org.jtools.doccomparator.document.ListItem;
 import org.jtools.doccomparator.document.Paragraph;
+import org.jtools.doccomparator.document.Picture;
+import org.jtools.doccomparator.document.Run;
 import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
@@ -356,7 +358,7 @@ final class Lines {
             marker = null;
         }
         TextBlock text = new TextBlock(item.text(), heading && laidOut == null ? fonts.heading() : fonts.text(),
-                Palette.TEXT, spans, formatting, "(empty paragraph)", laidOut);
+                Palette.TEXT, spans, formatting, "(empty paragraph)", laidOut).withPictures(pictures(item));
         String location = inTable ? null : location(item, false);
         TextBlock caption = location == null ? null : TextBlock.plain(location, fonts.small(), Palette.FAINT);
         String notes = notes(row, onLeft, formatting);
@@ -371,6 +373,19 @@ final class Lines {
                 new Span(property.length() + 2, text.length(), Span.Kind.CHANGED));
         return new Cell(Cell.Look.CHANGED, null, null, null,
                 new TextBlock(text, fonts.text(), Palette.TEXT, spans, List.of(), " "), null, null);
+    }
+
+    /** A paragraph's pictures, by their offset in its text. */
+    private static Map<Integer, Picture> pictures(Item item) {
+        Map<Integer, Picture> pictures = new HashMap<>();
+        int offset = 0;
+        for (Run run : item.paragraph().runs()) {
+            if (run.picture() != null) {
+                pictures.put(offset, run.picture());
+            }
+            offset += run.text().length();
+        }
+        return pictures;
     }
 
     /** Where a paragraph or a table is, when the body's flow does not say (or always): "Table 2", "Footer, section 2". */

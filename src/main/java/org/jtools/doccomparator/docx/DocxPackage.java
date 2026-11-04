@@ -1,14 +1,19 @@
 package org.jtools.doccomparator.docx;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -104,6 +109,46 @@ final class DocxPackage implements AutoCloseable {
         } catch (IOException e) {
             throw new DocxException(fileName, part + " cannot be read: " + e.getMessage());
         }
+    }
+
+    /** A binary part read: its SHA-256 in hexadecimal, and its bytes, null when larger than the size kept. */
+    record Binary(String digest, byte[] bytes) {
+    }
+
+    /**
+     * A binary part — a picture — read once: its digest computed as it goes, its bytes kept up to keptBytes, the rest
+     * only counted; past LARGEST_PART, refused as any part.
+     */
+    Binary binary(String part, int keptBytes) throws DocxException {
+        ZipEntry entry = entries.get(part.toLowerCase(Locale.ROOT));
+        if (entry == null) {
+            throw new DocxException(fileName, "it has no part " + part);
+        }
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("every JDK has SHA-256", e);
+        }
+        ByteArrayOutputStream kept = new ByteArrayOutputStream();
+        boolean keeping = true;
+        try (InputStream in = new LimitedInputStream(zip.getInputStream(entry), part)) {
+            byte[] buffer = new byte[64 * 1024];
+            for (int n = in.read(buffer); n >= 0; n = in.read(buffer)) {
+                digest.update(buffer, 0, n);
+                if (keeping) {
+                    if (kept.size() + n > keptBytes) {
+                        keeping = false;
+                        kept = null;
+                    } else {
+                        kept.write(buffer, 0, n);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new DocxException(fileName, part + " cannot be read: " + e.getMessage());
+        }
+        return new Binary(HexFormat.of().formatHex(digest.digest()), keeping ? kept.toByteArray() : null);
     }
 
     /** "word/document.xml" → "word/_rels/document.xml.rels"; "" (the package) → "_rels/.rels". */

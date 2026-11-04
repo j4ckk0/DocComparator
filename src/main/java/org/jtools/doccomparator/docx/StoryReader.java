@@ -10,6 +10,7 @@ import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.ListItem;
 import org.jtools.doccomparator.document.Paragraph;
+import org.jtools.doccomparator.document.Picture;
 import org.jtools.doccomparator.document.Run;
 import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
@@ -39,9 +40,17 @@ final class StoryReader {
     private int sections;
     private final List<SectionReference> sectionReferences = new ArrayList<>();
 
+    /** The pictures of the part being read, through its relationships. */
+    private Pictures pictures = Pictures.NONE;
+
     StoryReader(StyleSheet styles, Numbering numbering) {
         this.styles = styles;
         this.numbering = numbering;
+    }
+
+    /** Reads the next part's pictures through its relationships: each part has its own. */
+    void pictures(Pictures ofPart) {
+        pictures = ofPart;
     }
 
     boolean trackedChanges() {
@@ -131,12 +140,19 @@ final class StoryReader {
             length += text.length();
             if (!runs.isEmpty()) {
                 Run last = runs.getLast();
-                if (Objects.equals(last.styleId(), styleId) && last.formatting().equals(formatting)) {
+                if (last.picture() == null
+                        && Objects.equals(last.styleId(), styleId) && last.formatting().equals(formatting)) {
                     runs.set(runs.size() - 1, new Run(last.text() + text, styleId, formatting));
                     return;
                 }
             }
             runs.add(new Run(text, styleId, formatting));
+        }
+
+        /** A picture: a run of its own, never joined to another. */
+        void addPicture(Picture picture, String styleId, Formatting formatting) {
+            runs.add(new Run(String.valueOf(Picture.IN_TEXT), styleId, formatting, picture));
+            length += 1;
         }
     }
 
@@ -275,7 +291,22 @@ final class StoryReader {
             case "noBreakHyphen" -> append(xml, text, "‑");
             case "softHyphen" -> append(xml, text, "­");
             case "sym" -> append(xml, text, symbol(xml.wordAttribute("char")));
-            case "drawing", "pict", "object" -> findTextBoxes(xml, content);
+            case "drawing", "pict", "object" -> {
+                Drawing drawing = new Drawing();
+                scanDrawing(xml, content, drawing);
+                if (drawing.pictures.isEmpty() && drawing.unsupported != null) {
+                    drawing.pictures.add(Pictures.unsupported(drawing.unsupported, drawing.description, drawing.width,
+                            drawing.height));
+                }
+                if (!drawing.pictures.isEmpty()) {   // the text before it, a run; the picture, one of its own
+                    Formatting formatting = new Formatting(properties);
+                    content.addRun(text.toString(), formatting.get("rStyle"), formatting.without("rStyle"));
+                    text.setLength(0);
+                    for (Picture picture : drawing.pictures) {
+                        content.addPicture(picture, formatting.get("rStyle"), formatting.without("rStyle"));
+                    }
+                }
+            }
             // w:instrText (a field's code), w:delText (deleted), w:fldChar, w:footnoteReference…: no text shown
             default -> xml.skip();
         }
@@ -295,17 +326,106 @@ final class StoryReader {
         }
     }
 
-    /** The text boxes of a drawing, a VML picture or an object, wherever they are in it. */
-    private void findTextBoxes(XmlCursor xml, ParagraphContent content) throws DocxException {
+    /** What a drawing holds, as it is found: its pictures, its size, its description; what cannot be shown in it. */
+    private static final class Drawing {
+        final List<Picture> pictures = new ArrayList<>();
+        float width;
+        float height;
+        String description;
+        String unsupported;
+    }
+
+    /** EMUs, DrawingML's lengths: 12700 to the point. */
+    private static final float EMUS_PER_POINT = 12700;
+
+    /**
+     * A drawing, a VML picture or an object, all of it: its text boxes, wherever they are in it; its pictures (a:blip,
+     * the bitmap Word keeps beside an SVG included; v:imagedata), at the size (wp:extent, a VML shape's style) and with
+     * the description (wp:docPr) it gives; a chart or a diagram, which cannot be shown.
+     */
+    private void scanDrawing(XmlCursor xml, ParagraphContent content, Drawing drawing) throws DocxException {
         xml.forChildren(child -> {
             if (child.isWord("txbxContent")) {
                 content.textBoxes.add(new TextBox(readBlocks(child)));
-            } else if (child.isMarkupCompatibility("AlternateContent")) {
-                child.firstChoice(choice -> findTextBoxes(choice, content));
-            } else {
-                findTextBoxes(child, content);
+                return;
             }
+            if (child.isMarkupCompatibility("AlternateContent")) {
+                child.firstChoice(choice -> scanDrawing(choice, content, drawing));
+                return;
+            }
+            switch (child.localName()) {
+                case "extent" -> {
+                    drawing.width = emus(child.plainAttribute("cx"));
+                    drawing.height = emus(child.plainAttribute("cy"));
+                }
+                case "docPr" -> drawing.description = first(child.plainAttribute("descr"),
+                        child.plainAttribute("title"), child.plainAttribute("name"));
+                case "graphicData" -> {
+                    String uri = child.plainAttribute("uri");
+                    if (uri != null && (uri.endsWith("/chart") || uri.contains("/diagram"))) {
+                        drawing.unsupported = uri.endsWith("/chart") ? "chart" : "diagram";
+                    }
+                }
+                case "blip" -> drawing.pictures.add(pictures.image(child.relationshipAttribute("embed"),
+                        child.relationshipAttribute("link"), drawing.description, drawing.width, drawing.height));
+                case "shape", "rect" -> vmlSize(child.plainAttribute("style"), drawing);
+                case "imagedata" -> drawing.pictures.add(pictures.image(child.relationshipAttribute("id"), null,
+                        drawing.description, drawing.width, drawing.height));
+                default -> {
+                }
+            }
+            scanDrawing(child, content, drawing);
         });
+    }
+
+    private static float emus(String value) {
+        try {
+            return value == null ? 0 : Long.parseLong(value.trim()) / EMUS_PER_POINT;
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    /** A VML shape's size, from its style: "width:120pt;height:80pt" (in points, or inches, or pixels). */
+    private static void vmlSize(String style, Drawing drawing) {
+        if (style == null) {
+            return;
+        }
+        for (String declaration : style.split(";")) {
+            String[] pair = declaration.split(":", 2);
+            if (pair.length == 2 && (pair[0].trim().equals("width") || pair[0].trim().equals("height"))) {
+                float points = vmlPoints(pair[1].trim());
+                if (pair[0].trim().equals("width")) {
+                    drawing.width = points;
+                } else {
+                    drawing.height = points;
+                }
+            }
+        }
+    }
+
+    private static float vmlPoints(String length) {
+        try {
+            if (length.endsWith("pt")) {
+                return Float.parseFloat(length.substring(0, length.length() - 2));
+            } else if (length.endsWith("in")) {
+                return Float.parseFloat(length.substring(0, length.length() - 2)) * 72;
+            } else if (length.endsWith("px")) {
+                return Float.parseFloat(length.substring(0, length.length() - 2)) * 0.75f;
+            }
+            return Float.parseFloat(length);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private static String first(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     /** An equation's text: its m:t, in order. */

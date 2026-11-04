@@ -37,6 +37,7 @@ final class TestDocx {
     }
 
     private final Map<String, String> parts = new LinkedHashMap<>();
+    private final Map<String, byte[]> binaries = new LinkedHashMap<>();
     private final Map<String, List<Link>> links = new LinkedHashMap<>();   // by the part that links
 
     private TestDocx() {
@@ -68,6 +69,12 @@ final class TestDocx {
         return this;
     }
 
+    /** A binary part as is (a picture), linked from nowhere unless link() says so. */
+    TestDocx binary(String name, byte[] bytes) {
+        binaries.put(name, bytes);
+        return this;
+    }
+
     /** A relationship of a part ("" for the package's own); an external target is written as it is given. */
     TestDocx link(String fromPart, String id, String type, String target, boolean external) {
         links.computeIfAbsent(fromPart, part -> new ArrayList<>()).add(new Link(id, type, target, external));
@@ -92,6 +99,11 @@ final class TestDocx {
             }
             for (Map.Entry<String, String> part : parts.entrySet()) {
                 put(zip, part.getKey(), part.getValue());
+            }
+            for (Map.Entry<String, byte[]> binary : binaries.entrySet()) {
+                zip.putNextEntry(new ZipEntry(binary.getKey()));
+                zip.write(binary.getValue());
+                zip.closeEntry();
             }
         }
         return file;

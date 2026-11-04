@@ -24,7 +24,13 @@ expects: the font cache is then named after `localhost`. It covers every lookup 
 fetches unless told not to: `XmlCursor`, the program's only XML parser, supports no DTD, no external entity, no
 protocol to fetch them with, and refuses a part that has a DOCTYPE, which Word never writes. The links a document
 holds — the template it is attached to, often on a network share, a linked picture, a hyperlink — are read as text
-and never followed.
+and never followed: a picture whose relationship points outside the document, whether linked or said to be embedded,
+is shown as a frame saying so, never fetched.
+
+**Pictures are decoded as untrusted.** A document's pictures are decoded by the JDK's ImageIO, its size read first: one
+saying it has more than 400 million pixels is not decoded; the others at most 1000 pixels on their longer side, a line
+in so many skipped, whatever they hold; one larger than 32 MiB is not kept. ImageIO's cache, which it keeps on disk in
+the temporary directory unless told not to, is turned off as the program starts: decoding writes nothing.
 
 Two checks run with every build, so a change that breaks the rule does not build:
 
@@ -88,9 +94,13 @@ downloads its plugins into `~/.m2`. After that, `mvn -o` builds offline.
   every one of them under Word's name (`b`, `sz`, `rFonts.ascii`, `pBdr.top.sz`), so that all can be compared. Runs that
   look the same are joined: Word splits them for reasons of its own.
 - **The template:** the one the settings attach, as linked, and the one the properties name.
+- **The pictures:** each a run of its own, standing in its paragraph's text as one character (U+FFFC): its image (its
+  file's bytes, and their SHA-256), the size it is shown at, its description. Through the relationships of the part it
+  is in: a header's logo, the header's own. A chart, a diagram (SmartArt): a picture saying so. A picture is compared by
+  its image: one added or removed, or replaced by another at the same place, is a difference of the text.
+- **Where Word's pages began** when Word last laid the document out (`w:lastRenderedPageBreak`), for the document view.
 
-Not read yet: comments, pictures (but the text boxes they hold), the numbers a list shows (its format is read), what an
-abstract list borrows from a numbering style.
+Not read yet: comments, what an abstract list borrows from a numbering style.
 
 ## The window
 
@@ -121,7 +131,12 @@ paragraph beside its match, as high as the taller.
   has none); and where sections end. The program does not lay pages out itself: its lines are not quite Word's, so a
   page Word began within a paragraph is shown before the line holding where it began; one begun in a table counts but is
   not shown. What begins in an empty paragraph, left out with the blanks, is shown before the paragraph after it. Word's
-  record of its pages is not compared: it is no part of the content, and changes with the printer. Not shown: pictures.
+  record of its pages is not compared: it is no part of the content, and changes with the printer.
+  Pictures are drawn in their line, at the size the document gives them, scaled as the text, no wider than the page;
+  one that differs, framed in red; what cannot be drawn — a linked picture, a chart, a diagram, an EMF or WMF picture
+  (Word's own vector formats, which the JDK cannot read) — as a frame saying what it is. A picture floating beside the
+  text is drawn in the line it is anchored in; cropping and rotation are not applied. The diff view shows a picture as a
+  small sign, framed in red when it differs.
 - **Colours**, after Beyond Compare's: red, the text differs, the very words or letters marked darker; purple, on one
   side only; teal, moved; amber, the same text but its structure or style differs. A red bar marks where the other side has text this one has not; a dotted line, text formatted otherwise (its
   tooltip says how). A sign between the sides says the same at a glance.
@@ -219,7 +234,7 @@ run it again after a change: it writes the same files):
 | Document | What it is |
 |---|---|
 | `procedure-revA.docx` | the reference: a maintenance procedure, revision A, with page breaks, and Word's record of its pages |
-| `procedure-revB.docx` | its next version: paragraphs added, sentences changed, two sections swapped, a table row added, formatting and heading levels changed, a paragraph indented, the table's header row shaded and taller, a cell's border, blanks added, tracked changes, another footer and template |
+| `procedure-revB.docx` | its next version: its figure redrawn, paragraphs added, sentences changed, two sections swapped, a table row added, formatting and heading levels changed, a paragraph indented, the table's header row shaded and taller, a cell's border, blanks added, tracked changes, another footer and template |
 | `training-handbook.docx` | another document, on another template, with other headings and styles, that copied paragraphs from revision A, in another order, and changed pieces of them |
 
 The script says what each change is; `SamplesTest` checks that the comparison finds them.
@@ -277,9 +292,9 @@ Both are built from either system. Previous versions' archives are removed from 
 |---|---|
 | `src/main/java/org/jtools/doccomparator/` | `Launcher` (the entry point, given two documents or none), `MainWindow` (the window, its menus), `NoNetworkResolver` (see "No network") |
 | `…/document/` | what a Word document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
-| `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `StylesReader`, `Numbering`, `FormattingReader` |
+| `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `StylesReader`, `Numbering`, `FormattingReader`, `Pictures` (a part's pictures, through its relationships, nothing outside fetched) |
 | `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Row`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `PropertyNames` |
-| `…/ui/` | `ComparatorPanel` (the ribbon, the sides' heads, the status line), `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `FontFamilies`, `FileUris` (files dropped from Linux) |
+| `…/ui/` | `ComparatorPanel` (the ribbon, the sides' heads, the status line), `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux) |
 | `src/main/resources/META-INF/services/` | what installs `NoNetworkResolver` |
 | `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `compare/`: each step, tables, and `SamplesTest`; `ui/LinesTest`, the view, drawn without a screen |
 | `samples/` | the sample documents, and the script that writes them (see "Samples") |

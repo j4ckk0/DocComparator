@@ -31,6 +31,7 @@ public final class DocxReader {
             StoryReader stories = new StoryReader(styles, readNumbering(docx, relationships));
 
             List<Block> body = List.of();
+            stories.pictures(new Pictures(docx, relationships));
             try (XmlCursor xml = docx.open(main)) {
                 xml.root("document");
                 while (xml.nextChild()) {
@@ -95,6 +96,7 @@ public final class DocxReader {
                         default -> "";
                     }
                     + (severalSections ? ", section " + reference.section() : "");
+            stories.pictures(new Pictures(docx, docx.relationships(part.get())));   // a header's logo: its own
             try (XmlCursor xml = docx.open(part.get())) {
                 xml.root(header ? "hdr" : "ftr");
                 headersAndFooters.add(new Story(reference.kind(), label, stories.readBlocks(xml)));
@@ -109,6 +111,7 @@ public final class DocxReader {
         if (part.isEmpty() || !docx.has(part.get())) {
             return List.of();
         }
+        stories.pictures(new Pictures(docx, docx.relationships(part.get())));
         try (XmlCursor xml = docx.open(part.get())) {
             xml.root(kind);
             return stories.readNotes(xml, storyKind, noun);

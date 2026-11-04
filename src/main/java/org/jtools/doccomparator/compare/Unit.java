@@ -2,8 +2,11 @@ package org.jtools.doccomparator.compare;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import org.jtools.doccomparator.document.Picture;
 import org.jtools.doccomparator.document.Run;
 
 /**
@@ -14,10 +17,11 @@ import org.jtools.doccomparator.document.Run;
  * @param words   its words' codes, in order
  * @param bag     the same, sorted: what two items have in common whatever the order, an upper bound of the rest
  * @param runEnds where each run of the paragraph ends in its text
- * @param cells   for a table, its cells by row and column on its grid, null where none starts; null otherwise
+ * @param cells    for a table, its cells by row and column on its grid, null where none starts; null otherwise
+ * @param pictures its pictures' digests, by their offset in its text: a picture is compared by its image
  */
 record Unit(Item item, String text, List<Token> tokens, String key, int[] words, int[] bag, int[] runEnds,
-            Unit[][] cells) {
+            Unit[][] cells, Map<Integer, String> pictures) {
 
     /** Starts the key of a table, a row or a column: never the same as a paragraph's. */
     private static final char COMPOSITE = '\u0002';
@@ -30,10 +34,22 @@ record Unit(Item item, String text, List<Token> tokens, String key, int[] words,
         }
         String text = item.text();
         List<Token> tokens = Token.of(text);
+        Map<Integer, String> pictures = new HashMap<>();
+        int offset = 0;
+        for (Run run : item.paragraph().runs()) {
+            if (run.picture() != null) {
+                pictures.put(offset, run.picture().digest());
+            }
+            offset += run.text().length();
+        }
         StringBuilder key = new StringBuilder();
         for (Token token : tokens) {
             if (blanks || token.type() != Token.Type.BLANK) {
                 key.append(token.text(text));
+                String picture = pictures.get(token.start());
+                if (picture != null) {
+                    key.append(picture).append(Picture.IN_TEXT);   // two pictures differ by their images
+                }
             }
         }
         int[] words = tokens.stream().filter(token -> token.type() == Token.Type.WORD)
@@ -45,7 +61,7 @@ record Unit(Item item, String text, List<Token> tokens, String key, int[] words,
             end += runs.get(i).text().length();
             runEnds[i] = end;
         }
-        return new Unit(item, text, tokens, key.toString(), words, sorted(words), runEnds, null);
+        return new Unit(item, text, tokens, key.toString(), words, sorted(words), runEnds, null, pictures);
     }
 
     private static Unit table(Item item, boolean blanks, Vocabulary vocabulary) {
@@ -61,7 +77,7 @@ record Unit(Item item, String text, List<Token> tokens, String key, int[] words,
             }
         }
         Unit table = composite(item, all);
-        return new Unit(item, table.text, table.tokens, table.key, table.words, table.bag, table.runEnds, cells);
+        return new Unit(item, table.text, table.tokens, table.key, table.words, table.bag, table.runEnds, cells, Map.of());
     }
 
     /** A unit made of others — a table, a row, a column — and standing for this item. */
@@ -80,7 +96,7 @@ record Unit(Item item, String text, List<Token> tokens, String key, int[] words,
             w += part.words.length;
         }
         return new Unit(item, text.toString(), Token.of(text.toString()), key.toString(), words, sorted(words),
-                new int[0], null);
+                new int[0], null, Map.of());
     }
 
     private static int[] sorted(int[] words) {

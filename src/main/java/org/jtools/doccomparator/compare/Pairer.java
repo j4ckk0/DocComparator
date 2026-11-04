@@ -169,6 +169,10 @@ final class Pairer {
         }
         int n = a.words().length;
         int m = b.words().length;
+        if (n == 0 && m == 0) {
+            // no words: the same text, but for its pictures (a figure redrawn), is the least that goes together
+            return a.text().equals(b.text()) && !a.text().isBlank() ? least : 0;
+        }
         double enough = least * (n + m) - 1e-9;   // the words to keep in common, twice
         if (n == 0 || m == 0 || 2.0 * Math.min(n, m) < enough) {
             return 0;   // too different in length to keep enough in common

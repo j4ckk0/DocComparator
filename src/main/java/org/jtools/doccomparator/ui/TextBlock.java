@@ -22,6 +22,7 @@ import java.util.Map;
 import org.jtools.doccomparator.compare.FormatSpan;
 import org.jtools.doccomparator.compare.PropertyDifference;
 import org.jtools.doccomparator.compare.Span;
+import org.jtools.doccomparator.document.Picture;
 
 /**
  * A text wrapped to a width, its differences marked: behind the text that differs, a bar where the other side has
@@ -44,6 +45,8 @@ final class TextBlock {
     private final List<FormatSpan> formatting;
     private final String placeholder;
     private final DocumentLook look;
+    /** Its pictures, by their offset in its text. */
+    private Map<Integer, Picture> pictures = Map.of();
 
     /** The lines laid out: each its layout, its first character, where it starts across, where its top is. */
     private final List<TextLayout> layouts = new ArrayList<>();
@@ -81,6 +84,12 @@ final class TextBlock {
         this.formatting = formatting;
         this.placeholder = placeholder;
         this.look = look;
+    }
+
+    /** The same, with its pictures, by their offset in its text. */
+    TextBlock withPictures(Map<Integer, Picture> found) {
+        pictures = Map.copyOf(found);
+        return this;
     }
 
     static TextBlock plain(String text, Font font, Color color) {
@@ -139,6 +148,19 @@ final class TextBlock {
             numberX = Math.max(0, left + firstLine);
             float end = numberX + number.getAdvance();
             textAfterNumber = end + pixels * 2 <= left ? left : end + pixels * 6;
+        }
+
+        // pictures in the place of the characters standing for them: as shown in the document, or a sign
+        if (!text.isEmpty()) {
+            Font labels = font.deriveFont(Font.PLAIN, Math.max(9, font.getSize2D() - 2));
+            for (Map.Entry<Integer, Picture> picture : pictures.entrySet()) {
+                int at = picture.getKey();
+                if (at < shown.length()) {
+                    attributed.addAttribute(TextAttribute.CHAR_REPLACEMENT, laidOut
+                            ? PictureGraphic.shown(picture.getValue(), pixels, width - left - right, labels)
+                            : PictureGraphic.sign(picture.getValue(), font), at, at + 1);
+                }
+            }
         }
 
         LineBreakMeasurer measurer = new LineBreakMeasurer(attributed.getIterator(), context);
@@ -317,6 +339,20 @@ final class TextBlock {
                         .getBounds();
                 g.setColor(Palette.ABSENT_MARK);
                 g.fillRect(caret.x - 1, (int) (baseline - layout.getAscent()), 3, lineHeight);
+            }
+        }
+        for (Span span : spans) {   // a picture that differs: framed in red, its image covering what is behind it
+            if (span.differs()) {
+                for (int offset : pictures.keySet()) {
+                    if (offset >= span.start() && offset < span.end() && offset >= start && offset < end) {
+                        Rectangle frame = at.createTransformedShape(
+                                layout.getLogicalHighlightShape(offset - start, offset - start + 1)).getBounds();
+                        g.setColor(Palette.CHANGED_MARK);
+                        g.setStroke(new BasicStroke(3));
+                        g.drawRect(frame.x, frame.y, frame.width, frame.height);
+                        g.setStroke(new BasicStroke(1));
+                    }
+                }
             }
         }
         for (FormatSpan span : formatting) {

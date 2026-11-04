@@ -186,6 +186,33 @@ class LinesTest {
         assertEquals(List.of(), diff.get(lineWith(diff, "Records", true)).left.text.pageMarks(), "the diff view has none");
     }
 
+    /** Pictures: drawn at their size in the document view, a sign in the diff view. */
+    @Test
+    void picturesAreDrawnAtTheirSize() throws IOException {
+        Comparison comparison = compare("procedure-revB.docx");
+        PictureImages.prepare(comparison.left());
+        List<Line> document = Lines.of(comparison, false, false, true, FONTS);
+        List<Line> diff = Lines.of(comparison, false, FONTS);
+        ComparisonView view = new ComparisonView();
+        view.setLines(document, -1);
+        view.setSize(1200, 10);
+        view.setSize(1200, view.getPreferredSize().height);
+        Line figure = document.stream().filter(line -> line.left != null && line.left.text != null
+                && line.left.text.text().equals("\uFFFC")).findFirst().orElseThrow();
+        assertTrue(figure.left.height() > 100, "105 points high, at the view's scale: " + figure.left.height());
+        ComparisonView plain = new ComparisonView();
+        plain.setLines(diff, -1);
+        plain.setSize(1200, 10);
+        plain.setSize(1200, plain.getPreferredSize().height);
+        Line sign = diff.stream().filter(line -> line.left != null && line.left.text != null
+                && line.left.text.text().equals("\uFFFC")).findFirst().orElseThrow();
+        assertTrue(sign.left.height() < 40, "a sign, a line high: " + sign.left.height());
+        BufferedImage image = new BufferedImage(1200, 800, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = image.createGraphics();
+        view.paint(g);
+        g.dispose();
+    }
+
     /** List items: in the document view, their number in their text, where Word puts it; in the diff view, in the margin. */
     @Test
     void theDocumentViewShowsListNumbersInTheText() throws IOException {

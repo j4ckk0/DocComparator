@@ -5,6 +5,7 @@ Writes the sample documents of samples/, to try DocComparator on (README, "Sampl
   procedure-revA.docx      the reference: a maintenance procedure, revision A (Safety on a new page, a page break
                            before Records)
   procedure-revB.docx      its next version: paragraphs added and removed, sentences changed, two sections swapped,
+                           its figure redrawn,
                            a table row added, formatting changed, a paragraph indented, the table's header shaded
                            and taller, a cell's border, extra blanks, tracked changes, another footer and template
   training-handbook.docx   another document, on another template, with other headings and styles, that copied
@@ -17,7 +18,9 @@ footnotes), with Python's standard library alone. The output is the same at each
 """
 
 import os
+import struct
 import zipfile
+import zlib
 from xml.sax.saxutils import escape
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -200,7 +203,7 @@ def numbering_part():
 # The package
 
 def write_docx(name, *, title, author, body, styles, header, footer, footnotes, template_link, template_name,
-               ids):
+               ids, images=None, header_images=None):
     """
     A .docx in samples/, its styles under these ids (by role). header and footer: lists of paragraphs' XML. footnotes: (id, text) pairs, ids from 1.
     template_link: the template the settings attach, as Word links it (a path on a share); template_name: the one
@@ -231,6 +234,7 @@ def write_docx(name, *, title, author, body, styles, header, footer, footnotes, 
         DECLARATION + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
         '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
         '<Default Extension="xml" ContentType="application/xml"/>'
+        '<Default Extension="png" ContentType="image/png"/>'
         f'<Override PartName="/word/document.xml" ContentType="{word}document.main+xml"/>'
         f'<Override PartName="/word/styles.xml" ContentType="{word}styles+xml"/>'
         f'<Override PartName="/word/numbering.xml" ContentType="{word}numbering+xml"/>'
@@ -286,13 +290,86 @@ def write_docx(name, *, title, author, body, styles, header, footer, footnotes, 
         "docProps/core.xml": core,
         "docProps/app.xml": app,
     }
+    # pictures: word/media/<file>, linked from the body (images) or from the header, by its own relationships
+    images = images or {}
+    header_images = header_images or {}
+    if images:
+        links = "".join(f'<Relationship Id="rId{rid}" Type="{REL}image" Target="media/{file}"/>'
+                        for rid, (file, _) in images.items())
+        entries["word/_rels/document.xml.rels"] = entries["word/_rels/document.xml.rels"].replace(
+            "</Relationships>", links + "</Relationships>")
+    if header_images:
+        entries["word/_rels/header1.xml.rels"] = relationships(
+            [("rId" + rid, "image", "media/" + file, False) for rid, (file, _) in header_images.items()])
+    media = dict(list(images.values()) + list(header_images.values()))
     path = os.path.join(HERE, name)
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as docx:
         for entry, content in entries.items():
             info = zipfile.ZipInfo(entry, ZIP_DATE)
             info.compress_type = zipfile.ZIP_DEFLATED
             docx.writestr(info, content.encode("utf-8"))
+        for file, data in media.items():
+            info = zipfile.ZipInfo("word/media/" + file, ZIP_DATE)
+            info.compress_type = zipfile.ZIP_STORED
+            docx.writestr(info, data)
     print("wrote", os.path.relpath(path, os.getcwd()))
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Pictures: small PNG images drawn here, and the drawing that shows one, as Word writes it
+
+def png(width, height, colour_at):
+    """A PNG image, each pixel the (r, g, b) colour_at(x, y) gives."""
+    def chunk(kind, data):
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+    rows = b"".join(b"\x00" + b"".join(bytes(colour_at(x, y)) for x in range(width)) for y in range(height))
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(rows, 9)) + chunk(b"IEND", b""))
+
+
+def pump(outlet):
+    """A diagram of the pump: its body, its motor on its shaft, its base, its outlet in the colour given."""
+    def colour_at(x, y):
+        if 40 <= x < 150 and 50 <= y < 110:
+            return (60, 80, 110)                       # the body
+        if (x - 190) ** 2 + (y - 80) ** 2 < 30 ** 2:
+            return (120, 130, 140)                     # the motor
+        if 150 <= x < 165 and 72 <= y < 88:
+            return (90, 90, 90)                        # the shaft
+        if 80 <= x < 110 and 20 <= y < 50:
+            return outlet                              # the outlet
+        if 110 <= y < 118 and 30 <= x < 230:
+            return (150, 120, 80)                      # the base
+        return (235, 242, 250)
+    return png(240, 140, colour_at)
+
+
+def logo():
+    """Keldar's logo: an orange square, a white band across."""
+    return png(48, 48, lambda x, y: (255, 255, 255) if abs(x - y) < 6 else (230, 120, 30))
+
+
+def picture(rid, width_pt, height_pt, description, number):
+    """A picture in the text (wp:inline), as Word writes one: its size in EMUs, 12700 to the point."""
+    cx, cy = int(width_pt * 12700), int(height_pt * 12700)
+    return ('<w:r><w:drawing>'
+            '<wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" '
+            'distT="0" distB="0" distL="0" distR="0">'
+            f'<wp:extent cx="{cx}" cy="{cy}"/>'
+            f'<wp:docPr id="{number}" name="Picture {number}" descr="{escape(description)}"/>'
+            '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+            '<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+            '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+            f'<pic:nvPicPr><pic:cNvPr id="0" name="picture{number}.png"/><pic:cNvPicPr/></pic:nvPicPr>'
+            f'<pic:blipFill><a:blip r:embed="{rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
+            f'<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm>'
+            '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic>'
+            '</wp:inline></w:drawing></w:r>')
+
+
+PUMP = pump((60, 140, 90))             # the outlet in green
+PUMP_REDRAWN = pump((200, 50, 40))     # revision B's: the outlet in red
+LOGO = logo()
 
 
 def page_number(style):
@@ -326,6 +403,9 @@ def procedure_revision_a():
                   "benches of building C."),
         paragraph("It applies to every technician who has completed the basic hydraulics training and holds a valid "
                   "workshop badge."),
+        paragraph(picture("rIdPump", 180, 105, "The KP-40 pump: its body, motor and outlet", 1),
+                  extra='<w:jc w:val="center"/>'),
+        paragraph(run("Figure 1: the KP-40 hydraulic pump.", i=True), extra='<w:jc w:val="center"/>'),
 
         h1("Scope"),
         paragraph("The following operations are covered:"),
@@ -364,11 +444,13 @@ def procedure_revision_a():
     ])
     write_docx("procedure-revA.docx", title="Maintenance Procedure KP-MP-012", author="A. Moreau", body=body,
                styles=styles_part(ids, "Calibri", 22, "1F3864", 48),
-               header=[paragraph("Keldar Pumps — Maintenance Procedure KP-MP-012", style=ids["Header"])],
+               header=[paragraph(picture("rIdLogo", 18, 18, "Keldar's logo", 9),
+                                " Keldar Pumps — Maintenance Procedure KP-MP-012", style=ids["Header"])],
                footer=[page_number(ids["Footer"])("Revision A — Page ")],
                footnotes=[(1, "Measured on the bench of building C in March 2025.")],
                template_link="file:///\\\\fileserver\\templates\\Keldar-Procedure.dotx",
-               template_name="Keldar-Procedure.dotx", ids=ids)
+               template_name="Keldar-Procedure.dotx", ids=ids,
+               images={"Pump": ("pump.png", PUMP)}, header_images={"Logo": ("logo.png", LOGO)})
 
 
 def procedure_revision_b():
@@ -387,6 +469,9 @@ def procedure_revision_b():
                   "benches of buildings C and D."),                                                # "and D"
         paragraph("It applies to every technician who has completed the basic hydraulics training and holds a valid "
                   "workshop badge."),
+        paragraph(picture("rIdPump", 180, 105, "The KP-40 pump: its body, motor and outlet", 1),
+                  extra='<w:jc w:val="center"/>'),
+        paragraph(run("Figure 1: the KP-40 hydraulic pump.", i=True), extra='<w:jc w:val="center"/>'),
         paragraph("It replaces revision A, which no longer applies after 1 December 2026."),    # added
 
         h1("Scope"),
@@ -436,11 +521,14 @@ def procedure_revision_b():
     ])
     write_docx("procedure-revB.docx", title="Maintenance Procedure KP-MP-012", author="M. Laurent", body=body,
                styles=styles_part(ids, "Calibri", 22, "1F3864", 48),
-               header=[paragraph("Keldar Pumps — Maintenance Procedure KP-MP-012", style=ids["Header"])],
+               header=[paragraph(picture("rIdLogo", 18, 18, "Keldar's logo", 9),
+                                " Keldar Pumps — Maintenance Procedure KP-MP-012", style=ids["Header"])],
                footer=[page_number(ids["Footer"])("Revision B — Page ")],                     # A → B
                footnotes=[(1, "Measured on the benches of buildings C and D in March 2026.")],     # changed
                template_link="file:///\\\\fileserver\\templates\\Keldar-Procedure-2026.dotx",      # another template
-               template_name="Keldar-Procedure-2026.dotx", ids=ids)
+               template_name="Keldar-Procedure-2026.dotx", ids=ids,
+               images={"Pump": ("pump.png", PUMP_REDRAWN)},                                     # the figure redrawn
+               header_images={"Logo": ("logo.png", LOGO)})
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -472,6 +560,9 @@ def training_handbook():
         # copied from "Purpose": procedure → module
         paragraph("This module describes the periodic maintenance of the KP-40 hydraulic pump installed on the test "
                   "benches of building C."),
+        # copied from "Purpose": the figure, as it is
+        paragraph(picture("rIdPump", 180, 105, "The KP-40 pump: its body, motor and outlet", 1),
+                  extra='<w:jc w:val="center"/>'),
 
         h2("Before you start"),
         # copied from "Safety", the second and third sentences changed, the footnote left behind
@@ -512,7 +603,8 @@ def training_handbook():
                footer=[page_number(ids["Footer"])("Training — ")],
                footnotes=[],
                template_link="file:///\\\\fileserver\\templates\\Keldar-Training.dotx",
-               template_name="Keldar-Training.dotx", ids=ids)
+               template_name="Keldar-Training.dotx", ids=ids,
+               images={"Pump": ("pump.png", PUMP)})
 
 
 if __name__ == "__main__":

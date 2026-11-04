@@ -1,6 +1,7 @@
 package org.jtools.doccomparator;
 
 import java.nio.file.Path;
+import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -15,6 +16,7 @@ public final class Launcher {
     }
 
     public static void main(String[] args) {
+        ImageIO.setUseCache(false);   // ImageIO caches on disk, in the temporary directory, unless told not to
         SwingUtilities.invokeLater(() -> {
             useSystemLook();
             MainWindow window = new MainWindow();

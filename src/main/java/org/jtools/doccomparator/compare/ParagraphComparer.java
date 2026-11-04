@@ -11,6 +11,7 @@ import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.ListItem;
 import org.jtools.doccomparator.document.Paragraph;
+import org.jtools.doccomparator.document.Picture;
 import org.jtools.doccomparator.document.Run;
 import org.jtools.doccomparator.document.Style;
 import org.jtools.doccomparator.document.StyleSheet;
@@ -120,7 +121,7 @@ final class ParagraphComparer {
                     position(tb, 0, b.text()), position(tb, rangeB[0], b.text()));
 
             List<Diff.Edit> edits = absorbSmallEqualities(
-                    Diff.of(codes(ta, rangeA, a.text()), codes(tb, rangeB, b.text())), ta, rangeA[0]);
+                    Diff.of(codes(ta, rangeA, a), codes(tb, rangeB, b)), ta, rangeA[0]);
             for (Diff.Edit edit : edits) {
                 int fromA = rangeA[0] + edit.fromA();
                 int toA = rangeA[0] + edit.toA();
@@ -161,12 +162,14 @@ final class ParagraphComparer {
             return new int[] {from, to};
         }
 
-        private int[] codes(List<Token> tokens, int[] range, String text) {
+        /** Each token's code: its text's; a blank's, the same for all when blanks are left out; a picture's, its image's. */
+        private int[] codes(List<Token> tokens, int[] range, Unit unit) {
             int[] codes = new int[range[1] - range[0]];
             for (int i = 0; i < codes.length; i++) {
                 Token token = tokens.get(range[0] + i);
+                String picture = unit.pictures().get(token.start());
                 codes[i] = !options.blanks() && token.type() == Token.Type.BLANK ? BLANK
-                        : vocabulary.code(token.text(text));
+                        : vocabulary.code(picture != null ? Picture.IN_TEXT + picture : token.text(unit.text()));
             }
             return codes;
         }

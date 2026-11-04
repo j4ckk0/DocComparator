@@ -64,6 +64,7 @@ import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import org.jtools.doccomparator.compare.Comparison;
 import org.jtools.doccomparator.compare.DocumentComparer;
+import org.jtools.doccomparator.document.Picture;
 import org.jtools.doccomparator.document.WordDocument;
 import org.jtools.doccomparator.docx.DocxReader;
 
@@ -241,6 +242,8 @@ public final class ComparatorPanel extends JPanel {
             protected Comparison doInBackground() throws IOException {
                 WordDocument a = knownLeft != null ? knownLeft : read(left);
                 WordDocument b = knownRight != null ? knownRight : read(right);
+                PictureImages.prepare(a);   // decoded here, away from the window's thread
+                PictureImages.prepare(b);
                 return DocumentComparer.compare(a, b, with);
             }
 
@@ -283,7 +286,9 @@ public final class ComparatorPanel extends JPanel {
         SwingWorker<WordDocument, Void> worker = new SwingWorker<>() {
             @Override
             protected WordDocument doInBackground() throws IOException {
-                return known != null ? known : read(path);
+                WordDocument document = known != null ? known : read(path);
+                PictureImages.prepare(document);
+                return document;
             }
 
             @Override
@@ -653,7 +658,7 @@ public final class ComparatorPanel extends JPanel {
         return menu;
     }
 
-    /** The text of the current line's side: a paragraph's, or a table row's cells, a tab between them. */
+    /** The text of the current line's side: a paragraph's, or a table row's cells, a tab between them; "[picture]" for each. */
     private void copy(boolean left) {
         int current = view.current();
         if (current < 0) {
@@ -674,7 +679,8 @@ public final class ComparatorPanel extends JPanel {
         } else {
             text.append(cell.text.text());
         }
-        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(text.toString()), null);
+        String copied = text.toString().replace(String.valueOf(Picture.IN_TEXT), "[picture]");
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(copied), null);
     }
 
     private static Action action(String name, String tip, KeyStroke key, Runnable run) {
