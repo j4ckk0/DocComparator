@@ -3,6 +3,14 @@
 What each version brought, newest first. The GitHub Releases carry the same notes with the downloads and their
 checksums.
 
+## 1.9 — 2026-11-05
+
+- **A faster start on Windows too**: the Windows distribution now carries Java's AOT cache of the program, as the
+  Linux one does; it holds wherever the archive is unpacked, whatever the time zone.
+- **Smaller downloads**: each distribution's runtime is made for the program, with only the parts of Java it uses and
+  the program inside it, about half the size of a full runtime: 36 MB for Windows instead of 57, 41 MB for Linux
+  instead of 69.
+
 ## 1.8 — 2026-11-04
 
 - **Java 25**: the program runs on Eclipse Temurin 25, the runtime both distributions carry.
