@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.jtools.doccomparator.compare.CompareOptions;
@@ -69,9 +68,9 @@ final class Lines {
     /** The document view: where pages begin, by paragraph, on each side (PageMarks). */
     private final List<Map<Paragraph, List<DocumentLook.PageMark>>> pageMarks = new ArrayList<>();
     private final List<Line> lines = new ArrayList<>();
-    /** The numbers lists are at, on each side: by list, a counter for each level. */
-    private final Map<String, int[]> leftNumbers = new HashMap<>();
-    private final Map<String, int[]> rightNumbers = new HashMap<>();
+    /** The numbers the lists are at, on each side, counted again in each part. */
+    private ListNumbers leftNumbers = new ListNumbers();
+    private ListNumbers rightNumbers = new ListNumbers();
 
     private Lines(Fonts fonts, Shown shown, CompareOptions options, StyleSheet[] styles) {
         this.fonts = fonts;
@@ -135,8 +134,8 @@ final class Lines {
         }
         int titleLine = lines.size();
         lines.add(Line.title(story.title()));
-        leftNumbers.clear();
-        rightNumbers.clear();
+        leftNumbers = new ListNumbers();
+        rightNumbers = new ListNumbers();
         Map<Integer, Integer> lineOfRow = new HashMap<>();
         Map<Cell, Integer> moved = new HashMap<>();
         int r = 0;
@@ -426,75 +425,13 @@ final class Lines {
         return String.join("  ·  ", notes);
     }
 
-    /**
-     * The heading level, or the mark of a list item as Word shows it: its level's text ("%1.", "%1.%2"), each number
-     * counted in the order of the side's paragraphs; a bullet as such.
-     */
-    private static String marker(Item item, Map<String, int[]> numbers) {
+    /** The heading level ("H2"), or the mark of a list item as Word shows it; null for neither. */
+    private static String marker(Item item, ListNumbers numbers) {
         if (item.paragraph().headingLevel() > 0) {
             return "H" + item.paragraph().headingLevel();
         }
         ListItem list = item.paragraph().listItem();
-        if (list == null) {
-            return null;
-        }
-        String format = list.numberFormat() == null ? "decimal" : list.numberFormat();
-        if (format.equals("bullet")) {
-            return bullet(list.levelText());
-        }
-        int level = Math.clamp(list.level(), 0, 8);
-        int[] counters = numbers.computeIfAbsent(list.listId(), id -> new int[9]);
-        counters[level]++;
-        for (int deeper = level + 1; deeper < counters.length; deeper++) {
-            counters[deeper] = 0;
-        }
-        String text = list.levelText() == null ? "%" + (level + 1) + "." : list.levelText();
-        for (int l = 0; l <= level; l++) {
-            text = text.replace("%" + (l + 1), number(Math.max(1, counters[l]), l == level ? format : "decimal"));
-        }
-        return text.length() > 6 ? text.substring(0, 6) : text;
-    }
-
-    /**
-     * A bullet as it can be shown: Word's own bullets are often characters of the Symbol or Wingdings fonts, private
-     * to them (U+F0B7…), which no other font has: those as the bullet they stand for; any other as it is ("o", "–").
-     */
-    private static String bullet(String text) {
-        if (text == null || text.isEmpty()) {
-            return "\u2022";
-        }
-        char c = text.charAt(0);
-        if (c >= '\uF000' && c <= '\uF0FF') {
-            return switch (c) {
-                case '\uF0A7', '\uF06E' -> "\u25AA";
-                case '\uF0D8' -> "\u27A2";
-                case '\uF0FC' -> "\u2713";
-                default -> "\u2022";
-            };
-        }
-        return text;
-    }
-
-    private static String number(int n, String format) {
-        return switch (format) {
-            case "lowerLetter" -> String.valueOf((char) ('a' + (n - 1) % 26));
-            case "upperLetter" -> String.valueOf((char) ('A' + (n - 1) % 26));
-            case "lowerRoman" -> roman(n).toLowerCase(Locale.ROOT);
-            case "upperRoman" -> roman(n);
-            default -> String.valueOf(n);
-        };
-    }
-
-    private static String roman(int n) {
-        String[] symbols = {"M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"};
-        int[] values = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
-        StringBuilder roman = new StringBuilder();
-        for (int i = 0; i < values.length; i++) {
-            for (; n >= values[i]; n -= values[i]) {
-                roman.append(symbols[i]);
-            }
-        }
-        return roman.toString();
+        return list == null ? null : numbers.next(list);
     }
 
     private static String count(long differences) {
