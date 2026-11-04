@@ -21,6 +21,7 @@ import org.jtools.doccomparator.compare.StoryComparison;
 import org.jtools.doccomparator.compare.TableComparison;
 import org.jtools.doccomparator.document.ListItem;
 import org.jtools.doccomparator.document.Story;
+import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.WordDocument;
 
 /**
@@ -38,31 +39,39 @@ final class Lines {
     private final boolean onlyDifferences;
     private final boolean onlyComparable;
     private final CompareOptions options;
+    /** The document view: each paragraph as its document's styles lay it out; null for the diff view. */
+    private final StyleSheet[] styles;
     private final List<Line> lines = new ArrayList<>();
     /** The numbers lists are at, on each side: by list, a counter for each level. */
     private final Map<String, int[]> leftNumbers = new HashMap<>();
     private final Map<String, int[]> rightNumbers = new HashMap<>();
 
-    private Lines(Fonts fonts, boolean onlyDifferences, boolean onlyComparable, CompareOptions options) {
+    private Lines(Fonts fonts, boolean onlyDifferences, boolean onlyComparable, CompareOptions options,
+                  StyleSheet[] styles) {
         this.fonts = fonts;
         this.onlyDifferences = onlyDifferences;
         this.onlyComparable = onlyComparable;
         this.options = options;
+        this.styles = styles;
     }
 
     static List<Line> of(Comparison comparison, boolean onlyDifferences, Fonts fonts) {
-        return of(comparison, onlyDifferences, false, fonts);
+        return of(comparison, onlyDifferences, false, false, fonts);
+    }
+
+    static List<Line> of(Comparison comparison, boolean onlyDifferences, boolean onlyComparable, Fonts fonts) {
+        return of(comparison, onlyDifferences, onlyComparable, false, fonts);
     }
 
     /**
      * The lines of one document alone, on its side, the other empty: its parts, paragraphs and tables as they are,
      * nothing compared — until the other document is there.
      */
-    static List<Line> alone(WordDocument document, boolean onLeft, Fonts fonts) {
+    static List<Line> alone(WordDocument document, boolean onLeft, boolean documentView, Fonts fonts) {
         Comparison itself = DocumentComparer.compare(document, document,
                 CompareOptions.TEXT_ONLY.with(Aspect.HEADERS_AND_FOOTERS, true));
         List<Line> lines = new ArrayList<>();
-        for (Line line : of(itself, false, fonts)) {
+        for (Line line : of(itself, false, false, documentView, fonts)) {
             if (line.isTitle()) {
                 int dash = line.title.indexOf(" \u2014 ");
                 lines.add(Line.title(dash < 0 ? line.title : line.title.substring(0, dash)));
@@ -77,8 +86,10 @@ final class Lines {
      * The lines of a comparison: only those that differ, if asked; only what is comparable, if asked — what has its
      * match on the other side, moved or not: a paragraph, a table, a row of a table on one side only is left out.
      */
-    static List<Line> of(Comparison comparison, boolean onlyDifferences, boolean onlyComparable, Fonts fonts) {
-        Lines lines = new Lines(fonts, onlyDifferences, onlyComparable, comparison.options());
+    static List<Line> of(Comparison comparison, boolean onlyDifferences, boolean onlyComparable, boolean documentView,
+                         Fonts fonts) {
+        Lines lines = new Lines(fonts, onlyDifferences, onlyComparable, comparison.options(), documentView
+                ? new StyleSheet[] {comparison.left().styles(), comparison.right().styles()} : null);
         lines.addDocument(comparison.documentDifferences());
         for (StoryComparison story : comparison.stories()) {
             lines.addStory(story);
@@ -242,6 +253,9 @@ final class Lines {
             }
             Cell.Look cellLook = look(cell).stronger(look(columnSlot)).stronger(look(rowSlot));
             Cell shown = cell(cell, onLeft, cellLook);
+            if (styles != null) {
+                shown.shading = DocumentLook.shading((onLeft ? cell.left() : cell.right()).cell());
+            }
             columns.add(shown);
             look = look.stronger(cellLook);
         }
@@ -320,8 +334,9 @@ final class Lines {
         List<Span> spans = alone ? List.of() : onLeft ? row.diff().left() : row.diff().right();
         List<FormatSpan> formatting = onLeft ? row.diff().leftFormatting() : row.diff().rightFormatting();
         boolean heading = item.paragraph().headingLevel() > 0;
-        TextBlock text = new TextBlock(item.text(), heading ? fonts.heading() : fonts.text(), Palette.TEXT, spans,
-                formatting, "(empty paragraph)");
+        DocumentLook laidOut = styles == null ? null : DocumentLook.of(styles[onLeft ? 0 : 1], item.paragraph());
+        TextBlock text = new TextBlock(item.text(), heading && laidOut == null ? fonts.heading() : fonts.text(),
+                Palette.TEXT, spans, formatting, "(empty paragraph)", laidOut);
         boolean inTable = !item.places().isEmpty() && !item.places().getLast().textBox();
         String location = inTable ? null : location(item, false);
         TextBlock caption = location == null ? null : TextBlock.plain(location, fonts.small(), Palette.FAINT);

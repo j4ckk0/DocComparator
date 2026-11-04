@@ -37,6 +37,7 @@ import javax.swing.AbstractButton;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
+import javax.swing.ButtonGroup;
 import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.JButton;
@@ -50,6 +51,8 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JRadioButton;
+import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
@@ -98,6 +101,9 @@ public final class ComparatorPanel extends JPanel {
     private CompareOptions options = CompareOptions.DEFAULT;
     private boolean onlyDifferences;
     private boolean onlyComparable;
+    /** The document view, each paragraph laid out as in Word; the diff view otherwise. */
+    private boolean documentView;
+    private final List<AbstractButton> viewButtons = new ArrayList<>();
     private Comparison comparison;
     private SwingWorker<?, ?> running;
     private Consumer<String> titleListener = title -> { };
@@ -296,7 +302,7 @@ public final class ComparatorPanel extends JPanel {
                         rightDocument = document;
                         rightHeader.show(path, document);
                     }
-                    view.setLines(Lines.alone(document, onLeft, view.fonts()), -1);
+                    view.setLines(Lines.alone(document, onLeft, documentView, view.fonts()), -1);
                     view.setWaitingSide(onLeft ? 1 : 0);
                     status.setText("Open the other document to compare.");
                     updateActions();
@@ -344,7 +350,7 @@ public final class ComparatorPanel extends JPanel {
         rightHeader.show(rightPath, result.right());
         Point at = scroll.getViewport().getViewPosition();
         view.setWaitingSide(-1);
-        view.setLines(Lines.of(result, onlyDifferences, onlyComparable, view.fonts()), -1);
+        view.setLines(Lines.of(result, onlyDifferences, onlyComparable, documentView, view.fonts()), -1);
         SwingUtilities.invokeLater(() -> scroll.getViewport().setViewPosition(new Point(0, Math.min(at.y,
                 Math.max(0, view.getHeight() - scroll.getViewport().getHeight())))));
         int[] count = view.differenceCount();
@@ -405,6 +411,14 @@ public final class ComparatorPanel extends JPanel {
                 BorderFactory.createMatteBorder(0, 0, 1, 0, Palette.GRID),
                 BorderFactory.createEmptyBorder(4, 4, 2, 4)));
         ribbon.add(group("Go", 3, button(previous), button(next), button(swap)));
+        ButtonGroup views = new ButtonGroup();
+        JRadioButton diff = viewButton("Diff", false,
+                "The text, plain and compact: the differences at a glance, as Beyond Compare shows them");
+        JRadioButton document = viewButton("Document", true,
+                "Each paragraph as Word lays it out: fonts, sizes, colours, alignment, indents, spacing, shading");
+        views.add(diff);
+        views.add(document);
+        ribbon.add(group("View", 3, diff, document));
         ribbon.add(group("Text", 3, aspectBox(Aspect.TEXT), aspectBox(Aspect.BLANKS)));
         for (Map.Entry<String, List<Aspect>> layout : LAYOUT) {
             ribbon.add(group(layout.getKey(), 3,
@@ -434,6 +448,57 @@ public final class ComparatorPanel extends JPanel {
         return ribbon;
     }
 
+    /** A button choosing a view, kept in step with the others choosing the same. */
+    private JRadioButton viewButton(String name, boolean document, String tip) {
+        JRadioButton button = new JRadioButton(name, document == documentView);
+        button.setToolTipText(tip);
+        button.putClientProperty("documentView", document);
+        button.addItemListener(e -> {
+            if (button.isSelected()) {
+                setDocumentView(document);
+            }
+        });
+        viewButtons.add(button);
+        return button;
+    }
+
+    /** Shows the comparison, or the document alone, in this view. */
+    private void setDocumentView(boolean document) {
+        if (document == documentView) {
+            return;
+        }
+        documentView = document;
+        for (AbstractButton button : viewButtons) {
+            button.setSelected(Boolean.valueOf(document).equals(button.getClientProperty("documentView")));
+        }
+        if (comparison != null) {
+            show(comparison);
+        } else if (leftPath != null || rightPath != null) {
+            compare();
+        }
+    }
+
+    /** The views, as a menu of the window. */
+    public JMenu viewMenu() {
+        JMenu menu = new JMenu("View");
+        menu.setMnemonic(KeyEvent.VK_V);
+        ButtonGroup group = new ButtonGroup();
+        for (boolean document : new boolean[] {false, true}) {
+            JRadioButtonMenuItem item = new JRadioButtonMenuItem(document ? "Document view" : "Diff view",
+                    document == documentView);
+            item.putClientProperty("documentView", document);
+            item.addItemListener(e -> {
+                if (item.isSelected()) {
+                    setDocumentView(document);
+                }
+            });
+            viewButtons.add(item);
+            group.add(item);
+            menu.add(item);
+        }
+        return menu;
+    }
+
     /** A group of the ribbon: its items in columns of so many, top to bottom, then left to right; its name under them. */
     private static JPanel group(String name, int rows, JComponent... items) {
         int columns = (items.length + rows - 1) / rows;
@@ -456,7 +521,7 @@ public final class ComparatorPanel extends JPanel {
         title.setForeground(Palette.FAINT);
         JPanel group = new JPanel(new BorderLayout(0, 2));
         group.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Palette.GRID),
-                BorderFactory.createEmptyBorder(0, 8, 0, 8)));
+                BorderFactory.createEmptyBorder(0, 5, 0, 5)));
         group.add(grid, BorderLayout.CENTER);
         group.add(title, BorderLayout.SOUTH);
         // as wide as it needs, as high as the highest group: every name on the same line

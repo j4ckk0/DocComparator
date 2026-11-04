@@ -8,14 +8,9 @@ import java.util.TreeSet;
 import java.util.function.Predicate;
 import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import org.jtools.doccomparator.document.Formatting;
-import org.jtools.doccomparator.document.Style;
-import org.jtools.doccomparator.document.StyleSheet;
 
 /** The differences of properties found, those of a kind the options leave out left out as they are found. */
 final class Differences {
-
-    /** How far a chain of "based on" is followed, as StyleSheet does. */
-    private static final int LONGEST_CHAIN = 32;
 
     private final CompareOptions options;
     private final List<PropertyDifference> found = new ArrayList<>();
@@ -95,25 +90,5 @@ final class Differences {
             }
         }
         return parts.isEmpty() ? null : String.join(", ", parts);
-    }
-
-    /**
-     * A paragraph's formatting as it applies: the document's default, then the styles its style is based on, the
-     * farthest first, then its style (the default paragraph style if it names none), then its own — the nearest wins. Two documents on different templates may lay
-     * out alike paragraphs that set nothing themselves.
-     */
-    static Formatting effective(StyleSheet styles, String styleId, Formatting own) {
-        List<Style> chain = new ArrayList<>();
-        Style style = styles.style(styles.paragraphStyle(styleId));   // no style named: the default one, "Normal"
-        for (int depth = 0; style != null && depth < LONGEST_CHAIN; depth++) {
-            chain.add(style);
-            style = styles.style(style.basedOn());
-        }
-        TreeMap<String, String> values = new TreeMap<>(styles.defaultParagraph().values());
-        for (Style s : chain.reversed()) {
-            values.putAll(s.paragraph().values());
-        }
-        values.putAll(own.values());
-        return new Formatting(values);
     }
 }

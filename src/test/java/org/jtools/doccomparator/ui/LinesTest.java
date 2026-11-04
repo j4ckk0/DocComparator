@@ -118,7 +118,7 @@ class LinesTest {
 
     @Test
     void aDocumentAloneIsShownOnItsSideAsItIs() throws IOException {
-        List<Line> lines = Lines.alone(DocxReader.read(Path.of("samples", "procedure-revA.docx")), false, FONTS);
+        List<Line> lines = Lines.alone(DocxReader.read(Path.of("samples", "procedure-revA.docx")), false, false, FONTS);
         assertEquals(List.of("Body", "Headers and footers", "Footnotes and endnotes"),
                 lines.stream().filter(Line::isTitle).map(line -> line.title).toList(), "no difference counted");
         assertTrue(lines.stream().filter(line -> !line.isTitle())
@@ -144,6 +144,25 @@ class LinesTest {
                 }
             }
         }
+    }
+
+    /** The document view: each paragraph as its styles lay it out, drawn without a screen. */
+    @Test
+    void theDocumentViewLaysParagraphsOutAsWordDoes() throws IOException {
+        List<Line> lines = Lines.of(compare("procedure-revB.docx"), false, false, true, FONTS);
+        ComparisonView view = new ComparisonView();
+        view.setLines(lines, -1);
+        view.setSize(1200, 10);
+        view.setSize(1200, view.getPreferredSize().height);
+        BufferedImage image = new BufferedImage(1200, 800, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = image.createGraphics();
+        view.paint(g);
+        g.dispose();
+        Cell title = lines.get(lineWith(lines, "Maintenance Procedure", true)).left;
+        Cell body = lines.get(lineWith(lines, "Document KP-MP-012", true)).left;
+        assertTrue(title.height() > body.height(), "the title's style is larger than Normal");
+        Cell indented = lines.get(lineWith(lines, "The parts needed", false)).right;
+        assertNotNull(indented.text, "laid out");
     }
 
     @Test

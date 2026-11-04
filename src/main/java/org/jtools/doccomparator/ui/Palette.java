@@ -41,6 +41,11 @@ final class Palette {
     private Palette() {
     }
 
+    /** A colour to lay over text drawn in its own colours, which shows through. */
+    static Color translucent(Color color) {
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(), 150);
+    }
+
     static Color line(Cell.Look look) {
         return switch (look) {
             case SAME -> BACKGROUND;

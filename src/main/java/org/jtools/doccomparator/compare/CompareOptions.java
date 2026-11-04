@@ -25,7 +25,7 @@ public record CompareOptions(Set<Aspect> aspects) {
         ALIGNMENT("Alignment", "Paragraphs' alignment: left, centred, right, justified"),
         PARAGRAPHS("Paragraphs", "Other paragraph formatting: borders, shading, tabs, keep with next, page breaks…"),
         TABLE_LAYOUT("Table layout", "Rows and columns added, removed or moved, their numbers; widths and heights"),
-        CELLS("Cell formatting", "Cells' and tables' shading, borders, margins, vertical alignment; header rows…"),
+        CELLS("Cells", "Cells' and tables' shading, borders, margins, vertical alignment; header rows…"),
         TEMPLATE("Template", "The template attached, and the one named"),
         HEADERS_AND_FOOTERS("Headers and footers", "Their text, as a part of its own");
 

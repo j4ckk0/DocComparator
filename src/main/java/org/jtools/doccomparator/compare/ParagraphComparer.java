@@ -335,8 +335,8 @@ final class ParagraphComparer {
         differences.add(Aspect.STYLES, "paragraph style", paragraphStyleName(leftStyles, a.styleId()),
                 paragraphStyleName(rightStyles, b.styleId()));
 
-        Formatting appliedA = Differences.effective(leftStyles, a.styleId(), a.formatting());
-        Formatting appliedB = Differences.effective(rightStyles, b.styleId(), b.formatting());
+        Formatting appliedA = leftStyles.effectiveParagraph(a.styleId(), a.formatting());
+        Formatting appliedB = rightStyles.effectiveParagraph(b.styleId(), b.formatting());
         differences.formatting(Aspects.Source.PARAGRAPH, "", appliedA, appliedB,
                 aspect -> aspect == Aspect.INDENTATION || aspect == Aspect.SPACING || aspect == Aspect.ALIGNMENT);
         differences.formatting(Aspects.Source.PARAGRAPH, "", a.formatting(), b.formatting(),

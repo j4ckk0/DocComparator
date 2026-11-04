@@ -57,6 +57,7 @@ final class MainWindow extends JFrame {
         }
         JMenuBar bar = new JMenuBar();
         bar.add(file);
+        bar.add(panel.viewMenu());
         bar.add(panel.compareMenu());
         bar.add(go);
         return bar;

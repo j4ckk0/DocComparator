@@ -38,6 +38,8 @@ final class ComparisonView extends JComponent implements Scrollable {
     private static final int MARGIN = 28;
     private static final int RIGHT_PADDING = 8;
     private static final int TITLE_HEIGHT = 26;
+    /** The width of a page's text, in pixels at a scale of 1: A4, 21 cm, less an inch on each side. */
+    private static final float PAGE_TEXT_WIDTH = 9026 / 15f;
 
     private final Fonts fonts;
     private final FontRenderContext context = new FontRenderContext(null, true, true);
@@ -179,14 +181,16 @@ final class ComparisonView extends JComponent implements Scrollable {
         }
         laidOutWidth = width;
         float textWidth = columnWidth(width) - MARGIN - RIGHT_PADDING;
+        // the document view: a page's width of text (A4, margins of an inch) fills a side
+        float scale = Math.clamp(textWidth / PAGE_TEXT_WIDTH, 0.5f, 1.6f);
         int y = 0;
         for (Line line : lines) {
             line.top = y;
             if (line.isTitle()) {
                 line.height = TITLE_HEIGHT;
             } else {
-                int left = line.left == null ? 0 : line.left.layout(context, textWidth);
-                int right = line.right == null ? 0 : line.right.layout(context, textWidth);
+                int left = line.left == null ? 0 : line.left.layout(context, textWidth, scale);
+                int right = line.right == null ? 0 : line.right.layout(context, textWidth, scale);
                 line.height = Math.max(left, right) + 1;   // and the line between lines
             }
             y += line.height;
@@ -347,8 +351,10 @@ final class ComparisonView extends JComponent implements Scrollable {
         if (cell.marker != null) {
             g.setColor(Palette.FAINT);
             g.setFont(fonts.small());
+            // on the first line of the text: below the space a paragraph keeps before it (the document view)
+            float baseline = cell.text != null ? cell.text.firstBaseline() : g.getFontMetrics().getAscent() + 1;
             g.drawString(cell.marker, x + 6, y + Cell.PADDING
-                    + (cell.caption == null ? 0 : cell.caption.height() + Cell.GAP) + g.getFontMetrics().getAscent() + 1);
+                    + (cell.caption == null ? 0 : cell.caption.height() + Cell.GAP) + baseline);
         }
         paintContent(g, cell, x + MARGIN, y);
     }
@@ -386,7 +392,8 @@ final class ComparisonView extends JComponent implements Scrollable {
             if (column == null) {
                 hatch(g, left, top, right - left, height);
             } else {
-                g.setColor(Palette.line(column.look));
+                g.setColor(column.look == Cell.Look.SAME && column.shading != null ? column.shading
+                        : Palette.line(column.look));
                 g.fillRect(left, top, right - left, height);
                 paintContent(g, column, left + Cell.PADDING, top);
             }

@@ -1,8 +1,11 @@
 package org.jtools.doccomparator.document;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -70,6 +73,46 @@ public record StyleSheet(Map<String, Style> styles, Formatting defaultParagraph,
             style = style(style.basedOn());
         }
         return null;
+    }
+
+    /**
+     * A paragraph's properties as they apply: the document's defaults, then the styles its style is based on, the
+     * farthest first, then its style (the default paragraph style if it names none), then its own — the nearest wins.
+     */
+    public Formatting effectiveParagraph(String styleId, Formatting own) {
+        TreeMap<String, String> values = new TreeMap<>(defaultParagraph.values());
+        for (Style style : chain(paragraphStyle(styleId))) {
+            values.putAll(style.paragraph().values());
+        }
+        values.putAll(own.values());
+        return new Formatting(values);
+    }
+
+    /**
+     * A run's properties as they apply: the document's defaults, then those of its paragraph's style and the styles it
+     * is based on, then its character style's and theirs, then its own — the nearest wins.
+     */
+    public Formatting effectiveRun(String paragraphStyleId, String runStyleId, Formatting own) {
+        TreeMap<String, String> values = new TreeMap<>(defaultRun.values());
+        for (Style style : chain(paragraphStyle(paragraphStyleId))) {
+            values.putAll(style.run().values());
+        }
+        for (Style style : chain(runStyleId)) {
+            values.putAll(style.run().values());
+        }
+        values.putAll(own.values());
+        return new Formatting(values);
+    }
+
+    /** A style and those it is based on, the farthest first. */
+    private List<Style> chain(String id) {
+        List<Style> chain = new ArrayList<>();
+        Style style = style(id);
+        for (int depth = 0; style != null && depth < LONGEST_CHAIN; depth++) {
+            chain.add(style);
+            style = style(style.basedOn());
+        }
+        return chain.reversed();
     }
 
     /** Word's outline level, 0 to 8 for the headings 1 to 9, 9 for body text: the heading level, 0 for none. */

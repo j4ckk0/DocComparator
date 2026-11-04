@@ -108,6 +108,13 @@ dropped on, its head included. Dropping works from Windows' Explorer and from Li
 `file://` URIs, decoded by `FileUris` without the JDK's networking classes). The two sides scroll as one, each
 paragraph beside its match, as high as the taller.
 
+- **Two views**, in the ribbon's *View* or the *View* menu. *Diff*, the text plain and compact, the differences at a
+  glance, as Beyond Compare shows them. *Document*, each paragraph as Word lays it out, through its styles: fonts,
+  sizes, bold, italic, underline, colours and highlighting; alignment, justified lines included, indents, space before
+  and after, line spacing; a paragraph's and a cell's shading — at a scale that fits a page's width in each side. A
+  font the machine has not got is shown in one made to take its place (Carlito for Calibri, Liberation for Arial and
+  Times New Roman, on Linux), else in Java's own. Paragraphs stay side by side, paired, their differences marked over
+  their formatting. Not shown: the page breaks, the numbers of lists in the text (they are in the margin), pictures.
 - **Colours**, after Beyond Compare's: red, the text differs, the very words or letters marked darker; purple, on one
   side only; teal, moved; amber, the same text but its structure or style differs. A red bar marks where the other side has text this one has not; a dotted line, text formatted otherwise (its
   tooltip says how). A sign between the sides says the same at a glance.
@@ -264,7 +271,7 @@ Both are built from either system. Previous versions' archives are removed from 
 | `…/document/` | what a Word document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
 | `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `StylesReader`, `Numbering`, `FormattingReader` |
 | `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Row`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `PropertyNames` |
-| `…/ui/` | `ComparatorPanel` (the ribbon, the sides' heads, the status line), `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked), `FileUris` (files dropped from Linux) |
+| `…/ui/` | `ComparatorPanel` (the ribbon, the sides' heads, the status line), `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `FontFamilies`, `FileUris` (files dropped from Linux) |
 | `src/main/resources/META-INF/services/` | what installs `NoNetworkResolver` |
 | `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `compare/`: each step, tables, and `SamplesTest`; `ui/LinesTest`, the view, drawn without a screen |
 | `samples/` | the sample documents, and the script that writes them (see "Samples") |

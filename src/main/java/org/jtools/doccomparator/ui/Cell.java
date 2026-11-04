@@ -1,5 +1,6 @@
 package org.jtools.doccomparator.ui;
 
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.font.FontRenderContext;
 import java.util.List;
@@ -40,6 +41,8 @@ final class Cell {
     final TextBlock notes;
     /** The line of its match, for a moved paragraph or table; -1 otherwise. */
     int counterpartLine = -1;
+    /** A table cell's own shading, shown where nothing differs (the document view); null for none. */
+    Color shading;
     private TextBlock link;
     private int height;
     private float[] columnX = new float[0];
@@ -73,15 +76,16 @@ final class Cell {
         }
     }
 
-    int layout(FontRenderContext context, float width) {
+    /** Lays the cell out to this width, the document's points at this scale (the document view): its height. */
+    int layout(FontRenderContext context, float width, float scale) {
         int h = PADDING;
         if (caption != null) {
             h += caption.layout(context, width) + GAP;
         }
         if (columns != null) {
-            h += layoutGrid(context, width);
+            h += layoutGrid(context, width, scale);
         } else {
-            h += text.layout(context, width);
+            h += text.layout(context, width, scale);
         }
         for (TextBlock block : new TextBlock[] {notes, link}) {
             if (block != null) {
@@ -92,7 +96,7 @@ final class Cell {
         return height;
     }
 
-    private int layoutGrid(FontRenderContext context, float width) {
+    private int layoutGrid(FontRenderContext context, float width, float scale) {
         int n = columns.size();
         columnX = new float[n];
         columnWidth = new float[n];
@@ -108,7 +112,8 @@ final class Cell {
             columnWidth[c] = width * (column == null ? MISSING_COLUMN : 1) / Math.max(weights, 1);
             x += columnWidth[c];
             if (column != null) {
-                gridHeight = Math.max(gridHeight, column.layout(context, Math.max(10, columnWidth[c] - 2 * PADDING)));
+                gridHeight = Math.max(gridHeight,
+                        column.layout(context, Math.max(10, columnWidth[c] - 2 * PADDING), scale));
             }
         }
         return gridHeight;
