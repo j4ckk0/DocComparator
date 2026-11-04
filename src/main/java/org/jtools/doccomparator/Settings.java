@@ -9,13 +9,14 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 /**
- * The program's settings — its look —, kept in doccomparator.properties, beside the program (doccomparator.jar): in
+ * The program's settings — its look, its language —, kept in doccomparator.properties, beside the program (doccomparator.jar): in
  * its folder, as a portable program keeps them, never in the registry or the user's folder. Written only when a
  * setting changes; a folder that cannot be written in keeps nothing, and the program goes on.
  */
 final class Settings {
 
     static final String LOOK = "look";
+    static final String LANGUAGE = "language";
     private static final String FILE = "doccomparator.properties";
 
     private final Path file;

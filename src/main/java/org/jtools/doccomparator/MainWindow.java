@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import javax.swing.Action;
+import javax.swing.Box;
 import javax.swing.ButtonGroup;
 import javax.swing.JFrame;
 import javax.swing.JCheckBoxMenuItem;
@@ -19,6 +20,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.i18n.I18nLabels;
+import org.jtools.doccomparator.i18n.I18nLanguage;
+import org.jtools.doccomparator.i18n.I18nLanguageBox;
 import org.jtools.doccomparator.ui.ComparatorPanel;
 
 /** The program's only window: the comparison and its menus. Closing it, or File ▸ Exit, ends the program. */
@@ -30,6 +33,7 @@ final class MainWindow extends JFrame {
     /** The menus' own labels; the panel's are its own. */
     private final I18nLabels labels = new I18nLabels();
     private final JCheckBoxMenuItem darkMode = new JCheckBoxMenuItem();
+    private final I18nLanguageBox language = new I18nLanguageBox(labels);
     private final ButtonGroup looks = new ButtonGroup();
     private final List<JRadioButtonMenuItem> lookItems = new ArrayList<>();
 
@@ -38,6 +42,7 @@ final class MainWindow extends JFrame {
         this.settings = settings;
         // the JVM ends with its last window: nothing else keeps it running
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        useSwingLocale();
         setJMenuBar(menuBar());
         add(panel, BorderLayout.CENTER);
         String version = title();
@@ -53,10 +58,23 @@ final class MainWindow extends JFrame {
      * buttons), which take the default locale.
      */
     void languageChanged() {
+        useSwingLocale();
+        labels.apply();
+        language.show(I18n.language());
+        panel.languageChanged();
+    }
+
+    /** Speaks this language from now on, and the next time (Settings). */
+    private void useLanguage(I18nLanguage chosen) {
+        I18n.use(chosen);
+        settings.set(Settings.LANGUAGE, chosen.code());
+        languageChanged();
+    }
+
+    /** Swing's own dialogs (the file chooser's buttons, a message's OK) in the language in use. */
+    private static void useSwingLocale() {
         Locale.setDefault(I18n.language().locale());
         JComponent.setDefaultLocale(I18n.language().locale());
-        labels.apply();
-        panel.languageChanged();
     }
 
     /** Opens two documents and compares them, as given at the start. */
@@ -138,6 +156,11 @@ final class MainWindow extends JFrame {
         bar.add(view);
         bar.add(panel.compareMenu());
         bar.add(go);
+        // the language on the right of the menus
+        bar.add(Box.createHorizontalGlue());
+        language.onChoice(this::useLanguage);
+        bar.add(language);
+        bar.add(Box.createHorizontalStrut(4));
         return bar;
     }
 }

@@ -160,9 +160,14 @@ paragraph beside its match, as high as the taller.
   diff view is dark too; the document view keeps its white page, as a document printed. The one chosen is kept for the
   next time in
   `doccomparator.properties`, beside the program: in its folder, never in the registry or the user's folder; written
-  only when the look is changed, and not at all where the folder cannot be written in.
+  only when the look or the language is changed, and not at all where the folder cannot be written in.
+- **The language**, in the drop list on the right of the menus: *Français*, the default, or *English*. The whole window
+  takes it at once — menus, ribbon, tooltips, messages — and so does what the comparison says: the parts' names, the
+  properties' ("trame", "shading"), where a paragraph is; the documents are read again for it. Swing's own dialogs
+  (the file chooser's buttons) follow. The language chosen is kept for the next time, as the look is. What the
+  documents say stays as they say it: their text, their styles' names, Word's own values ("clear", "fill D9E2F3").
 - **The ribbon**, as Word has it: groups side by side, each its name under its buttons — *Go*, *Text*, *Structure*,
-  *Formatting*, *Document*, *Show*, *Presets*.
+  *Formatting*, *Document*, *Show*, *Presets* (named here as in English).
 - **Previous and next difference**: F7 and Shift+F7, or *Go*. *Only differences* hides the lines that are the
   same; *Only what is comparable* hides what has nothing in common with the other side — paragraphs, tables, rows and
   columns of tables on one side only — and shows the rest: the same paragraphs as they are, the close ones with their
@@ -172,6 +177,21 @@ paragraph beside its match, as high as the taller.
   *Compare* menu, with *None*. Each change compares again at once; the documents are not read again.
 - What is said under a paragraph, a cell or a row: what else differs (heading, style, indent, shading…), on each side
   its own value. A right click copies a side's text.
+
+## Languages
+
+Every text a user reads is in `src/main/resources/org/jtools/doccomparator/i18n/`, one file per language:
+`messages_fr.properties`, `messages_en.properties` — UTF-8, the same keys in each. A text's `{0}`, `{1}`… are replaced
+by its arguments as they are (no `MessageFormat`: an apostrophe is written as it is). The classes are in
+`org.jtools.doccomparator.i18n`: `I18nLanguage` (the languages, French the default), `I18n` (the texts of the language
+in use), `I18nLabels` (a part of the window's labels, set again when the language changes), `I18nLanguageBox` (the
+drop list). `I18nTest` checks that both files have the same keys, none blank, that every key the program names is in
+them and every key in them is named; the other tests speak English (`I18nEnglishInTests`, found by JUnit through
+`src/test/resources`).
+
+To add a language: a constant in `I18nLanguage` with its ISO 639 code, and its file, `messages_<code>.properties`, with
+every key of the others (`I18nTest` says which are missing); its name in itself goes in every file
+(`language.<code>`).
 
 ## How it compares
 
@@ -313,8 +333,10 @@ holds. Previous versions' archives are removed from `releases/` once the new one
 | `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `DrawingReader` (a drawing's pictures and text boxes), `StylesReader`, `Numbering`, `FormattingReader`, `Pictures` (a part's pictures, through its relationships, nothing outside fetched) |
 | `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Pairing`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `PropertyNames` |
 | `…/ui/` | `ComparatorPanel` (the documents, read and compared in the background), `OptionControls` (the ribbon and the Compare and View menus, kept in step), `DocumentHeader` and `DropHandler` (a side's head, documents dropped), `StatusLine`, `CopyMenu`, `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `ListNumbers` (list items numbered as Word does), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux) |
+| `…/i18n/` | the languages (see "Languages"): `I18nLanguage`, `I18n`, `I18nLabels`, `I18nLanguageBox` |
+| `src/main/resources/org/jtools/doccomparator/i18n/` | the texts, one file per language |
 | `src/main/resources/META-INF/services/` | what installs `NoNetworkResolver` |
-| `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `compare/`: each step, tables, and `SamplesTest`; `ui/LinesTest`, the view, drawn without a screen |
+| `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `compare/`: each step, tables, and `SamplesTest`; `ui/LinesTest`, the view, drawn without a screen; `i18n/I18nTest`, the languages' files |
 | `samples/` | the sample documents, and the script that writes them (see "Samples") |
 | `src/dist/`, `src/assembly/` | the launchers of the distributions, FlatLaf's licence, and what goes in them |
 | `scripts/` | the scripts above |
