@@ -46,11 +46,14 @@ What stays outside these checks:
   Traced on Linux (`strace`, 2026-11-04, reading, comparing and drawing the samples): no connection, no address bound,
   no packet. What the trace does show, all on the machine itself:
   - three sockets the JRE opens and closes as its networking library loads, to learn whether IPv6 is there — never
-    connected, nothing sent. The library loads because the JDK's Linux font code asks for the machine's name, to name
-    its font cache (`NoNetworkResolver` answers, so no name is looked up). The JDK's Windows code has no such path;
-  - that font cache, `~/.java/fonts/<version>/`, written once by the JDK on Linux, the only file written outside the
-    program's folder. Shipping fonts of our own would avoid both, at the price of the system's fonts: a document in a
-    script those fonts lack would show empty boxes;
+    bound, never connected, nothing sent. The library loads as soon as the JDK reads a font file, through file channels
+    whose code loads it: in any Java program that draws text, whatever its fonts (tried: with fonts shipped in the JRE
+    and a font configuration of our own, the probe is still there), and no option avoids it. On Windows the same
+    library is likely to do the same (not traced);
+  - a font cache, `~/.java/fonts/<version>/`, written once by the JDK's Linux font code, the only file written outside
+    the program's folder. Naming it, that code asks for the machine's name: `NoNetworkResolver` answers, nothing is
+    looked up. Shipping fonts of our own would avoid the cache, for some megabytes, and at the price of the system's
+    fonts (a document in a script they lack would show empty boxes): not done;
   - the C library asking the local name service cache (`/var/run/nscd/socket`) for the user's name.
 
   The JVM's performance counters are kept in memory (`-XX:-UsePerfData` in every launcher), not in a file of `/tmp` or
