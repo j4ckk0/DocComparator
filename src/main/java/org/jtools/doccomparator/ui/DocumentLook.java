@@ -11,10 +11,11 @@ import org.jtools.doccomparator.document.StyleSheet;
 
 /**
  * How a paragraph looks in Word, for the document view: each run's font, size, weight, slant, lines, colours; the
- * paragraph's alignment, indents, spacing and shading — as they apply through the styles. Lengths in points.
+ * paragraph's alignment, indents, spacing and shading — as they apply through the styles and its list; a list item's
+ * number. Lengths in points.
  */
 record DocumentLook(List<StyledRun> runs, Alignment alignment, float left, float right, float firstLine, float before,
-                    float after, float lineFactor, float exactLine, boolean atLeast, Color shading) {
+                    float after, float lineFactor, float exactLine, boolean atLeast, Color shading, String number) {
 
     enum Alignment {
         LEFT, CENTER, RIGHT, JUSTIFIED
@@ -40,7 +41,7 @@ record DocumentLook(List<StyledRun> runs, Alignment alignment, float left, float
             Map.entry("black", Color.BLACK), Map.entry("white", Color.WHITE));
 
     static DocumentLook of(StyleSheet styles, Paragraph paragraph) {
-        Formatting p = styles.effectiveParagraph(paragraph.styleId(), paragraph.formatting());
+        Formatting p = styles.effectiveParagraph(paragraph);
         Alignment alignment = switch (p.get("jc") == null ? "" : p.get("jc")) {
             case "center" -> Alignment.CENTER;
             case "right", "end" -> Alignment.RIGHT;
@@ -81,7 +82,13 @@ record DocumentLook(List<StyledRun> runs, Alignment alignment, float left, float
             offset += run.text().length();
         }
         return new DocumentLook(runs, alignment, left, right, firstLine, points(p.get("spacing.before")),
-                points(p.get("spacing.after")), lineFactor, exactLine, atLeast, color(p.get("shd.fill")));
+                points(p.get("spacing.after")), lineFactor, exactLine, atLeast, color(p.get("shd.fill")), null);
+    }
+
+    /** The same, its list item's number ("3.", "•") at the start of its first line. */
+    DocumentLook withNumber(String text) {
+        return new DocumentLook(runs, alignment, left, right, firstLine, before, after, lineFactor, exactLine, atLeast,
+                shading, text);
     }
 
     /** A cell's shading, if it has one. */

@@ -334,15 +334,19 @@ final class Lines {
         List<Span> spans = alone ? List.of() : onLeft ? row.diff().left() : row.diff().right();
         List<FormatSpan> formatting = onLeft ? row.diff().leftFormatting() : row.diff().rightFormatting();
         boolean heading = item.paragraph().headingLevel() > 0;
+        boolean inTable = !item.places().isEmpty() && !item.places().getLast().textBox();
         DocumentLook laidOut = styles == null ? null : DocumentLook.of(styles[onLeft ? 0 : 1], item.paragraph());
+        String marker = inTable ? null : marker(item, onLeft ? leftNumbers : rightNumbers);
+        if (laidOut != null && item.paragraph().listItem() != null && marker != null) {
+            laidOut = laidOut.withNumber(marker);   // in the text, as Word shows it, not in the margin
+            marker = null;
+        }
         TextBlock text = new TextBlock(item.text(), heading && laidOut == null ? fonts.heading() : fonts.text(),
                 Palette.TEXT, spans, formatting, "(empty paragraph)", laidOut);
-        boolean inTable = !item.places().isEmpty() && !item.places().getLast().textBox();
         String location = inTable ? null : location(item, false);
         TextBlock caption = location == null ? null : TextBlock.plain(location, fonts.small(), Palette.FAINT);
         String notes = notes(row, onLeft, formatting);
-        return new Cell(look, inTable ? null : row, inTable ? null : marker(item, onLeft ? leftNumbers : rightNumbers),
-                caption, text, null,
+        return new Cell(look, inTable ? null : row, marker, caption, text, null,
                 notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), Palette.FAINT));
     }
 
@@ -397,7 +401,7 @@ final class Lines {
         }
         String format = list.numberFormat() == null ? "decimal" : list.numberFormat();
         if (format.equals("bullet")) {
-            return "\u2022";
+            return bullet(list.levelText());
         }
         int level = Math.clamp(list.level(), 0, 8);
         int[] counters = numbers.computeIfAbsent(list.listId(), id -> new int[9]);
@@ -410,6 +414,26 @@ final class Lines {
             text = text.replace("%" + (l + 1), number(Math.max(1, counters[l]), l == level ? format : "decimal"));
         }
         return text.length() > 6 ? text.substring(0, 6) : text;
+    }
+
+    /**
+     * A bullet as it can be shown: Word's own bullets are often characters of the Symbol or Wingdings fonts, private
+     * to them (U+F0B7…), which no other font has: those as the bullet they stand for; any other as it is ("o", "–").
+     */
+    private static String bullet(String text) {
+        if (text == null || text.isEmpty()) {
+            return "\u2022";
+        }
+        char c = text.charAt(0);
+        if (c >= '\uF000' && c <= '\uF0FF') {
+            return switch (c) {
+                case '\uF0A7', '\uF06E' -> "\u25AA";
+                case '\uF0D8' -> "\u27A2";
+                case '\uF0FC' -> "\u2713";
+                default -> "\u2022";
+            };
+        }
+        return text;
     }
 
     private static String number(int n, String format) {

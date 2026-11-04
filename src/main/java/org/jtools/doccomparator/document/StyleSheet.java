@@ -89,6 +89,20 @@ public record StyleSheet(Map<String, Style> styles, Formatting defaultParagraph,
     }
 
     /**
+     * A paragraph's properties as they apply, its list's included: the defaults, its style's, then those its list level
+     * gives its items (their indent), then its own.
+     */
+    public Formatting effectiveParagraph(Paragraph paragraph) {
+        Formatting own = paragraph.formatting();
+        if (paragraph.listItem() != null && !paragraph.listItem().paragraph().isEmpty()) {
+            TreeMap<String, String> values = new TreeMap<>(paragraph.listItem().paragraph().values());
+            values.putAll(own.values());
+            own = new Formatting(values);
+        }
+        return effectiveParagraph(paragraph.styleId(), own);
+    }
+
+    /**
      * A run's properties as they apply: the document's defaults, then those of its paragraph's style and the styles it
      * is based on, then its character style's and theirs, then its own — the nearest wins.
      */

@@ -114,7 +114,8 @@ paragraph beside its match, as high as the taller.
   and after, line spacing; a paragraph's and a cell's shading — at a scale that fits a page's width in each side. A
   font the machine has not got is shown in one made to take its place (Carlito for Calibri, Liberation for Arial and
   Times New Roman, on Linux), else in Java's own. Paragraphs stay side by side, paired, their differences marked over
-  their formatting. Not shown: the page breaks, the numbers of lists in the text (they are in the margin), pictures.
+  their formatting. List items show their numbers and bullets at the start of their line, the text at the list's indent. Not shown: the
+  page breaks, pictures.
 - **Colours**, after Beyond Compare's: red, the text differs, the very words or letters marked darker; purple, on one
   side only; teal, moved; amber, the same text but its structure or style differs. A red bar marks where the other side has text this one has not; a dotted line, text formatted otherwise (its
   tooltip says how). A sign between the sides says the same at a glance.
@@ -201,7 +202,8 @@ fill D9E2F3". Word's `cnfStyle`, the table style's banding flags it writes on ro
 compared: Word rewrites it on every row below one inserted.
 
 Not compared yet: the formatting text takes from its styles (Characters compares what is set on the text itself, Styles
-the styles), the indentation a list's numbering gives its items.
+the styles). The indentation a list gives its items is compared with the rest, as Word applies it: over the
+paragraph's style, under the paragraph's own.
 
 ## Samples
 

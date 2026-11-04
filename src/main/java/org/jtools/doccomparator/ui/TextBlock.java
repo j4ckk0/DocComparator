@@ -50,6 +50,9 @@ final class TextBlock {
     private int height;
     private float shadingLeft;
     private float shadingRight;
+    /** A list item's number, laid out, and where it starts across; null for none. */
+    private TextLayout number;
+    private float numberX;
 
     /** A text and its differences; placeholder: what is shown, faint, for an empty text. */
     TextBlock(String text, Font font, Color color, List<Span> spans, List<FormatSpan> formatting, String placeholder) {
@@ -113,12 +116,23 @@ final class TextBlock {
         shadingLeft = left;
         shadingRight = width - right;
 
+        // a list item's number where its first line starts, the text after it at the indent — Word's tab — or further
+        number = null;
+        float textAfterNumber = 0;
+        if (laidOut && look.number() != null && !look.runs().isEmpty()) {
+            number = new TextLayout(look.number(), font(look.runs().getFirst(), pixels), context);
+            numberX = Math.max(0, left + firstLine);
+            float end = numberX + number.getAdvance();
+            textAfterNumber = end + pixels * 2 <= left ? left : end + pixels * 6;
+        }
+
         LineBreakMeasurer measurer = new LineBreakMeasurer(attributed.getIterator(), context);
         float top = before;
         boolean firstOne = true;
         while (measurer.getPosition() < shown.length()) {
             int start = measurer.getPosition();
-            float lineLeft = Math.max(0, left + (firstOne ? firstLine : 0));
+            float lineLeft = firstOne && number != null ? textAfterNumber
+                    : Math.max(0, left + (firstOne ? firstLine : 0));
             float available = Math.max(20, width - lineLeft - right);
             int end = lineEnd(shown, start);
             TextLayout layout = measurer.nextLayout(available, end, false);
@@ -183,6 +197,11 @@ final class TextBlock {
         return text;
     }
 
+    /** A list item's number, shown in the text (the document view); null for none. */
+    String number() {
+        return look == null ? null : look.number();
+    }
+
     /** Where the first line's baseline is, from the block's top. */
     float firstBaseline() {
         return layouts.isEmpty() ? 0 : tops.getFirst() + layouts.getFirst().getAscent();
@@ -199,6 +218,10 @@ final class TextBlock {
             int end = start + layout.getCharacterCount();
             float lineX = x + xs.get(i);
             float baseline = y + tops.get(i) + layout.getAscent();
+            if (i == 0 && number != null) {
+                g.setColor(look.runs().getFirst().color() != null ? look.runs().getFirst().color() : color);
+                number.draw(g, x + numberX, baseline);
+            }
             if (!text.isEmpty()) {
                 paintHighlights(g, layout, start, end, lineX, baseline);
                 paintBehind(g, layout, start, end, lineX, baseline);

@@ -2,6 +2,7 @@ package org.jtools.doccomparator.docx;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.jtools.doccomparator.document.Formatting;
 
 /**
  * The document's lists (numbering.xml): for a list (numId) and a level, the numbering it shows. A list is an
@@ -9,7 +10,8 @@ import java.util.Map;
  */
 final class Numbering {
 
-    record Level(String format, String text) {
+    /** A level: its number's format and text, and the paragraph properties it gives its items (their indent). */
+    record Level(String format, String text, Formatting paragraph) {
     }
 
     static final Numbering NONE = new Numbering();
@@ -73,15 +75,19 @@ final class Numbering {
         int level = parseLevel(xml.wordAttribute("ilvl"));
         String format = null;
         String text = null;
+        Formatting paragraph = Formatting.NONE;
         while (xml.nextChild()) {
             if (xml.isWord("numFmt")) {
                 format = xml.wordAttribute("val");
             } else if (xml.isWord("lvlText")) {
                 text = xml.wordAttribute("val");
+            } else if (xml.isWord("pPr")) {
+                paragraph = FormattingReader.read(xml, () -> { });   // consumed
+                continue;
             }
             xml.skip();
         }
-        levels.put(level, new Level(format, text));
+        levels.put(level, new Level(format, text, paragraph));
     }
 
     /** A list level as Word writes it, from 0; 0 when unreadable. */

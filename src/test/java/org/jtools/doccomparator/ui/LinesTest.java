@@ -165,6 +165,20 @@ class LinesTest {
         assertNotNull(indented.text, "laid out");
     }
 
+    /** List items: in the document view, their number in their text, where Word puts it; in the diff view, in the margin. */
+    @Test
+    void theDocumentViewShowsListNumbersInTheText() throws IOException {
+        List<Line> document = Lines.of(compare("procedure-revB.docx"), false, false, true, FONTS);
+        Cell step = document.get(lineWith(document, "Unscrew the filter cover", false)).right;
+        assertEquals("4.", step.text.number());
+        assertNull(step.marker, "not in the margin as well");
+        assertEquals("\u2022", document.get(lineWith(document, "Replacement of the suction", true)).left.text.number());
+        List<Line> diff = Lines.of(compare("procedure-revB.docx"), false, FONTS);
+        Cell plain = diff.get(lineWith(diff, "Unscrew the filter cover", false)).right;
+        assertEquals("4.", plain.marker);
+        assertNull(plain.text.number());
+    }
+
     @Test
     void theViewIsDrawnWithoutAScreen() throws IOException {
         ComparisonView view = new ComparisonView();

@@ -180,7 +180,8 @@ final class StoryReader {
         }
         int ilvl = Numbering.parseLevel(level);
         Numbering.Level shown = numbering.level(listId, ilvl);
-        return new ListItem(listId, ilvl, shown == null ? null : shown.format(), shown == null ? null : shown.text());
+        return shown == null ? new ListItem(listId, ilvl, null, null)
+                : new ListItem(listId, ilvl, shown.format(), shown.text(), shown.paragraph());
     }
 
     /** What a paragraph holds besides its properties: runs, and what wraps runs. */

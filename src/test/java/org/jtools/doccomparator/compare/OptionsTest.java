@@ -67,6 +67,19 @@ class OptionsTest {
                 indented.diff().properties());
     }
 
+    /** A list item's indent comes from its list's level, which wins over its style's: Word's order. */
+    @Test
+    void aListGivesItsItemsTheirIndent() {
+        org.jtools.doccomparator.document.Paragraph item = REVISION_A.body().blocks().stream()
+                .filter(b -> b instanceof org.jtools.doccomparator.document.Paragraph p
+                        && p.text().startsWith("Replacement of the suction"))
+                .map(b -> (org.jtools.doccomparator.document.Paragraph) b).findFirst().orElseThrow();
+        assertEquals("360", item.listItem().paragraph().get("ind.hanging"), "read from the numbering");
+        org.jtools.doccomparator.document.Formatting applied = REVISION_A.styles().effectiveParagraph(item);
+        assertEquals("720", applied.get("ind.left"));
+        assertEquals("360", applied.get("ind.hanging"));
+    }
+
     @Test
     void withoutTheTextOnlyTheLayoutCounts() {
         CompareOptions layout = CompareOptions.LAYOUT_ONLY;
