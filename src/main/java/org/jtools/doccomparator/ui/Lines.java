@@ -39,9 +39,30 @@ final class Lines {
     /** The most formatting differences a paragraph lists; the rest are in the tooltip of the text. */
     private static final int LISTED_FORMATTING = 4;
 
+    /**
+     * What the lines show: every line, or only those that differ; everything, or only what is comparable — what has its
+     * match on the other side, moved or not; the diff view, or the document view.
+     */
+    record Shown(boolean onlyDifferences, boolean onlyComparable, boolean documentView) {
+
+        /** Every line, in the diff view. */
+        static final Shown ALL = new Shown(false, false, false);
+
+        Shown withOnlyDifferences(boolean on) {
+            return new Shown(on, onlyComparable, documentView);
+        }
+
+        Shown withOnlyComparable(boolean on) {
+            return new Shown(onlyDifferences, on, documentView);
+        }
+
+        Shown withDocumentView(boolean on) {
+            return new Shown(onlyDifferences, onlyComparable, on);
+        }
+    }
+
     private final Fonts fonts;
-    private final boolean onlyDifferences;
-    private final boolean onlyComparable;
+    private final Shown shown;
     private final CompareOptions options;
     /** The document view: each paragraph as its document's styles lay it out; null for the diff view. */
     private final StyleSheet[] styles;
@@ -52,21 +73,11 @@ final class Lines {
     private final Map<String, int[]> leftNumbers = new HashMap<>();
     private final Map<String, int[]> rightNumbers = new HashMap<>();
 
-    private Lines(Fonts fonts, boolean onlyDifferences, boolean onlyComparable, CompareOptions options,
-                  StyleSheet[] styles) {
+    private Lines(Fonts fonts, Shown shown, CompareOptions options, StyleSheet[] styles) {
         this.fonts = fonts;
-        this.onlyDifferences = onlyDifferences;
-        this.onlyComparable = onlyComparable;
+        this.shown = shown;
         this.options = options;
         this.styles = styles;
-    }
-
-    static List<Line> of(Comparison comparison, boolean onlyDifferences, Fonts fonts) {
-        return of(comparison, onlyDifferences, false, false, fonts);
-    }
-
-    static List<Line> of(Comparison comparison, boolean onlyDifferences, boolean onlyComparable, Fonts fonts) {
-        return of(comparison, onlyDifferences, onlyComparable, false, fonts);
     }
 
     /**
@@ -77,7 +88,7 @@ final class Lines {
         Comparison itself = DocumentComparer.compare(document, document,
                 CompareOptions.TEXT_ONLY.with(Aspect.HEADERS_AND_FOOTERS, true));
         List<Line> lines = new ArrayList<>();
-        for (Line line : of(itself, false, false, documentView, fonts)) {
+        for (Line line : of(itself, Shown.ALL.withDocumentView(documentView), fonts)) {
             if (line.isTitle()) {
                 int dash = line.title.indexOf(" \u2014 ");
                 lines.add(Line.title(dash < 0 ? line.title : line.title.substring(0, dash)));
@@ -89,14 +100,13 @@ final class Lines {
     }
 
     /**
-     * The lines of a comparison: only those that differ, if asked; only what is comparable, if asked — what has its
-     * match on the other side, moved or not: a paragraph, a table, a row of a table on one side only is left out.
+     * The lines of a comparison, as shown: only what is comparable leaves out a paragraph, a table, a row of a table on
+     * one side only.
      */
-    static List<Line> of(Comparison comparison, boolean onlyDifferences, boolean onlyComparable, boolean documentView,
-                         Fonts fonts) {
-        Lines lines = new Lines(fonts, onlyDifferences, onlyComparable, comparison.options(), documentView
+    static List<Line> of(Comparison comparison, Shown shown, Fonts fonts) {
+        Lines lines = new Lines(fonts, shown, comparison.options(), shown.documentView()
                 ? new StyleSheet[] {comparison.left().styles(), comparison.right().styles()} : null);
-        if (documentView) {
+        if (shown.documentView()) {
             lines.pageMarks.add(PageMarks.of(comparison.left(), comparison.options().blanks()));
             lines.pageMarks.add(PageMarks.of(comparison.right(), comparison.options().blanks()));
         }
@@ -153,7 +163,7 @@ final class Lines {
                 int rightRow = k < rights.size() ? rights.get(k) : -1;
                 boolean comparable = leftRow >= 0 && rows.get(leftRow).moved()
                         || rightRow >= 0 && rows.get(rightRow).moved();
-                if (onlyComparable) {   // a moved one alone on its line: its neighbour may be one not comparable
+                if (shown.onlyComparable()) {   // a moved one alone on its line: its neighbour may be one not comparable
                     if (leftRow >= 0 && rows.get(leftRow).moved()) {
                         add(Line.of(cell(rows.get(leftRow), true), null), true, lineOfRow, moved, leftRow);
                     }
@@ -183,7 +193,7 @@ final class Lines {
      */
     private void add(Line line, boolean comparable, Map<Integer, Integer> lineOfRow, Map<Cell, Integer> moved,
                      int... rows) {
-        if (onlyDifferences && !line.differs() || onlyComparable && !comparable) {
+        if (shown.onlyDifferences() && !line.differs() || shown.onlyComparable() && !comparable) {
             return;
         }
         int index = lines.size();
@@ -282,14 +292,14 @@ final class Lines {
 
     /** The columns shown: all; only what is comparable, those with a match on the other side, moved or not. */
     private List<Integer> shownColumns(TableComparison table) {
-        List<Integer> shown = new ArrayList<>();
+        List<Integer> columns = new ArrayList<>();
         for (int c = 0; c < table.columns().size(); c++) {
             Slot slot = table.columns().get(c);
-            if (!onlyComparable || slot.left() >= 0 && slot.right() >= 0 || slot.moved()) {
-                shown.add(c);
+            if (!shown.onlyComparable() || slot.left() >= 0 && slot.right() >= 0 || slot.moved()) {
+                columns.add(c);
             }
         }
-        return shown;
+        return columns;
     }
 
     /** A column by its letters, as a spreadsheet names it: A to Z, then AA… */

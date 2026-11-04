@@ -101,10 +101,8 @@ public final class ComparatorPanel extends JPanel {
     private WordDocument leftDocument;
     private WordDocument rightDocument;
     private CompareOptions options = CompareOptions.DEFAULT;
-    private boolean onlyDifferences;
-    private boolean onlyComparable;
-    /** The document view, each paragraph laid out as in Word; the diff view otherwise. */
-    private boolean documentView;
+    /** The lines shown, and in which view: the diff view, or the document view (each paragraph as Word lays it out). */
+    private Lines.Shown shown = Lines.Shown.ALL;
     private final List<AbstractButton> viewButtons = new ArrayList<>();
     private Comparison comparison;
     private SwingWorker<?, ?> running;
@@ -237,7 +235,7 @@ public final class ComparatorPanel extends JPanel {
             running = null;
             setCursor(null);
         }
-        Palette.use(Palette.lookIsDark() && !documentView);
+        Palette.use(Palette.lookIsDark() && !shown.documentView());
         showEmptySides();
         if (leftPath == null && rightPath == null) {
             comparison = null;
@@ -326,8 +324,8 @@ public final class ComparatorPanel extends JPanel {
                         rightDocument = document;
                         rightHeader.show(path, document);
                     }
-                    Palette.use(Palette.lookIsDark() && !documentView);
-                    view.setLines(Lines.alone(document, onLeft, documentView, view.fonts()), -1);
+                    Palette.use(Palette.lookIsDark() && !shown.documentView());
+                    view.setLines(Lines.alone(document, onLeft, shown.documentView(), view.fonts()), -1);
                     view.setWaitingSide(onLeft ? 1 : 0);
                     status.setText("Open the other document to compare.");
                     updateActions();
@@ -375,8 +373,8 @@ public final class ComparatorPanel extends JPanel {
         rightHeader.show(rightPath, result.right());
         Point at = scroll.getViewport().getViewPosition();
         view.setWaitingSide(-1);
-        Palette.use(Palette.lookIsDark() && !documentView);   // a page is white: the document view keeps light colours
-        view.setLines(Lines.of(result, onlyDifferences, onlyComparable, documentView, view.fonts()), -1);
+        Palette.use(Palette.lookIsDark() && !shown.documentView());   // a page is white: the document view stays light
+        view.setLines(Lines.of(result, shown, view.fonts()), -1);
         SwingUtilities.invokeLater(() -> scroll.getViewport().setViewPosition(new Point(0, Math.min(at.y,
                 Math.max(0, view.getHeight() - scroll.getViewport().getHeight())))));
         int[] count = view.differenceCount();
@@ -458,7 +456,7 @@ public final class ComparatorPanel extends JPanel {
         JCheckBox only = new JCheckBox("Only differences");
         only.setToolTipText("Hide the lines that are the same");
         only.addItemListener(e -> {
-            onlyDifferences = only.isSelected();
+            shown = shown.withOnlyDifferences(only.isSelected());
             if (comparison != null) {
                 show(comparison);
             }
@@ -467,7 +465,7 @@ public final class ComparatorPanel extends JPanel {
         comparable.setToolTipText("Hide what has nothing in common with the other side: paragraphs, tables, rows and "
                 + "columns on one side only; the same paragraphs stay as they are, the close ones with their differences");
         comparable.addItemListener(e -> {
-            onlyComparable = comparable.isSelected();
+            shown = shown.withOnlyComparable(comparable.isSelected());
             if (comparison != null) {
                 show(comparison);
             }
@@ -481,7 +479,7 @@ public final class ComparatorPanel extends JPanel {
 
     /** A button choosing a view, kept in step with the others choosing the same. */
     private JRadioButton viewButton(String name, boolean document, String tip) {
-        JRadioButton button = new JRadioButton(name, document == documentView);
+        JRadioButton button = new JRadioButton(name, document == shown.documentView());
         button.setToolTipText(tip);
         button.putClientProperty("documentView", document);
         button.addItemListener(e -> {
@@ -495,10 +493,10 @@ public final class ComparatorPanel extends JPanel {
 
     /** Shows the comparison, or the document alone, in this view. */
     private void setDocumentView(boolean document) {
-        if (document == documentView) {
+        if (document == shown.documentView()) {
             return;
         }
-        documentView = document;
+        shown = shown.withDocumentView(document);
         for (AbstractButton button : viewButtons) {
             button.setSelected(Boolean.valueOf(document).equals(button.getClientProperty("documentView")));
         }
@@ -516,7 +514,7 @@ public final class ComparatorPanel extends JPanel {
         ButtonGroup group = new ButtonGroup();
         for (boolean document : new boolean[] {false, true}) {
             JRadioButtonMenuItem item = new JRadioButtonMenuItem(document ? "Document view" : "Diff view",
-                    document == documentView);
+                    document == shown.documentView());
             item.putClientProperty("documentView", document);
             item.addItemListener(e -> {
                 if (item.isSelected()) {

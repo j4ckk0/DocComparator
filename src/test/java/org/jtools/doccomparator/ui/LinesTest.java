@@ -18,6 +18,7 @@ import org.jtools.doccomparator.compare.Comparison;
 import org.jtools.doccomparator.compare.DocumentComparer;
 import org.jtools.doccomparator.compare.Span;
 import org.jtools.doccomparator.docx.DocxReader;
+import org.jtools.doccomparator.ui.Lines.Shown;
 import org.junit.jupiter.api.Test;
 
 /** The lines of the view, on the samples: what is shown where. Drawn too, without a screen. */
@@ -27,7 +28,7 @@ class LinesTest {
 
     @Test
     void eachPartHasItsTitleCountingItsLinesThatDiffer() throws IOException {
-        List<Line> lines = Lines.of(compare("procedure-revB.docx"), false, FONTS);
+        List<Line> lines = Lines.of(compare("procedure-revB.docx"), Shown.ALL, FONTS);
         List<String> titles = lines.stream().filter(Line::isTitle).map(line -> line.title).toList();
         assertEquals(4, titles.size(), titles.toString());
         assertTrue(titles.getFirst().startsWith("Document — 2 differences"));
@@ -39,7 +40,7 @@ class LinesTest {
 
     @Test
     void aMovedParagraphLinksToItsMatchBothWays() throws IOException {
-        List<Line> lines = Lines.of(compare("procedure-revB.docx"), false, FONTS);
+        List<Line> lines = Lines.of(compare("procedure-revB.docx"), Shown.ALL, FONTS);
         int left = lineWith(lines, "Wear safety glasses", true);
         Cell cell = lines.get(left).left;
         assertTrue(cell.moved());
@@ -51,7 +52,7 @@ class LinesTest {
 
     @Test
     void paragraphsAloneShareLinesSideBySide() throws IOException {
-        List<Line> lines = Lines.of(compare("training-handbook.docx"), false, FONTS);
+        List<Line> lines = Lines.of(compare("training-handbook.docx"), Shown.ALL, FONTS);
         int line = lineWith(lines, "Document KP-MP-012", true);
         assertEquals("Trainer: J. Petit. Duration: half a day, on the bench, in groups of four.",
                 lines.get(line).right.text.text());
@@ -60,7 +61,7 @@ class LinesTest {
 
     @Test
     void aTableHasALineForItsColumnsThenOneForEachRow() throws IOException {
-        List<Line> lines = Lines.of(compare("training-handbook.docx"), false, FONTS);
+        List<Line> lines = Lines.of(compare("training-handbook.docx"), Shown.ALL, FONTS);
         int header = lines.indexOf(lines.stream().filter(l -> l.left != null && l.left.columns != null).findFirst()
                 .orElseThrow());
         Line columns = lines.get(header);
@@ -74,7 +75,7 @@ class LinesTest {
 
     @Test
     void listItemsAreNumberedAsWordShowsThem() throws IOException {
-        List<Line> lines = Lines.of(compare("training-handbook.docx"), false, FONTS);
+        List<Line> lines = Lines.of(compare("training-handbook.docx"), Shown.ALL, FONTS);
         assertEquals("3.", lines.get(lineWith(lines, "Unscrew the cover of the filter", false)).right.marker);
         assertEquals("2.", lines.get(lineWith(lines, "Where do you record", false)).right.marker, "a list of its own");
         assertEquals("•", lines.get(lineWith(lines, "Replacement of the suction filter", true)).left.marker);
@@ -83,8 +84,8 @@ class LinesTest {
     @Test
     void onlyDifferencesLeavesOutTheLinesThatAreTheSame() throws IOException {
         Comparison comparison = compare("procedure-revB.docx");
-        List<Line> all = Lines.of(comparison, false, FONTS);
-        List<Line> only = Lines.of(comparison, true, FONTS);
+        List<Line> all = Lines.of(comparison, Shown.ALL, FONTS);
+        List<Line> only = Lines.of(comparison, Shown.ALL.withOnlyDifferences(true), FONTS);
         assertTrue(only.size() < all.size());
         assertTrue(only.stream().allMatch(line -> line.isTitle() || line.differs()));
         assertEquals(all.stream().filter(Line::differs).count(), only.stream().filter(Line::differs).count());
@@ -95,7 +96,7 @@ class LinesTest {
     @Test
     void onlyWhatIsComparableLeavesOutWhatHasNoMatch() throws IOException {
         Comparison comparison = compare("training-handbook.docx");
-        List<Line> comparable = Lines.of(comparison, false, true, FONTS);
+        List<Line> comparable = Lines.of(comparison, Shown.ALL.withOnlyComparable(true), FONTS);
         for (Line line : comparable) {
             if (!line.isTitle() && line.left != null && line.right == null) {
                 assertTrue(line.left.counterpartLine >= 0, "alone, it is moved: " + line.left.text);
@@ -134,7 +135,7 @@ class LinesTest {
                 DocxReader.read(Path.of("samples", "procedure-revB.docx")), CompareOptions.TEXT_ONLY.with(
                         CompareOptions.Aspect.TEXT, false));
         assertTrue(comparison.same());
-        for (Line line : Lines.of(comparison, false, FONTS)) {
+        for (Line line : Lines.of(comparison, Shown.ALL, FONTS)) {
             assertFalse(line.differs(), String.valueOf(line.title));
             for (Cell cell : new Cell[] {line.left, line.right}) {
                 if (cell != null && cell.text != null) {
@@ -149,7 +150,7 @@ class LinesTest {
     /** The document view: each paragraph as its styles lay it out, drawn without a screen. */
     @Test
     void theDocumentViewLaysParagraphsOutAsWordDoes() throws IOException {
-        List<Line> lines = Lines.of(compare("procedure-revB.docx"), false, false, true, FONTS);
+        List<Line> lines = Lines.of(compare("procedure-revB.docx"), Shown.ALL.withDocumentView(true), FONTS);
         ComparisonView view = new ComparisonView();
         view.setLines(lines, -1);
         view.setSize(1200, 10);
@@ -171,7 +172,7 @@ class LinesTest {
      */
     @Test
     void theDocumentViewShowsWhereEachPageBegins() throws IOException {
-        List<Line> lines = Lines.of(compare("procedure-revB.docx"), false, false, true, FONTS);
+        List<Line> lines = Lines.of(compare("procedure-revB.docx"), Shown.ALL.withDocumentView(true), FONTS);
         assertEquals(List.of("Page break \u2014 page 2"), lines.get(lineWith(lines, "Safety", true)).left.text.pageMarks(),
                 "asked for, and Word's record of it at the same place said once");
         assertEquals(List.of("Page 3"), lines.get(lineWith(lines, "Remove the old filter", true)).left.text.pageMarks(),
@@ -182,7 +183,7 @@ class LinesTest {
         assertEquals(List.of("Page break \u2014 page 3"), lines.get(lineWith(lines, "Safety", false)).right.text.pageMarks());
         assertEquals(List.of("Page break \u2014 page 4"), lines.get(lineWith(lines, "Records", false)).right.text.pageMarks());
         assertEquals(List.of(), lines.get(lineWith(lines, "Purpose", true)).left.text.pageMarks());
-        List<Line> diff = Lines.of(compare("procedure-revB.docx"), false, FONTS);
+        List<Line> diff = Lines.of(compare("procedure-revB.docx"), Shown.ALL, FONTS);
         assertEquals(List.of(), diff.get(lineWith(diff, "Records", true)).left.text.pageMarks(), "the diff view has none");
     }
 
@@ -191,8 +192,8 @@ class LinesTest {
     void picturesAreDrawnAtTheirSize() throws IOException {
         Comparison comparison = compare("procedure-revB.docx");
         PictureImages.prepare(comparison.left());
-        List<Line> document = Lines.of(comparison, false, false, true, FONTS);
-        List<Line> diff = Lines.of(comparison, false, FONTS);
+        List<Line> document = Lines.of(comparison, Shown.ALL.withDocumentView(true), FONTS);
+        List<Line> diff = Lines.of(comparison, Shown.ALL, FONTS);
         ComparisonView view = new ComparisonView();
         view.setLines(document, -1);
         view.setSize(1200, 10);
@@ -216,12 +217,12 @@ class LinesTest {
     /** List items: in the document view, their number in their text, where Word puts it; in the diff view, in the margin. */
     @Test
     void theDocumentViewShowsListNumbersInTheText() throws IOException {
-        List<Line> document = Lines.of(compare("procedure-revB.docx"), false, false, true, FONTS);
+        List<Line> document = Lines.of(compare("procedure-revB.docx"), Shown.ALL.withDocumentView(true), FONTS);
         Cell step = document.get(lineWith(document, "Unscrew the filter cover", false)).right;
         assertEquals("4.", step.text.number());
         assertNull(step.marker, "not in the margin as well");
         assertEquals("\u2022", document.get(lineWith(document, "Replacement of the suction", true)).left.text.number());
-        List<Line> diff = Lines.of(compare("procedure-revB.docx"), false, FONTS);
+        List<Line> diff = Lines.of(compare("procedure-revB.docx"), Shown.ALL, FONTS);
         Cell plain = diff.get(lineWith(diff, "Unscrew the filter cover", false)).right;
         assertEquals("4.", plain.marker);
         assertNull(plain.text.number());
@@ -230,7 +231,7 @@ class LinesTest {
     @Test
     void theViewIsDrawnWithoutAScreen() throws IOException {
         ComparisonView view = new ComparisonView();
-        view.setLines(Lines.of(compare("training-handbook.docx"), false, view.fonts()), 3);
+        view.setLines(Lines.of(compare("training-handbook.docx"), Shown.ALL, view.fonts()), 3);
         view.setSize(1200, 10);
         view.setSize(1200, view.getPreferredSize().height);
         assertTrue(view.getHeight() > 1000);
