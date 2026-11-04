@@ -198,7 +198,7 @@ final class TableComparer {
 
     /**
      * Besides the pairs found, the columns left over between two pairs whose headers (their first cells) are alike:
-     * paired in place, in order. A column whose values were all rewritten under the same header is still that column.
+     * paired in place, in order.
      */
     private static List<Pairer.Match> inPlace(List<Pairer.Match> matches, Unit a, Unit b) {
         int leftLength = columnCount(a);

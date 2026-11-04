@@ -195,7 +195,7 @@ final class XmlCursor implements AutoCloseable {
         return value != null ? value : reader.getAttributeValue(R_STRICT, localName);
     }
 
-    /** An attribute without a namespace (those of a part's relationships); null when absent. */
+    /** An attribute without a namespace (a relationship's, a drawing's: cx, descr…); null when absent. */
     String plainAttribute(String localName) {
         for (int i = 0; i < reader.getAttributeCount(); i++) {
             String namespace = reader.getAttributeNamespace(i);

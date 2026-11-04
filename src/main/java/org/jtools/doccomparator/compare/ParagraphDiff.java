@@ -5,7 +5,8 @@ import java.util.List;
 /**
  * How two paired paragraphs differ: their text, stretch by stretch on each side (spans cover the whole text, in
  * order, with ABSENT marks between them); the formatting of the text they share, where it differs (with the styles
- * compared); their own properties — heading, list, place, style — where they differ (with structure and styles).
+ * or the characters compared); their own properties — heading, list, place, style, indents… — where they differ, as
+ * the options compare them.
  */
 public record ParagraphDiff(List<Span> left, List<Span> right, List<FormatSpan> leftFormatting,
                             List<FormatSpan> rightFormatting, List<PropertyDifference> properties) {

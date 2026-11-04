@@ -401,7 +401,7 @@ final class Lines {
         return location;
     }
 
-    /** What else differs, this side's values: "heading: heading 2 · formatting: b: true → (none)". */
+    /** What else differs, this side's values: "heading: heading 2 · formatting (dotted): bold: true → (none)". */
     private static String notes(Row row, boolean onLeft, List<FormatSpan> formatting) {
         List<String> notes = new ArrayList<>();
         for (PropertyDifference difference : row.diff().properties()) {

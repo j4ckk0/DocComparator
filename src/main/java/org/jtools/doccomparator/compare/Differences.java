@@ -9,7 +9,7 @@ import java.util.function.Predicate;
 import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import org.jtools.doccomparator.document.Formatting;
 
-/** The differences of properties found, those of a kind the options leave out left out as they are found. */
+/** The differences of properties found; those of a kind the options leave out are dropped as they are found. */
 final class Differences {
 
     private final CompareOptions options;

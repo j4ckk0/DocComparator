@@ -23,8 +23,8 @@ import org.junit.jupiter.api.Test;
 /**
  * DocComparator never reaches the network (README, "No network"): no class of the program may name what the JDK
  * reaches it with. Read from the compiled classes rather than the sources, so that nothing escapes through an
- * import, a fully qualified name or a method reference. The enforcer rule of pom.xml keeps out the libraries,
- * whose classes this test does not read.
+ * import, a fully qualified name or a method reference. The one library shipped, FlatLaf, is read too; the enforcer
+ * rule of pom.xml keeps out any other.
  */
 class NoNetworkTest {
 

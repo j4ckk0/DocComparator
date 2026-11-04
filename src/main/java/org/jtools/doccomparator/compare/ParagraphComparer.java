@@ -96,7 +96,7 @@ final class ParagraphComparer {
         }
     }
 
-    /** What the formatting of a run is: two runs alike differ alike from a third. */
+    /** Two runs' formatting, as a key: runs formatted alike are compared once. */
     private record RunPair(String styleA, Formatting formattingA, String styleB, Formatting formattingB) {
     }
 
@@ -133,7 +133,7 @@ final class ParagraphComparer {
                         Token y = tb.get(fromB + k);
                         if (x.text(a.text()).equals(y.text(b.text()))) {
                             same(x.start(), x.end(), y.start(), y.end());
-                        } else {   // blanks, which the code took as the same: left out, they are
+                        } else {   // two different blanks, coded alike: the blanks are left out
                             left.add(x.start(), x.end(), Span.Kind.SAME);
                             right.add(y.start(), y.end(), Span.Kind.SAME);
                         }
@@ -289,7 +289,7 @@ final class ParagraphComparer {
         return result;
     }
 
-    /** A picture's character: same as any other in the text, a picture differs by its image only. */
+    /** A picture's character: never absorbed into a change beside it, since a picture differs by its image. */
     private static boolean isPicture(Token token, String text) {
         return token.end() - token.start() == 1 && text.charAt(token.start()) == Picture.IN_TEXT;
     }

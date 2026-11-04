@@ -156,7 +156,7 @@ class ParagraphComparerTest {
                 Paragraphs.unit(left, options.blanks(), vocabulary), Paragraphs.unit(right, options.blanks(), vocabulary));
     }
 
-    /** The text with its differences marked: {changed}, [only here], ^ absent, (unimportant), | between spans. */
+    /** The text with its differences marked: {changed}, [only here], ^ absent, | between spans. */
     static String marked(String text, List<Span> spans) {
         StringBuilder marked = new StringBuilder();
         Span.Kind previous = null;

@@ -70,9 +70,9 @@ import org.jtools.doccomparator.document.WordDocument;
 import org.jtools.doccomparator.docx.DocxReader;
 
 /**
- * The comparison of two documents, all of it but the window: a toolbar (the sides, the differences, the options), the
- * name of each document above its side, the two sides, the map of the differences, and a status line. Documents are
- * opened from the toolbar, by dropping them on their side, or given at the start.
+ * The comparison of two documents, all of it but the window: a ribbon (the differences, the view, the options), the
+ * head of each side (its document's path, its Open… button), the two sides, the map of the differences, and a status
+ * line. Documents are opened from a side's head, by dropping them on their side, or given at the start.
  */
 public final class ComparatorPanel extends JPanel {
 

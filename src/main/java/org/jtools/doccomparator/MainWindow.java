@@ -50,8 +50,7 @@ final class MainWindow extends JFrame {
 
     /**
      * View ▸ Look: FlatLaf's looks, light and dark, and those Java has here — the system's, Nimbus, Metal… —, the one
-     * chosen kept for the next time
-     * (Settings), the window shown in it at once.
+     * chosen kept for the next time (Settings), the window shown in it at once.
      */
     private JMenu lookMenu() {
         JMenu menu = new JMenu("Look");

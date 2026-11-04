@@ -48,7 +48,7 @@ final class StoryReader {
         this.numbering = numbering;
     }
 
-    /** Reads the next part's pictures through its relationships: each part has its own. */
+    /** The pictures of the part read next, through its relationships: each part has its own. */
     void pictures(Pictures ofPart) {
         pictures = ofPart;
     }

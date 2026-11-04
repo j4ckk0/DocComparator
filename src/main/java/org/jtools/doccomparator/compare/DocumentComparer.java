@@ -91,7 +91,7 @@ public final class DocumentComparer {
         return options.text() ? status : Row.Status.SAME;
     }
 
-    /** Two paragraphs, or two tables, compared; moved, the same otherwise, as moved, when the text counts. */
+    /** Two paragraphs, or two tables, compared; a moved pair otherwise the same is shown moved, when the text counts. */
     private Row pair(Unit a, Unit b, int counterpart) {
         Row.Status status;
         ParagraphDiff diff;
