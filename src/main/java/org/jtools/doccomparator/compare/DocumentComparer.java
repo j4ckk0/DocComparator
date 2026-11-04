@@ -33,7 +33,6 @@ import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.Style;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.WordDocument;
-import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * Compares two Word documents: their paragraphs and tables paired (Pairer), the pairs compared (ParagraphComparer,
@@ -149,11 +148,11 @@ public final class DocumentComparer {
 
     private List<PropertyDifference> documentDifferences() {
         Differences differences = new Differences(options);
-        differences.add(Aspect.TEMPLATE, I18n.text("compared.attachedTemplate"), left.template().attached(),
+        differences.add(Aspect.TEMPLATE, Said.of("compared.attachedTemplate"), left.template().attached(),
                 right.template().attached());
-        differences.add(Aspect.TEMPLATE, I18n.text("compared.template"), left.template().named(),
+        differences.add(Aspect.TEMPLATE, Said.of("compared.template"), left.template().named(),
                 right.template().named());
-        differences.add(Aspect.SECTIONS, I18n.text("compared.sections"), String.valueOf(sections(left)),
+        differences.add(Aspect.SECTIONS, Said.of("compared.sections"), String.valueOf(sections(left)),
                 String.valueOf(sections(right)));
         if (options.has(Aspect.STYLES)) {
             styleDifferences(differences, left.styles(), right.styles());
@@ -173,10 +172,13 @@ public final class DocumentComparer {
     }
 
     /** The defaults, then each style by name, as both documents define them: all of it a matter of styles. */
+    /** A style one document defines and the other has not. */
+    private static final Said DEFINED = Said.of("value.defined");
+
     private static void styleDifferences(Differences differences, StyleSheet a, StyleSheet b) {
-        differences.formattingAs(Aspect.STYLES, name -> I18n.text("compared.ofDefaultParagraph", name),
+        differences.formattingAs(Aspect.STYLES, name -> Said.of("compared.ofDefaultParagraph", name),
                 a.defaultParagraph(), b.defaultParagraph());
-        differences.formattingAs(Aspect.STYLES, name -> I18n.text("compared.ofDefaultText", name), a.defaultRun(),
+        differences.formattingAs(Aspect.STYLES, name -> Said.of("compared.ofDefaultText", name), a.defaultRun(),
                 b.defaultRun());
         Map<String, Style> stylesA = byName(a);
         Map<String, Style> stylesB = byName(b);
@@ -186,16 +188,16 @@ public final class DocumentComparer {
             Style styleA = stylesA.get(name);
             Style styleB = stylesB.get(name);
             if (styleA == null || styleB == null) {
-                differences.add(Aspect.STYLES, I18n.text("compared.style", name),
-                        styleA == null ? null : I18n.text("value.defined"), styleB == null ? null : I18n.text("value.defined"));
+                differences.add(Aspect.STYLES, Said.of("compared.style", name),
+                        styleA == null ? null : DEFINED, styleB == null ? null : DEFINED);
                 continue;
             }
-            differences.add(Aspect.STYLES, I18n.text("compared.styleType", name), styleA.type(), styleB.type());
-            differences.add(Aspect.STYLES, I18n.text("compared.styleBasedOn", name), a.nameOf(styleA.basedOn()),
+            differences.add(Aspect.STYLES, Said.of("compared.styleType", name), styleA.type(), styleB.type());
+            differences.add(Aspect.STYLES, Said.of("compared.styleBasedOn", name), a.nameOf(styleA.basedOn()),
                     b.nameOf(styleB.basedOn()));
-            differences.formattingAs(Aspect.STYLES, property -> I18n.text("compared.ofStyleParagraph", property, name),
+            differences.formattingAs(Aspect.STYLES, property -> Said.of("compared.ofStyleParagraph", property, name),
                     styleA.paragraph(), styleB.paragraph());
-            differences.formattingAs(Aspect.STYLES, property -> I18n.text("compared.ofStyleText", property, name),
+            differences.formattingAs(Aspect.STYLES, property -> Said.of("compared.ofStyleText", property, name),
                     styleA.run(), styleB.run());
         }
     }

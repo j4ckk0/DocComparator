@@ -67,15 +67,13 @@ class OptionsTest {
     void aPropertyAndItsAttributesAreOneDifference() {
         List<PropertyDifference> cells = everyDifference(CompareOptions.TEXT_ONLY.with(Aspect.TEXT, false)
                 .with(Aspect.CELLS, true));
-        assertTrue(cells.contains(new PropertyDifference(Aspect.CELLS, "cell shading", "(none)",
-                "clear, color auto, fill D9E2F3")), cells.toString());
-        assertTrue(cells.contains(new PropertyDifference(Aspect.CELLS, "cell bottom border", "(none)",
-                "single, color C00000, space 0, sz 12")), cells.toString());
+        assertTrue(Paragraphs.said(cells).contains("CELLS cell shading: (none) → clear, color auto, fill D9E2F3"), cells.toString());
+        assertTrue(Paragraphs.said(cells).contains("CELLS cell bottom border: (none) → single, color C00000, space 0, sz 12"), cells.toString());
     }
 
     @Test
     void wordsBandingFlagsAreNoDifference() {
-        assertTrue(everyDifference(CompareOptions.ALL).stream().noneMatch(d -> d.property().contains("cnfStyle")));
+        assertTrue(everyDifference(CompareOptions.ALL).stream().noneMatch(d -> d.property().say().contains("cnfStyle")));
     }
 
     @Test
@@ -83,8 +81,8 @@ class OptionsTest {
         Pairing indented = pairing(DocumentComparer.compare(REVISION_A, REVISION_B,
                 CompareOptions.TEXT_ONLY.with(Aspect.INDENTATION, true)), "The parts needed");
         assertEquals(Pairing.Status.OTHERWISE, indented.status());
-        assertEquals(List.of(new PropertyDifference(Aspect.INDENTATION, "indent left", "(none)", "720")),
-                indented.diff().properties());
+        assertEquals(List.of("INDENTATION indent left: (none) → 720"),
+                Paragraphs.said(indented.diff().properties()));
     }
 
     /** A list item's indent comes from its list's level, which wins over its style's: Word's order. */
@@ -132,7 +130,7 @@ class OptionsTest {
     private static void assertFound(Aspect aspect, String property) {
         List<PropertyDifference> alone = everyDifference(CompareOptions.TEXT_ONLY.with(Aspect.TEXT, false)
                 .with(aspect, true));
-        assertTrue(alone.stream().anyMatch(d -> d.property().equals(property) && d.aspect() == aspect),
+        assertTrue(alone.stream().anyMatch(d -> d.property().say().equals(property) && d.aspect() == aspect),
                 property + " with " + aspect + ": " + alone);
         assertTrue(alone.stream().allMatch(d -> d.aspect() == aspect), "nothing but " + aspect + ": " + alone);
         List<PropertyDifference> others = everyDifference(CompareOptions.ALL.with(aspect, false));

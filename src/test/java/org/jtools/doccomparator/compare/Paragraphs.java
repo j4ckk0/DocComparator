@@ -41,6 +41,11 @@ final class Paragraphs {
     private Paragraphs() {
     }
 
+    /** Property differences as they are said in English, each its kind first: "CHARACTERS bold: true → (none)". */
+    static List<String> said(List<PropertyDifference> differences) {
+        return differences.stream().map(d -> d.aspect() + " " + d).toList();
+    }
+
     static Paragraph paragraph(String text) {
         return paragraph(null, 0, null, new Run(text, null, Formatting.NONE));
     }

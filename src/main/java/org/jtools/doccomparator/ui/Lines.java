@@ -148,10 +148,10 @@ final class Lines {
         if (differences.isEmpty()) {
             return;
         }
-        lines.add(Line.title(I18n.text("line.document") + TITLE_COUNT + count(differences.size())));
+        lines.add(Line.title(I18n.text("line.document") + TITLE_COUNT + ComparisonWords.count(differences.size())));
         for (PropertyDifference difference : differences) {
-            lines.add(Line.of(property(difference.property(), difference.left()),
-                    property(difference.property(), difference.right())));
+            lines.add(Line.of(property(difference.property().say(), difference.left().say()),
+                    property(difference.property().say(), difference.right().say())));
         }
     }
 
@@ -212,7 +212,8 @@ final class Lines {
             side.linkTo(target, target > line, said ? fonts.small() : null, palette);
         });
         long differences = lines.subList(titleLine, lines.size()).stream().filter(Line::differs).count();
-        lines.set(titleLine, Line.title(ComparisonWords.part(story.part()) + TITLE_COUNT + count(differences)));
+        lines.set(titleLine,
+                Line.title(ComparisonWords.part(story.part()) + TITLE_COUNT + ComparisonWords.count(differences)));
     }
 
     /**
@@ -314,7 +315,7 @@ final class Lines {
             marking = marking.stronger(LineSide.Marking.OTHERWISE);
         }
         String notes = String.join(BETWEEN_NOTES, rowProperties.stream()
-                .map(d -> I18n.text("line.property", d.property(), side.of(d.left(), d.right()))).toList());
+                .map(d -> ComparisonWords.property(d, side)).toList());
         return new LineSide(marking, pairing, String.valueOf(number), null, null, columns,
                 notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), palette.faint, palette));
     }
@@ -432,12 +433,12 @@ final class Lines {
     private static String notes(Pairing pairing, Side side, List<FormatSpan> formatting) {
         List<String> notes = new ArrayList<>();
         for (PropertyDifference difference : pairing.diff().properties()) {
-            notes.add(I18n.text("line.property", difference.property(), side.of(difference.left(), difference.right())));
+            notes.add(ComparisonWords.property(difference, side));
         }
         Set<PropertyDifference> formats = new LinkedHashSet<>();
         formatting.forEach(span -> formats.addAll(span.differences()));
         if (!formats.isEmpty()) {
-            List<String> listed = formats.stream().limit(LISTED_FORMATTING).map(Lines::said).toList();
+            List<String> listed = formats.stream().limit(LISTED_FORMATTING).map(ComparisonWords::change).toList();
             notes.add(I18n.text("line.formatting", String.join(", ", listed)
                     + (formats.size() > LISTED_FORMATTING ? "…" : "")));
         }
@@ -451,16 +452,5 @@ final class Lines {
         }
         ListItem list = item.paragraph().listItem();
         return list == null ? null : numbers.next(list);
-    }
-
-    /** How many differences: "no difference", "1 difference", "3 differences". */
-    static String count(long differences) {
-        return differences == 0 ? I18n.text("count.none") : differences == 1 ? I18n.text("count.one")
-                : I18n.text("count.many", differences);
-    }
-
-    /** A property difference as the view says it: "shading: clear → fill D9E2F3". */
-    static String said(PropertyDifference difference) {
-        return I18n.text("line.change", difference.property(), difference.left(), difference.right());
     }
 }

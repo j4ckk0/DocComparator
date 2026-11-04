@@ -33,7 +33,6 @@ import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Picture;
 import org.jtools.doccomparator.document.Run;
 import org.jtools.doccomparator.document.StyleSheet;
-import org.jtools.doccomparator.i18n.I18n;
 import java.util.function.UnaryOperator;
 
 /**
@@ -344,7 +343,7 @@ final class ParagraphComparer {
     /** How two runs are formatted otherwise, as the options compare it: their character style, their own properties. */
     private List<PropertyDifference> runDifferences(Run a, Run b) {
         Differences differences = new Differences(options);
-        differences.add(Aspect.STYLES, I18n.text("compared.characterStyle"), leftStyles.nameOf(a.styleId()),
+        differences.add(Aspect.STYLES, Said.of("compared.characterStyle"), leftStyles.nameOf(a.styleId()),
                 rightStyles.nameOf(b.styleId()));
         differences.formatting(Aspects.Source.RUN, a.formatting(), b.formatting());
         return differences.list();
@@ -356,16 +355,16 @@ final class ParagraphComparer {
      */
     private List<PropertyDifference> properties(Paragraph a, Paragraph b, Item itemA, Item itemB) {
         Differences differences = new Differences(options);
-        differences.add(Aspect.SECTIONS, I18n.text("compared.story"), I18n.text("value.story." + itemA.story().kind().name()),
-                I18n.text("value.story." + itemB.story().kind().name()));
-        differences.add(Aspect.HEADINGS, I18n.text("compared.heading"), heading(a.headingLevel()),
+        differences.add(Aspect.SECTIONS, Said.of("compared.story"), Said.of("value.story." + itemA.story().kind().name()),
+                Said.of("value.story." + itemB.story().kind().name()));
+        differences.add(Aspect.HEADINGS, Said.of("compared.heading"), heading(a.headingLevel()),
                 heading(b.headingLevel()));
-        differences.add(Aspect.LISTS, I18n.text("compared.list"), list(a.listItem()), list(b.listItem()));
-        differences.add(Aspect.SECTIONS, I18n.text("compared.place"), itemA.placeInStructure(),
+        differences.add(Aspect.LISTS, Said.of("compared.list"), list(a.listItem()), list(b.listItem()));
+        differences.add(Aspect.SECTIONS, Said.of("compared.place"), itemA.placeInStructure(),
                 itemB.placeInStructure());
-        differences.add(Aspect.SECTIONS, I18n.text("compared.section"), a.endsSection() ? I18n.text("value.endsHere")
-                : null, b.endsSection() ? I18n.text("value.endsHere") : null);
-        differences.add(Aspect.STYLES, I18n.text("compared.paragraphStyle"), paragraphStyleName(leftStyles, a.styleId()),
+        differences.add(Aspect.SECTIONS, Said.of("compared.section"), a.endsSection() ? ENDS_HERE : null,
+                b.endsSection() ? ENDS_HERE : null);
+        differences.add(Aspect.STYLES, Said.of("compared.paragraphStyle"), paragraphStyleName(leftStyles, a.styleId()),
                 paragraphStyleName(rightStyles, b.styleId()));
 
         Formatting appliedA = leftStyles.effectiveParagraph(a);
@@ -382,17 +381,20 @@ final class ParagraphComparer {
         return Objects.requireNonNullElse(styles.nameOf(styles.paragraphStyle(id)), "Normal");
     }
 
-    private static String heading(int level) {
-        return level == 0 ? null : I18n.text("value.heading", level);
+    /** Where a section ends: on this paragraph. */
+    private static final Said ENDS_HERE = Said.of("value.endsHere");
+
+    private static Said heading(int level) {
+        return level == 0 ? null : Said.of("value.heading", level);
     }
 
-    private static String list(ListItem item) {
+    private static Said list(ListItem item) {
         if (item == null) {
             return null;
         }
-        String format = item.numberFormat() == null ? I18n.text("value.list") : item.numberFormat();
+        Said format = item.numberFormat() == null ? Said.of("value.list") : Said.verbatim(item.numberFormat());
         String text = item.levelText() == null || item.numberFormat() != null && item.numberFormat().equals("bullet")
                 ? "" : " \"" + item.levelText() + "\"";
-        return I18n.text("value.listLevel", format + text, item.level() + 1);
+        return Said.of("value.listLevel", Said.joined(format, Said.verbatim(text)), item.level() + 1);
     }
 }

@@ -27,7 +27,6 @@ import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
-import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * Compares two tables as a reader sees them: their layout, then their content, whatever their styles.
@@ -77,7 +76,7 @@ final class TableComparer {
             int right = row.right() >= 0 ? row.right() : partner(rowOfA, row.left());
             Differences differences = new Differences(options);
             if (left >= 0 && right >= 0) {
-                differences.formatting(Aspects.Source.ROW, name -> I18n.text("compared.ofRow", name),
+                differences.formatting(Aspects.Source.ROW, name -> Said.of("compared.ofRow", name),
                         rowFormatting(a, left), rowFormatting(b, right));
             }
             rowProperties.add(differences.list());
@@ -105,17 +104,17 @@ final class TableComparer {
     /** The properties of two tables, as the options compare them: their size, their place, their style, their own. */
     ParagraphDiff properties(Unit a, Unit b) {
         Differences differences = new Differences(options);
-        differences.add(Aspect.TABLE_LAYOUT, I18n.text("compared.rows"), String.valueOf(a.cells().length),
+        differences.add(Aspect.TABLE_LAYOUT, Said.of("compared.rows"), String.valueOf(a.cells().length),
                 String.valueOf(b.cells().length));
-        differences.add(Aspect.TABLE_LAYOUT, I18n.text("compared.columns"), String.valueOf(columns(a).size()),
+        differences.add(Aspect.TABLE_LAYOUT, Said.of("compared.columns"), String.valueOf(columns(a).size()),
                 String.valueOf(columns(b).size()));
-        differences.add(Aspect.SECTIONS, I18n.text("compared.place"), a.item().placeInStructure(),
+        differences.add(Aspect.SECTIONS, Said.of("compared.place"), a.item().placeInStructure(),
                 b.item().placeInStructure());
         Table x = a.item().table();
         Table y = b.item().table();
-        differences.add(Aspect.STYLES, I18n.text("compared.tableStyle"), leftStyles.nameOf(x.styleId()),
+        differences.add(Aspect.STYLES, Said.of("compared.tableStyle"), leftStyles.nameOf(x.styleId()),
                 rightStyles.nameOf(y.styleId()));
-        differences.formatting(Aspects.Source.TABLE, name -> I18n.text("compared.ofTable", name), x.formatting(),
+        differences.formatting(Aspects.Source.TABLE, name -> Said.of("compared.ofTable", name), x.formatting(),
                 y.formatting());
         return new ParagraphDiff(List.of(), List.of(), List.of(), List.of(), differences.list());
     }
@@ -151,7 +150,7 @@ final class TableComparer {
     private Pairing pair(Unit x, Unit y) {
         ParagraphDiff text = paragraphs.compare(x, y);
         Differences differences = new Differences(options);
-        differences.formatting(Aspects.Source.CELL, name -> I18n.text("compared.ofCell", name), x.item().cell(),
+        differences.formatting(Aspects.Source.CELL, name -> Said.of("compared.ofCell", name), x.item().cell(),
                 y.item().cell());
         List<PropertyDifference> properties = new ArrayList<>(text.properties());
         properties.addAll(differences.list());

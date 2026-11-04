@@ -25,7 +25,6 @@ import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.Story;
-import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * What the comparison pairs, one against one: a paragraph, or a whole table, compared row by row and column by column
@@ -83,7 +82,7 @@ public record Item(Story.Name story, List<Place> places, Paragraph paragraph, Ta
      * Where it is, as the structure compares it: in the flow of the text or in a text box — not which table, nor which
      * cell, which an inserted table, row or column would change for all those after it: those are compared as such.
      */
-    String placeInStructure() {
-        return I18n.text(places.stream().anyMatch(Place::textBox) ? "value.place.textBox" : "value.place.text");
+    Said placeInStructure() {
+        return Said.of(places.stream().anyMatch(Place::textBox) ? "value.place.textBox" : "value.place.text");
     }
 }

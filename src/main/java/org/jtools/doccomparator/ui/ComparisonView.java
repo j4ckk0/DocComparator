@@ -411,7 +411,7 @@ final class ComparisonView extends JComponent implements Scrollable {
         List<PropertyDifference> formatting = side.text.formattingAt(x, y);
         if (!formatting.isEmpty()) {
             return "<html>" + escape(I18n.text("view.formatting.tip")) + "<br>" + formatting.stream()
-                    .map(d -> escape(Lines.said(d)))
+                    .map(d -> escape(ComparisonWords.change(d)))
                     .collect(Collectors.joining("<br>")) + "</html>";
         }
         return side.moved() ? I18n.text("view.moved.tip") : describe(side.marking);

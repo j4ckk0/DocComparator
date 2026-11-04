@@ -178,7 +178,7 @@ language change becomes slow on big documents. It is listed so the choice is a k
   - The extensions `"docx", "docm", "dotx", "dotm"` are in the file chooser, and the same list is written in
     `DocxReader`'s doc; one constant in `DocxReader` would be the single source.
   - The client property `"look"` in `MainWindow.lookMenu`.
-- **Wording helpers in the line builder (2):** `Lines.count()` and `Lines.said()` are called by `ComparatorPanel`
+- **Wording helpers in the line builder (2)** — done, moved to `ComparisonWords` with finding 7: `Lines.count()` and `Lines.said()` are called by `ComparatorPanel`
   (the status line) and `ComparisonView` (tooltips). They are how the program says a difference, not how it builds
   lines. Leave them unless finding 7 is done; they would then go together into the view's wording.
 - **Comments:** reviewed separately (the comments review). They state intent and the present. Two stale ones were

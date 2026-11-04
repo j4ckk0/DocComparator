@@ -23,13 +23,15 @@ package org.jtools.doccomparator.ui;
 import java.util.ArrayList;
 import java.util.List;
 import org.jtools.doccomparator.compare.Item;
+import org.jtools.doccomparator.compare.PropertyDifference;
+import org.jtools.doccomparator.compare.Said;
 import org.jtools.doccomparator.compare.StoryComparison;
 import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.i18n.I18n;
 
 /**
- * What the comparison holds, said in the language in use: a story's name, where a paragraph is, a part's title. The
- * comparison keeps them as data; the view says them as it shows them.
+ * What the comparison holds, said in the language in use: a story's name, where a paragraph is, a part's title, how
+ * many differences, a property difference. The comparison keeps them as data; the view says them as it shows them.
  */
 final class ComparisonWords {
 
@@ -79,6 +81,23 @@ final class ComparisonWords {
         }
         String said = String.join(BETWEEN_PLACES, parts);
         return inBody ? Character.toUpperCase(said.charAt(0)) + said.substring(1) : said;
+    }
+
+    /** How many differences: "no difference", "1 difference", "3 differences". */
+    static String count(long differences) {
+        return differences == 0 ? I18n.text("count.none") : differences == 1 ? I18n.text("count.one")
+                : I18n.text("count.many", differences);
+    }
+
+    /** A property difference as the view says it: "shading: clear → fill D9E2F3". */
+    static String change(PropertyDifference difference) {
+        return I18n.text("line.change", difference.property().say(), difference.left().say(), difference.right().say());
+    }
+
+    /** A property difference, one side's value: "heading: heading 2". */
+    static String property(PropertyDifference difference, Side side) {
+        Said value = side.of(difference.left(), difference.right());
+        return I18n.text("line.property", difference.property().say(), value.say());
     }
 
     /** The title of a part of the documents: "Body", "Headers and footers", "Footnotes and endnotes". */

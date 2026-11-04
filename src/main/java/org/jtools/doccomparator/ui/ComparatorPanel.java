@@ -449,7 +449,7 @@ public final class ComparatorPanel extends JPanel {
         SwingUtilities.invokeLater(() -> scroll.getViewport().setViewPosition(new Point(0, Math.min(at.y,
                 Math.max(0, view.getHeight() - scroll.getViewport().getHeight())))));
         int[] count = view.differenceCount();
-        statusLine.say(result.same() ? I18n.text("status.same") : Lines.count(count[0]));
+        statusLine.say(result.same() ? I18n.text("status.same") : ComparisonWords.count(count[0]));
         updatePosition();
         updateActions();
     }
