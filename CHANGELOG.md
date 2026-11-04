@@ -5,6 +5,8 @@ checksums.
 
 ## 1.6 — not released yet
 
+- **A Help menu**: the program's licence and the embedded Java runtime's, read from the program and its runtime
+  (no file to find, no browser), and *About DocComparator*: its version, its home page to copy, the Java it runs on.
 - **Apache License 2.0**: `LICENSE` and `NOTICE` at the root and in each distribution, the licence's header in every
   source file, the pom ready for Maven Central (`org.jtools:doccomparator`, see PUBLISHING.md).
 - **A language change is immediate**: the comparison shown is said again in the other language at once, without

@@ -176,6 +176,7 @@ final class MainWindow extends JFrame {
         bar.add(view);
         bar.add(panel.compareMenu());
         bar.add(go);
+        bar.add(HelpMenu.of(this, labels));
         // the language on the right of the menus
         bar.add(Box.createHorizontalGlue());
         language.onChoice(this::useLanguage);

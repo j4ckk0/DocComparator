@@ -225,6 +225,10 @@ document copied in Explorer opens as if dropped.
   documents (`RibbonEdge`). The chevron in its top right corner collapses it to a strip, and opens it again; so do
   *View ▸ Ribbon* and Ctrl+F1, as in Word. Collapsed, its options are still in the *Compare* and *View* menus; the
   ribbon is kept open or collapsed for the next time, as the look is.
+- **Help**: *Licence…* (DocComparator's, Apache 2.0, read from inside the program), *Embedded Java runtime…* (the
+  runtime's terms, GPLv2 with the Classpath Exception, its licence read from the runtime itself, where its sources
+  are), *About DocComparator…* (the version, the home page as an address to copy — the program opens no browser —,
+  the Java it runs on).
 - **Previous and next difference**: F7 and Shift+F7, or *Go*. *Only differences* hides the lines that are the
   same; *Only what is comparable* hides what has nothing in common with the other side — paragraphs, tables, rows and
   columns of tables on one side only — and shows the rest: the same paragraphs as they are, the close ones with their
@@ -393,7 +397,7 @@ to be published; the distributions, with their JREs, are never uploaded there.
 
 | Path | What it holds |
 |---|---|
-| `src/main/java/org/jtools/doccomparator/` | `Launcher` (the entry point, given two documents or none), `MainWindow` (the window, its menus, its look), `Settings` (kept beside the program), `Looks` (FlatLaf's looks, light and dark, its native libraries off), `NoNetworkResolver` (see "No network") |
+| `src/main/java/org/jtools/doccomparator/` | `Launcher` (the entry point, given two documents or none), `MainWindow` (the window, its menus, its look), `HelpMenu` (the licences and About, read offline), `Settings` (kept beside the program), `Looks` (FlatLaf's looks, light and dark, its native libraries off), `NoNetworkResolver` (see "No network") |
 | `…/document/` | what a Word document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
 | `…/text/` | `TextReader` (text pasted into a `WordDocument`, a paragraph a line) |
 | `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `DrawingReader` (a drawing's pictures and text boxes), `StylesReader`, `Numbering`, `FormattingReader`, `Pictures` (a part's pictures, through its relationships, nothing outside fetched) |

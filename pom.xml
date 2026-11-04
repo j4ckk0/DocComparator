@@ -79,6 +79,19 @@
 
   <build>
     <finalName>doccomparator</finalName>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <!-- The program's own licence, inside it: Help ▸ Licence shows it, with nothing else to open. -->
+      <resource>
+        <directory>${project.basedir}</directory>
+        <targetPath>org/jtools/doccomparator</targetPath>
+        <includes>
+          <include>LICENSE</include>
+        </includes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <!-- Apache 2.0 header at the top of every Java source (same convention as the jtools projects) -->
