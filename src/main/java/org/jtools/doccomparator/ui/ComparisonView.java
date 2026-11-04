@@ -42,7 +42,11 @@ final class ComparisonView extends JComponent implements Scrollable {
     private final Fonts fonts;
     private final FontRenderContext context = new FontRenderContext(null, true, true);
     private List<Line> lines = List.of();
-    private String emptyMessage = "";
+    /** What a side says while there are no lines: whether its document is open, a title, then lines of text. */
+    record EmptySide(boolean opened, String title, List<String> lines) {
+    }
+
+    private EmptySide[] emptySides = {new EmptySide(false, "", List.of()), new EmptySide(false, "", List.of())};
     private int laidOutWidth = -1;
     private int totalHeight;
     private int current = -1;
@@ -87,9 +91,12 @@ final class ComparisonView extends JComponent implements Scrollable {
         return lines;
     }
 
-    /** What is said when there are no lines: how to start. */
-    void setEmptyMessage(String message) {
-        emptyMessage = message;
+    /**
+     * What each side says while there are no lines — a title, then lines of text: which document goes there, how to
+     * open it, or the one opened, waiting for the other.
+     */
+    void setEmptySides(EmptySide left, EmptySide right) {
+        emptySides = new EmptySide[] {left, right};
         repaint();
     }
 
@@ -245,14 +252,39 @@ final class ComparisonView extends JComponent implements Scrollable {
         }
     }
 
+    /**
+     * No lines yet: the two sides, each a place framed with dashes where its document goes, saying which one and how
+     * to open it — two documents, side by side, as they will be compared.
+     */
     private void paintEmpty(Graphics2D g) {
-        g.setColor(Palette.FAINT);
-        g.setFont(fonts.text());
-        int y = 40;
-        for (String part : emptyMessage.split("\n")) {
-            int x = Math.max(10, (getWidth() - g.getFontMetrics().stringWidth(part)) / 2);
-            g.drawString(part, x, y);
-            y += g.getFontMetrics().getHeight();
+        Rectangle visible = getVisibleRect();
+        int column = columnWidth(getWidth());
+        int[][] sides = {{0, column}, {column + GUTTER, getWidth() - column - GUTTER}};
+        Font title = fonts.heading().deriveFont(fonts.heading().getSize2D() + 4);
+        for (int side = 0; side < 2; side++) {
+            int x = sides[side][0] + 16;
+            int y = visible.y + 16;
+            int width = sides[side][1] - 32;
+            int height = Math.max(120, visible.height - 32);
+            EmptySide says = emptySides[side];
+            boolean opened = says.opened();
+            g.setColor(opened ? Palette.BACKGROUND : Palette.NO_SIDE);
+            g.fillRoundRect(x, y, width, height, 16, 16);
+            g.setColor(opened ? Palette.GRID : Palette.FAINT);
+            g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1, new float[] {8, 6}, 0));
+            g.drawRoundRect(x, y, width, height, 16, 16);
+            g.setStroke(new BasicStroke(1));
+            int lineY = y + height / 2 - ((says.lines().size() + 1) * g.getFontMetrics(fonts.text()).getHeight()) / 2;
+            g.setFont(title);
+            g.setColor(Palette.TEXT);
+            g.drawString(says.title(), x + Math.max(8, (width - g.getFontMetrics().stringWidth(says.title())) / 2), lineY);
+            lineY += g.getFontMetrics().getHeight() + 8;
+            g.setFont(fonts.text());
+            g.setColor(Palette.FAINT);
+            for (String line : says.lines()) {
+                g.drawString(line, x + Math.max(8, (width - g.getFontMetrics().stringWidth(line)) / 2), lineY);
+                lineY += g.getFontMetrics().getHeight();
+            }
         }
     }
 

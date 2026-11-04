@@ -71,8 +71,6 @@ import org.jtools.doccomparator.docx.DocxReader;
  */
 public final class ComparatorPanel extends JPanel {
 
-    private static final String HINT = "Open the two documents to compare: type their paths above, choose them with "
-            + "Open\u2026,\nor drop them here \u2014 both at once, or each on its side.";
 
     private final ComparisonView view = new ComparisonView();
     private final JScrollPane scroll = new JScrollPane(view);
@@ -107,7 +105,7 @@ public final class ComparatorPanel extends JPanel {
 
     public ComparatorPanel() {
         super(new BorderLayout());
-        view.setEmptyMessage(HINT);
+        showEmptySides();
         scroll.getVerticalScrollBar().setUnitIncrement(24);
         scroll.setBorder(BorderFactory.createEmptyBorder());
 
@@ -212,6 +210,7 @@ public final class ComparatorPanel extends JPanel {
             comparison = null;
             view.setLines(List.of(), -1);
             status.setText(leftPath == null && rightPath == null ? " " : "Open the other document to compare.");
+            showEmptySides();
             return;
         }
         if (running != null) {
@@ -256,6 +255,21 @@ public final class ComparatorPanel extends JPanel {
         };
         running = worker;
         worker.execute();
+    }
+
+    /** While a side has no document: what goes there, and how to open it; the side opened, its document's name. */
+    private void showEmptySides() {
+        view.setEmptySides(emptySide(leftPath, "Left", "Ctrl+O"), emptySide(rightPath, "Right", "Ctrl+Shift+O"));
+    }
+
+    private static ComparisonView.EmptySide emptySide(Path path, String side, String key) {
+        if (path != null) {
+            return new ComparisonView.EmptySide(true, String.valueOf(path.getFileName()),
+                    List.of("opened \u2014 now the other document"));
+        }
+        return new ComparisonView.EmptySide(false, side + " document", List.of("Drop a Word document here,",
+                "or choose it with Open\u2026 above (" + key + "),", "or type its path above.", "",
+                "Two dropped at once: the first on the left."));
     }
 
     private static WordDocument read(Path path) throws IOException {
