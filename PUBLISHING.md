@@ -84,6 +84,10 @@ distribution (`scripts/package.sh`, `scripts\package.bat`) and checks its launch
 the release with the two archives (`gh release create`, with the workflow's own token: no personal token is
 involved). Every push of `main` also runs `.github/workflows/build.yml`: the build and the tests, without a screen.
 
+Before a tag, the release workflow can be run by hand as a dry run (*Actions*, *release*, *Run workflow*, on `main`):
+the two distributions of the version `pom.xml` names, built and checked on Linux and on Windows, are kept as the
+run's artefacts, to download and try; nothing is published, and neither the tag nor the changelog is checked.
+
 By hand, should the workflow be unavailable: `scripts/package.sh` on Linux and `scripts\package.bat` on Windows, the
 Windows archive copied into `releases/` beside the Linux one, then `scripts/release.sh 1.6`, which creates the
 release from the pushed tag and uploads the archives — with a fine-grained token for this repository only (*Contents:

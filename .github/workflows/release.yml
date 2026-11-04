@@ -2,11 +2,14 @@
 # runtime is linked there, with the program in it, then Java's AOT cache of the program made by running it once), the
 # notes from CHANGELOG.md's "## X.Y" section, the checksums. The by-hand way is scripts/package.sh on Linux and
 # scripts\package.bat on Windows, then scripts/release.sh (see PUBLISHING.md, section 3).
+# Run by hand (Actions, release, Run workflow), it is a dry run: the two distributions of the version pom.xml names
+# built and checked on their systems, kept as the run's artefacts, nothing published.
 name: release
 
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,11 +20,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: The version, said once, in the pom
+        run: echo "VERSION=$(sed -n 's:.*<revision>\(.*\)</revision>.*:\1:p' pom.xml | head -1)" >> "$GITHUB_ENV"
+
       - name: Check that the tag matches the pom and the changelog
+        if: github.event_name == 'push'
         run: |
-          version="${GITHUB_REF_NAME#v}"
-          grep -q "<revision>$version</revision>" pom.xml || { echo "pom.xml is not at version $version"; exit 1; }
-          scripts/changelog-section.py "$version" > /dev/null
+          tag_version="${GITHUB_REF_NAME#v}"
+          [ "$tag_version" = "$VERSION" ] || { echo "pom.xml is at version $VERSION, not $tag_version"; exit 1; }
+          scripts/changelog-section.py "$VERSION" > /dev/null
 
       - name: Keep the externals' downloads from one release to the next
         uses: actions/cache@v4
@@ -40,7 +47,7 @@ jobs:
 
       - name: Say so should the archive lack its AOT cache (it still works, starting slower)
         run: |
-          tar tzf "releases/doccomparator-${GITHUB_REF_NAME#v}-linux.tar.gz" | grep -q '/doccomparator.aot$' \
+          tar tzf "releases/doccomparator-$VERSION-linux.tar.gz" | grep -q '/doccomparator.aot$' \
             || echo "::warning::the Linux archive goes without its AOT cache: see the package step's log"
 
       - uses: actions/upload-artifact@v4
@@ -53,6 +60,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: The version, said once, in the pom
+        shell: pwsh
+        run: |
+          $found = Select-String -Path pom.xml -Pattern '<revision>(.*)</revision>' | Select-Object -First 1
+          "VERSION=$($found.Matches[0].Groups[1].Value)" >> $env:GITHUB_ENV
 
       - name: Keep the externals' downloads from one release to the next
         uses: actions/cache@v4
@@ -73,7 +86,7 @@ jobs:
       - name: Check that each launcher uses the AOT cache
         shell: pwsh
         run: |
-          $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          $version = $env:VERSION
           $zip = "releases\doccomparator-$version-windows.zip"
           $dir = Join-Path $env:RUNNER_TEMP 'Doc Comparator (check)'
           Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
@@ -102,7 +115,9 @@ jobs:
             } else {
               echo "::warning::$launcher does not use the AOT cache"
               if (Test-Path "$dir\launch4j.log") { Get-Content "$dir\launch4j.log" }
-              if (Test-Path "$dir\classes.log") { Select-String -Path "$dir\classes.log" -Pattern 'doccomparator.Launcher' }
+              if (Test-Path "$dir\classes.log") {
+                Select-String -Path "$dir\classes.log" -Pattern 'doccomparator.Launcher'
+              }
             }
           }
 
@@ -114,6 +129,7 @@ jobs:
 
   release:
     needs: [linux, windows]
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
