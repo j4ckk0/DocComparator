@@ -3,6 +3,14 @@
 What each version brought, newest first. The GitHub Releases carry the same notes with the downloads and their
 checksums.
 
+## 1.8 — 2026-11-04
+
+- **Java 25**: the program runs on Eclipse Temurin 25, the runtime both distributions carry.
+- **Less memory**: every launcher turns on Java 25's compact object headers, about a tenth less memory for a
+  comparison.
+- **A faster start on Linux**: the Linux distribution carries Java's AOT cache of the program, `doccomparator.aot`;
+  its window opens sooner (0.35 s instead of 0.65 s, measured here). The Windows distribution has none yet.
+
 ## 1.7 — 2026-11-04
 
 - No change to what the program does: the code reviewed again (REVIEW.md). Every word of the comparison is now made
