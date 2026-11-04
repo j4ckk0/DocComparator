@@ -103,10 +103,10 @@ Two checks run with every build, so a change that breaks the rule does not build
 
 What stays outside these checks:
 
-- **The JRE.** The bundled Java runtime holds the JDK's networking code like any other; nothing in the program calls it.
+- **The runtime.** The bundled Java runtime holds the JDK's networking code like any other; nothing in the program calls it.
   Traced on Linux (`strace`, 2026-11-04, reading, comparing and drawing the samples): no connection, no address bound,
   no packet. What the trace does show, all on the machine itself:
-  - three sockets the JRE opens and closes as its networking library loads, to learn whether IPv6 is there — never
+  - three sockets the runtime opens and closes as its networking library loads, to learn whether IPv6 is there — never
     bound, never connected, nothing sent. The library loads as soon as the JDK reads a font file, through file channels
     whose code loads it: in any Java program that draws text, whatever its fonts (tried: with fonts shipped in the JRE
     and a font configuration of our own, the probe is still there), and no option avoids it. On Windows the same
@@ -373,38 +373,45 @@ The pre-push hook is enabled once per clone with `git config core.hooksPath .git
 ## Externals
 
 The software the build and the distributions need is not under source control. `externals.conf` names each one and its
-version, and `scripts/setup.sh` deploys them under generic names into `external/`: `jdk`, `maven`, `jre-linux.tar.gz`,
-`jre-windows.zip`. The archives stay in `external/downloads/`, so a second run downloads nothing.
+version, and `scripts/setup.sh` deploys them under generic names into `external/`: `jdk` and `maven`. The
+distributions' runtime is linked from that JDK. The archives stay in `external/downloads/`, so a second run downloads
+nothing.
 
 To fetch from a local mirror, set `MIRROR` in `externals.conf`. Keep its credentials in `externals.local.conf`, which
 is not under source control, or in the environment: `externals.conf` documents them.
 
 ## Packaging
 
-`scripts/package.sh` builds two self-contained distributions into `releases/`, each with its own JRE, so nothing needs
-installing where they are unpacked:
+Each system builds its own self-contained distribution into `releases/`, so nothing needs installing where it is
+unpacked: `scripts/package.sh` on Linux, `scripts\package.bat` on Windows. A release builds both, on GitHub.
 
-| Archive | Start it with |
-|---|---|
-| `doccomparator-<version>-linux.tar.gz` | `doccomparator.sh` |
-| `doccomparator-<version>-windows.zip` | `doccomparator.bat` (the signed `javaw.exe`, no console), or `DocComparator.exe` (not signed) |
+| Archive | Built by | Start it with |
+|---|---|---|
+| `doccomparator-<version>-linux.tar.gz` | `scripts/package.sh` | `doccomparator.sh` |
+| `doccomparator-<version>-windows.zip` | `scripts\package.bat` | `doccomparator.bat` (the signed `javaw.exe`, no console), or `DocComparator.exe` (not signed) |
 
-Both are built from either system, and hold the program's `LICENSE` and `NOTICE`, and, in `licenses/`, the licence
-of FlatLaf, whose classes `doccomparator.jar` holds. Previous versions' archives are removed from `releases/` once the new one is built.
+Each holds the program's `LICENSE` and `NOTICE`, and, in `licenses/`, the licence of FlatLaf, whose classes it holds.
+Previous versions' archives are removed from `releases/` once the new one is built.
 
-The Linux archive also carries `doccomparator.aot`, Java's AOT cache of the program: the classes it loads, already
-read and linked, so that its window opens sooner (here, in 0.35 s instead of 0.65 s). `scripts/package.sh` makes it by running the
-program once, as it ships, on the two sample procedures (it needs a display, or `xvfb-run`), then checks that the cache
-is used once the archive is unpacked elsewhere; should either fail, the archive goes without it, with a warning. The
-cache is only read, and `doccomparator.sh` passes it over silently should it not match the jar or the JRE. The Windows
-archive has none: its cache would have to be made on Windows.
+- **Its runtime, `jre/`**, is linked by `jlink` from the JDK that builds: the program and FlatLaf as modules
+  (`module-info.java`), and the JDK's modules they need — `java.desktop`, the French and English locale data, the
+  screen readers' bridge, the less common charsets. About half the size of a full JRE. `jlink` links only for the
+  system it runs on, hence one build per system. `doccomparator.jar` is still there: the launchers start it, and Java
+  takes its classes from the runtime.
+- **Its AOT cache, `doccomparator.aot`**, is Java's cache of the program: the classes it loads, already read and
+  linked, so that its window opens sooner (here, in 0.35 s instead of 0.65 s). The build makes it by running the
+  program once, on the two sample procedures, and checks it is used (it needs a display, or `xvfb-run` on Linux);
+  should that fail, the archive goes without it, with a warning. The cache holds no jar: the program's classes come
+  from the runtime, whose files' times it does not check, so it holds wherever the archive is unpacked, whatever the
+  time zone (a zip keeps a file's time in local time only). It is only read, and the launchers pass it over silently
+  should it not match.
 
 ## Publishing
 
 The licence, how the program reaches Maven Central (`org.jtools:doccomparator`), and how a version becomes a release on GitHub (a pushed tag `vX.Y`): [PUBLISHING.md](PUBLISHING.md); what each version brought: [CHANGELOG.md](CHANGELOG.md).
 In short, `mvn -Ppublish deploy` uploads the
 program's own jar (FlatLaf a dependency of it), its sources and javadoc, signed, to the Central Portal, where it waits
-to be published; the distributions, with their JREs, are never uploaded there.
+to be published; the distributions, with their runtimes, are never uploaded there.
 
 ## Layout
 
@@ -430,6 +437,6 @@ to be published; the distributions, with their JREs, are never uploaded there.
 Apache License 2.0 — see [LICENSE](LICENSE); [NOTICE](NOTICE) records the third-party terms.
 Copyright 2026 jtools.org. Every Java source carries the licence's header, written by `license-maven-plugin` as the
 sources are built. `doccomparator.jar` in the distributions holds FlatLaf (Apache License 2.0, its licence in
-`licenses/`). The self-contained distributions bundle an Eclipse Temurin runtime (GPLv2 with the Classpath
+`licenses/`). The self-contained distributions carry a runtime linked from Eclipse Temurin (GPLv2 with the Classpath
 Exception), whose own licence and notices are in the distribution's `jre/legal/` directory; each archive carries
 `LICENSE` and `NOTICE` at its root.

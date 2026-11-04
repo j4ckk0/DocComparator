@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Sourced by the scripts, from the project root: makes sure scripts/setup.sh has been run — everything it
-# deploys is there: external/jdk, maven, jre-linux.tar.gz, jre-windows.zip — offering to run it when
+# deploys is there: external/jdk and maven — offering to run it when
 # something is missing (at a terminal; elsewhere, the CI or a hook, it stops with the way out). Then puts the
 # externals in front: external/jdk as JAVA_HOME, its java and Maven's mvn first in PATH. Only generic names:
 # the versions are externals.conf's business.
@@ -17,8 +17,6 @@ missing_externals() {
   local m=
   [ -x "$ext/jdk/bin/java" ] || m="$m jdk/"
   [ -x "$ext/maven/bin/mvn" ] || m="$m maven/"
-  [ -s "$ext/jre-linux.tar.gz" ] || m="$m jre-linux.tar.gz"
-  [ -s "$ext/jre-windows.zip" ] || m="$m jre-windows.zip"
   echo "$m"
 }
 

@@ -1,7 +1,7 @@
 @echo off
 rem
 rem Called by the scripts, from the project root: makes sure scripts\setup.bat has been run — everything it
-rem deploys is there: external\jdk, maven, jre-linux.tar.gz, jre-windows.zip — offering to run it when
+rem deploys is there: external\jdk and maven — offering to run it when
 rem something is missing (a prompt with a 30 s timeout, No by default: the CI does not hang). Then puts the
 rem externals in front: external\jdk as JAVA_HOME, its java.exe and Maven's mvn.cmd first in PATH. No setlocal:
 rem the caller keeps what is set here. Only generic names: the versions are externals.conf's business.
@@ -31,6 +31,4 @@ rem ---- what setup deploys and is not there, in MISSING (undefined when all is 
 set "MISSING="
 if not exist "%EXT%\jdk\bin\java.exe" set "MISSING=%MISSING% jdk\"
 if not exist "%EXT%\maven\bin\mvn.cmd" set "MISSING=%MISSING% maven\"
-if not exist "%EXT%\jre-linux.tar.gz" set "MISSING=%MISSING% jre-linux.tar.gz"
-if not exist "%EXT%\jre-windows.zip" set "MISSING=%MISSING% jre-windows.zip"
 exit /b 0

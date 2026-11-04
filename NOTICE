@@ -18,8 +18,9 @@ Maven Central does not hold it: FlatLaf is a dependency of it there.
 Embedded Java runtime
 =====================
 
-The self-contained distributions — the Windows and Linux archives — bundle an Eclipse
-Temurin 25 Java runtime (JRE). The jar published on Maven Central carries no runtime
+The self-contained distributions — the Windows and Linux archives — carry a Java runtime
+linked (jlink) from the Eclipse Temurin 25 JDK: the modules the program needs, with the
+program and FlatLaf among them. The jar published on Maven Central carries no runtime
 and is not concerned by this section.
 
 Eclipse Temurin (OpenJDK) is licensed under the GNU General Public License, version 2,

@@ -108,6 +108,8 @@ class NoNetworkTest {
                     "java/net/spi/InetAddressResolver",
                     "java/net/UnknownHostException",
                     "java/net/InetAddress"), List.of()),
+            // the module's descriptor: names the resolver's service, which it provides
+            new Exemption("module-info", List.of("java/net/spi/InetAddressResolverProvider"), List.of()),
             // makes the program's only XML parser, set to fetch nothing
             new Exemption("org/jtools/doccomparator/docx/XmlCursor", List.of(), List.of(
                     "javax/xml/stream/XMLInputFactory.newDefaultFactory")));

@@ -1,9 +1,8 @@
 @echo off
 rem
 rem Deploys the project's externals into external\ (not under source control), from externals.conf:
-rem   external\jdk, external\maven                         extracted, their top-level directory stripped
-rem   external\jre-linux.tar.gz, external\jre-windows.zip  the JRE archives the distributions bundle
-rem   external\downloads\                                  the archives as downloaded (kept)
+rem   external\jdk, external\maven   extracted, their top-level directory stripped
+rem   external\downloads\            the archives as downloaded (kept)
 rem
 rem   scripts\setup.bat            deploys what is missing
 rem   scripts\setup.bat --force    downloads and deploys everything again
@@ -48,8 +47,6 @@ if not exist "%DL%" mkdir "%DL%"
 
 call :tool jdk JDK_WINDOWS bin\java.exe || exit /b 1
 call :tool maven MAVEN_WINDOWS bin\mvn.cmd || exit /b 1
-call :archive jre-linux.tar.gz JRE_LINUX || exit /b 1
-call :archive jre-windows.zip JRE_WINDOWS || exit /b 1
 
 echo == external\ ready:
 "%EXT%\jdk\bin\java.exe" -version 2>&1 | findstr /i "version"
@@ -70,18 +67,6 @@ if exist "%DIR%" rmdir /s /q "%DIR%"
 mkdir "%DIR%"
 tar -xf "!FILE!" -C "%DIR%" --strip-components 1 || exit /b 1
 echo == %DIR% deployed
-exit /b 0
-
-rem ---- a JRE archive: copied as it is under its generic name
-:archive
-set "TARGET=%EXT%\%~1"
-if exist "%TARGET%" if "%FORCE%"=="0" (
-  echo == %TARGET% present
-  exit /b 0
-)
-call :fetch %~2 || exit /b 1
-copy /y "!FILE!" "%TARGET%" >nul || exit /b 1
-echo == %TARGET% deployed
 exit /b 0
 
 rem ---- the archive of the URL held by the variable named %1, into external\downloads\ unless it is there; sets FILE

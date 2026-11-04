@@ -9,21 +9,21 @@ same way as the other jtools projects (XsdViewer). Checked against the tree at v
 Apache License 2.0, like the other jtools projects, copyright jtools.org:
 
 - `LICENSE` at the root, the licence's full text; `NOTICE` beside it, the third-party terms: FlatLaf (Apache License
-  2.0), whose classes the distributions' `doccomparator.jar` holds, and the Eclipse Temurin runtime (GPLv2 with the
-  Classpath Exception) the distributions bundle.
+  2.0), whose classes the distributions hold, and the runtime linked from Eclipse Temurin (GPLv2 with the Classpath
+  Exception) the distributions carry.
 - `<licenses>`, `<organization>` and `<developers>` in `pom.xml`, which Maven Central requires and shows.
 - The Apache header at the top of every Java source, written by `license-maven-plugin` as the sources are built
   (`update-file-header`, phase `process-sources`): a new source gets it at the next build.
 - The "Licence" section of `README.md`.
 - Each distribution carries `LICENSE` and `NOTICE` at its root, FlatLaf's licence in `licenses/`, and the runtime's
-  own in `jre/legal/`; `scripts/package.sh` checks they are there.
+  own in `jre/legal/`; `scripts/package.sh` and `scripts\package.bat` check they are there.
 
 ## 2. Maven Central
 
 `org.jtools:doccomparator` is the program's own jar: its classes, FlatLaf a dependency of it (the distributions'
 `doccomparator.jar` holds FlatLaf's classes; this one does not), with its sources, its javadoc, and its pom, the
 version written out (`flatten-maven-plugin`: the pom's `${revision}` never reaches Central). The distributions, with
-their JREs, are never uploaded: they are not attached to the build. **This is not part of a release**: a version
+their runtimes, are never uploaded: they are not attached to the build. **This is not part of a release**: a version
 reaches Central only when it is asked for on its own — what Central publishes can never be replaced or withdrawn.
 
 What it takes, once — all already done for XsdViewer, and shared by every `org.jtools` artifact:
@@ -66,7 +66,7 @@ These builds use the network (plugins, the upload): the program does not.
 
 ## 3. A release on GitHub
 
-What a user downloads: the two self-contained distributions of `scripts/package.sh`, each with its Java runtime, on
+What a user downloads: the two self-contained distributions, each with its Java runtime and built on its own system, on
 the repository's Releases page, with the version's notes from `CHANGELOG.md` and the archives' SHA-256. A release is
 public as soon as it is made: it is made when asked for, never as a side effect of a push.
 
@@ -79,11 +79,13 @@ public as soon as it is made: it is made when asked for, never as a side effect 
        git push origin main v1.6
 
 The tag starts `.github/workflows/release.yml` on GitHub: it checks that the tag, the pom and the changelog agree,
-deploys the externals (`scripts/setup.sh`), builds and tests the distributions (`scripts/package.sh`), and creates
+then on Linux and on Windows deploys the externals (`scripts/setup.sh`, `scripts\setup.bat`), builds and tests the
+distribution (`scripts/package.sh`, `scripts\package.bat`) and checks its launchers use the AOT cache, then creates
 the release with the two archives (`gh release create`, with the workflow's own token: no personal token is
 involved). Every push of `main` also runs `.github/workflows/build.yml`: the build and the tests, without a screen.
 
-By hand, should the workflow be unavailable: `scripts/package.sh`, then `scripts/release.sh 1.6`, which creates the
+By hand, should the workflow be unavailable: `scripts/package.sh` on Linux and `scripts\package.bat` on Windows, the
+Windows archive copied into `releases/` beside the Linux one, then `scripts/release.sh 1.6`, which creates the
 release from the pushed tag and uploads the archives — with a fine-grained token for this repository only (*Contents:
 read and write*), in `$GITHUB_TOKEN` or `~/.config/github/doccomparator-release-token`. `scripts/release.sh --dry-run
 1.6` prints the notes and calls nothing.

@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 #
-# Build the self-contained distributions (jar + bundled JRE + launchers; DocComparator.exe without a console), into releases/:
-#   releases/doccomparator-<version>-windows.zip, releases/doccomparator-<version>-linux.tar.gz
+# Build the self-contained Linux distribution (jar + runtime linked with the program + launcher + AOT cache), into
+# releases/doccomparator-<version>-linux.tar.gz. The Windows one is built on Windows (scripts\package.bat): jlink
+# links only for the system it runs on.
 #
 #   scripts/package.sh
 #   scripts/package.sh -DskipTests      # extra arguments are passed to mvn
 #
-# The JRE archives come from external/ (scripts/setup.sh deploys them; scripts/externals.sh checks they are there).
+# The JDK comes from external/ (scripts/setup.sh deploys it; scripts/externals.sh checks it is there). The AOT cache
+# is made by running the program once (pom.xml, profile dist): with no display, xvfb-run gives one when it is there.
 # The releases of the previous versions are removed once the new one is built: releases/ holds the release
 # of the version pom.xml names, and whatever else you put there is left alone.
 #
@@ -16,7 +18,9 @@ cd "$(dirname "$(readlink -f "$0")")/.."   # the project root
 running_instance "packaging"
 take_build_lock
 
-mvn clean package -Pdist "$@"
+run=()
+if [ -z "${DISPLAY:-}" ] && command -v xvfb-run >/dev/null; then run=(xvfb-run -a); fi
+${run[@]+"${run[@]}"} mvn clean package -Pdist "$@"
 
 # The releases of the previous versions go, now that the new one is there (only ours, named after another version).
 version=$(sed -n 's:.*<revision>\(.*\)</revision>.*:\1:p' pom.xml | head -1)   # said once, in the pom
@@ -27,49 +31,27 @@ for archive in releases/doccomparator-*-windows.zip releases/doccomparator-*-lin
   echo "== $archive removed (previous release)"
 done
 
-# Java's AOT cache in the Linux distribution, doccomparator.aot, for a faster start: made by running the program once,
-# as it ships (its launcher, its JRE, its flags), on the two sample procedures, then packed with it and checked as
-# unpacked elsewhere. With no display, xvfb-run gives one. Should that fail, the archive goes without the cache: the
-# program starts slower, nothing more. The Windows distribution has none: its cache would have to be made on Windows.
-aot_cache() {   # the Linux archive
-  local archive=$1 top=doccomparator-$version train=target/aot-training check=target/aot-check
-  local run=()
-  if [ -z "${DISPLAY:-}" ]; then
-    if ! command -v xvfb-run >/dev/null; then
-      echo "== WARNING: no display and no xvfb-run: $archive goes without its AOT cache" >&2
-      return 0
-    fi
-    run=(xvfb-run -a)
-  fi
-  rm -rf "${train:?}" "${check:?}"
-  mkdir -p "$train" "$check"
-  tar -xzf "$archive" -C "$train"
-  local dist=$PWD/$train/$top
-  if ! JAVA_TOOL_OPTIONS="-XX:AOTCacheOutput=$dist/doccomparator.aot -D$training=true" timeout 300 \
-      ${run[@]+"${run[@]}"} "$dist/doccomparator.sh" \
-      "$PWD/samples/procedure-revA.docx" "$PWD/samples/procedure-revB.docx" \
-      > "$train.log" 2>&1 || [ ! -s "$dist/doccomparator.aot" ]; then
-    tail -5 "$train.log" >&2
-    echo "== WARNING: the training run failed ($train.log): $archive goes without its AOT cache" >&2
+# The AOT cache, used once the archive is unpacked elsewhere and started by its launcher: the program's classes then
+# come from the cache ("shared objects file"), not from the runtime image. Its absence or refusal is said, not fatal:
+# the program starts slower, nothing more.
+check_aot() {   # the Linux archive
+  local archive=$1 unpacked=target/aot-check log=$PWD/target/aot-check.log
+  rm -rf "${unpacked:?}" "$log"
+  mkdir -p "$unpacked"
+  tar -xzf "$archive" -C "$unpacked"
+  mv "$unpacked/doccomparator-$version" "$unpacked/moved"
+  if [ ! -f "$unpacked/moved/doccomparator.aot" ]; then
+    echo "== WARNING: $archive goes without its AOT cache (see the build's output)" >&2
     return 0
   fi
-  tar -czf "$archive.part" -C "$train" "$top"
-  # unpacked under another name, the cache must be used: AOTMode=on fails rather than pass it over
-  tar -xzf "$archive.part" -C "$check"
-  mv "$check/$top" "$check/moved"
-  if ! timeout 120 ${run[@]+"${run[@]}"} "$check/moved/jre/bin/java" -XX:-UsePerfData -XX:+UseCompactObjectHeaders \
-      -XX:AOTMode=on -XX:AOTCache="$check/moved/doccomparator.aot" -D$training=true \
-      -jar "$check/moved/doccomparator.jar" \
-      > "$check.log" 2>&1; then
-    rm -f "$archive.part"
-    tail -5 "$check.log" >&2
-    echo "== WARNING: the AOT cache is not used once unpacked ($check.log): $archive goes without it" >&2
-    return 0
+  JAVA_TOOL_OPTIONS="-Ddoccomparator.training=true -Xlog:class+load=info:file=$log" timeout 120 \
+    ${run[@]+"${run[@]}"} "$unpacked/moved/doccomparator.sh" > /dev/null 2>&1 || true
+  if grep -q 'org.jtools.doccomparator.Launcher source: shared objects file' "$log" 2>/dev/null; then
+    echo "== $archive: its AOT cache is used"
+  else
+    echo "== WARNING: $archive: its AOT cache is not used once unpacked ($log)" >&2
   fi
-  mv -f "$archive.part" "$archive"
-  echo "== $archive: AOT cache added ($(du -h "$dist/doccomparator.aot" | cut -f1))"
 }
-training=doccomparator.training   # Launcher.TRAINING
 
 # What each archive must carry: a distribution runs with nothing installed. The entries go to grep whole, never
 # through a pipe it may leave early: under pipefail the writer left behind would fail the check.
@@ -80,9 +62,8 @@ check() {   # archive, its entries, what it must hold
     grep -q "^[^/]*/$needed\$" <<< "$entries" || { echo "$archive: no $needed" >&2; exit 1; }
   done
 }
-windows=releases/doccomparator-$version-windows.zip
 linux=releases/doccomparator-$version-linux.tar.gz
-aot_cache "$linux"
-check "$windows" "$(unzip -Z1 "$windows")" doccomparator.jar DocComparator.exe doccomparator.bat README.md LICENSE NOTICE licenses/FlatLaf-LICENSE.txt jre/bin/java.exe
-check "$linux" "$(tar tzf "$linux")" doccomparator.jar doccomparator.sh README.md LICENSE NOTICE licenses/FlatLaf-LICENSE.txt jre/bin/java
-echo "== releases/ checked: $windows, $linux"
+check "$linux" "$(tar tzf "$linux")" doccomparator.jar doccomparator.sh README.md LICENSE NOTICE \
+  licenses/FlatLaf-LICENSE.txt jre/bin/java jre/legal/java.base/LICENSE
+check_aot "$linux"
+echo "== releases/ checked: $linux"

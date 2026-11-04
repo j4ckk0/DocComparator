@@ -20,6 +20,7 @@ package org.jtools.doccomparator;
  * #L%
  */
 
+import java.awt.GraphicsEnvironment;
 import java.nio.file.Path;
 import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
@@ -35,8 +36,8 @@ import org.jtools.doccomparator.i18n.I18nLanguage;
 public final class Launcher {
 
     /**
-     * Set by scripts/package.sh to make the AOT cache: the program shows its window, compares the two documents given,
-     * then exits, for Java to record what it loaded.
+     * Set to make the AOT cache (pom.xml, profile dist): the program shows its window, compares the two documents
+     * given, then exits, for Java to record what it loaded.
      */
     static final String TRAINING = "doccomparator.training";
 
@@ -46,7 +47,24 @@ public final class Launcher {
     private Launcher() {
     }
 
+    /**
+     * The program's version: its module's, linked into the distributions' runtime image, or its jar's manifest's on
+     * the class path; null when it runs from its classes.
+     */
+    static String version() {
+        Module module = Launcher.class.getModule();
+        if (module.isNamed() && module.getDescriptor().rawVersion().isPresent()) {
+            return module.getDescriptor().rawVersion().get();
+        }
+        return Launcher.class.getPackage().getImplementationVersion();
+    }
+
     public static void main(String[] args) {
+        if (Boolean.getBoolean(TRAINING) && GraphicsEnvironment.isHeadless()) {
+            // nothing shown, a cache of little use: failing says so (pom.xml, profile dist)
+            System.err.println("training: no display");
+            System.exit(1);
+        }
         ImageIO.setUseCache(false);   // ImageIO caches on disk, in the temporary directory, unless told not to
         Settings settings = Settings.load();
         SwingUtilities.invokeLater(() -> {

@@ -1,6 +1,7 @@
-# A pushed tag vX.Y publishes the release: the two self-contained distributions (scripts/package.sh, each with its
-# Temurin JRE), the notes from CHANGELOG.md's "## X.Y" section, the checksums. The by-hand way is scripts/package.sh
-# then scripts/release.sh (see PUBLISHING.md, section 3).
+# A pushed tag vX.Y publishes the release: the two self-contained distributions, each built on its own system (its
+# runtime is linked there, with the program in it, then Java's AOT cache of the program made by running it once), the
+# notes from CHANGELOG.md's "## X.Y" section, the checksums. The by-hand way is scripts/package.sh on Linux and
+# scripts\package.bat on Windows, then scripts/release.sh (see PUBLISHING.md, section 3).
 name: release
 
 on:
@@ -11,7 +12,7 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,21 +27,101 @@ jobs:
         uses: actions/cache@v4
         with:
           path: external/downloads
-          key: externals-${{ hashFiles('externals.conf') }}
+          key: externals-linux-${{ hashFiles('externals.conf') }}
 
-      - name: Deploy the externals (JDK, Maven, the JREs bundled)
+      - name: Deploy the externals (JDK, Maven)
         run: scripts/setup.sh
 
-      - name: A display for the run that makes the Linux AOT cache
+      - name: A display for the run that makes the AOT cache
         run: command -v xvfb-run || { sudo apt-get update -q && sudo apt-get install -y -q xvfb; }
 
-      - name: Build and test, then package
+      - name: Build and test, then package (scripts/package.sh checks the cache is used once unpacked)
         run: scripts/package.sh
 
-      - name: Say so should the Linux archive lack its AOT cache (it still works, starting slower)
+      - name: Say so should the archive lack its AOT cache (it still works, starting slower)
         run: |
           tar tzf "releases/doccomparator-${GITHUB_REF_NAME#v}-linux.tar.gz" | grep -q '/doccomparator.aot$' \
             || echo "::warning::the Linux archive goes without its AOT cache: see the package step's log"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: releases/doccomparator-*-linux.tar.gz
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Keep the externals' downloads from one release to the next
+        uses: actions/cache@v4
+        with:
+          path: external/downloads
+          key: externals-windows-${{ hashFiles('externals.conf') }}
+
+      - name: Deploy the externals (JDK, Maven)
+        shell: cmd
+        run: scripts\setup.bat
+
+      - name: Build and test, then package
+        shell: cmd
+        run: scripts\package.bat
+
+      # Unpacked under a name with a space and parentheses, as "Program Files (x86)" would be, then started by each
+      # launcher: the program's classes must come from the cache ("shared objects file"). Said, not fatal.
+      - name: Check that each launcher uses the AOT cache
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          $zip = "releases\doccomparator-$version-windows.zip"
+          $dir = Join-Path $env:RUNNER_TEMP 'Doc Comparator (check)'
+          Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
+          Rename-Item (Join-Path $env:RUNNER_TEMP "doccomparator-$version") $dir
+          if (-not (Test-Path "$dir\doccomparator.aot")) {
+            echo "::warning::the Windows archive goes without its AOT cache: see the package step's log"
+            exit 0
+          }
+          foreach ($launcher in 'DocComparator.exe', 'doccomparator.bat') {
+            # a log beside the program (the launchers start it there): a path of its own would hold a drive's colon
+            $env:JAVA_TOOL_OPTIONS = '-Ddoccomparator.training=true -Xlog:class+load=info:file=classes.log'
+            Remove-Item "$dir\classes.log" -ErrorAction SilentlyContinue
+            $arguments = if ($launcher -eq 'DocComparator.exe') { @('--l4j-debug') } else { @() }
+            if ($arguments) {
+              Start-Process -FilePath "$dir\$launcher" -ArgumentList $arguments -WorkingDirectory $dir -Wait
+            } else {
+              Start-Process -FilePath "$dir\$launcher" -WorkingDirectory $dir -Wait
+            }
+            Start-Sleep -Seconds 2
+            Get-Process javaw -ErrorAction SilentlyContinue | Wait-Process -Timeout 120 -ErrorAction SilentlyContinue
+            $used = (Test-Path "$dir\classes.log") -and
+                (Select-String -Path "$dir\classes.log" -Quiet `
+                    -Pattern 'org.jtools.doccomparator.Launcher source: shared objects file')
+            if ($used) {
+              echo "$launcher uses the AOT cache"
+            } else {
+              echo "::warning::$launcher does not use the AOT cache"
+              if (Test-Path "$dir\launch4j.log") { Get-Content "$dir\launch4j.log" }
+              if (Test-Path "$dir\classes.log") { Select-String -Path "$dir\classes.log" -Pattern 'doccomparator.Launcher' }
+            }
+          }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: releases/doccomparator-*-windows.zip
+          if-no-files-found: error
+
+  release:
+    needs: [linux, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: releases
+          merge-multiple: true
 
       - name: Release notes
         run: scripts/release.sh --body "${GITHUB_REF_NAME#v}" > body.md && cat body.md

@@ -56,8 +56,9 @@ if ! $dry && ! git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/nu
   echo "tag $tag is not on GitHub - git push origin $tag" >&2; exit 1
 fi
 
-# The bundled runtime's version, from the JRE archive externals.conf names (…_25.0.5_8.tar.gz → 25.0.5).
-jre_version=$(sed -n 's/^JRE_LINUX=.*_\([0-9][0-9.]*\)_[0-9]*\.tar\.gz$/\1/p' externals.conf)
+# The bundled runtime's version, from the JDK archive externals.conf names, which it is linked from
+# (…_25.0.5_8.tar.gz → 25.0.5).
+jre_version=$(sed -n 's/^JDK_LINUX=.*_\([0-9][0-9.]*\)_[0-9]*\.tar\.gz$/\1/p' externals.conf)
 [ -n "$jre_version" ] || jre_version=25
 
 body=$(
@@ -72,7 +73,7 @@ body=$(
   echo "| \`$zip\` | Windows x64, no Java needed — unzip anywhere and start \`doccomparator.bat\` (the signed \`javaw.exe\`) or \`DocComparator.exe\` |"
   echo "| \`$tgz\` | Linux x64, no Java needed — untar anywhere and run \`doccomparator.sh\` |"
   echo
-  echo "Each archive bundles an Eclipse Temurin $jre_version runtime, redistributed under the GPLv2 with Classpath Exception (notices in \`jre/legal\`), and FlatLaf (Apache 2.0, in \`licenses/\`). DocComparator itself is Apache 2.0."
+  echo "Each archive carries a Java runtime linked from Eclipse Temurin $jre_version, redistributed under the GPLv2 with Classpath Exception (notices in \`jre/legal\`), and FlatLaf (Apache 2.0, in \`licenses/\`). DocComparator itself is Apache 2.0."
   echo
   echo "## Checksums (SHA-256)"
   echo

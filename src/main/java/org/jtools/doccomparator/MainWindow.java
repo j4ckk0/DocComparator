@@ -153,11 +153,11 @@ final class MainWindow extends JFrame {
     }
 
     /**
-     * The window's title: the documents' names, if any are open, then the program's name and its version, which the
-     * jar's manifest holds (the name alone when run from the classes).
+     * The window's title: the documents' names, if any are open, then the program's name and its version (the name
+     * alone when run from the classes).
      */
     static String title(String documentNames) {
-        String version = MainWindow.class.getPackage().getImplementationVersion();
+        String version = Launcher.version();
         String program = version == null ? APP_NAME : APP_NAME + " " + version;
         return documentNames.isEmpty() ? program : documentNames + TITLE_SEPARATOR + program;
     }

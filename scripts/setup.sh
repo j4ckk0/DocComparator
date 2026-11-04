@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 #
 # Deploys the project's externals into external/ (not under source control), from externals.conf:
-#   external/jdk, external/maven                        extracted, their top-level directory stripped
-#   external/jre-linux.tar.gz, external/jre-windows.zip  the JRE archives the distributions bundle
-#   external/downloads/                                 the archives as downloaded (kept)
+#   external/jdk, external/maven   extracted, their top-level directory stripped
+#   external/downloads/            the archives as downloaded (kept)
 #
 #   scripts/setup.sh            deploys what is missing
 #   scripts/setup.sh --force    downloads and deploys everything again
@@ -94,16 +93,6 @@ for spec in "jdk JDK_LINUX bin/java" "maven MAVEN_LINUX bin/mvn"; do
   file=$(fetch "${!2}") || exit 1   # downloaded before the directory is touched
   deploy "$file" "$dir"
   echo "== $dir deployed"
-done
-
-# the JRE archives the distributions bundle, kept as archives under generic names
-for spec in "jre-linux.tar.gz JRE_LINUX" "jre-windows.zip JRE_WINDOWS"; do
-  set -- $spec
-  target=$ext/$1
-  if [ -s "$target" ] && ! $force; then echo "== $target present"; continue; fi
-  file=$(fetch "${!2}") || exit 1
-  cp "$file" "$target"
-  echo "== $target deployed"
 done
 
 echo "== external/ ready:"

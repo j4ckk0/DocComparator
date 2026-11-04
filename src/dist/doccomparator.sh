@@ -1,10 +1,10 @@
 #!/bin/sh
-# Run DocComparator with the bundled JRE. Arguments are passed to the program.
+# Run DocComparator with its runtime. Arguments are passed to the program.
 dir=$(dirname "$(readlink -f "$0")")
 # -XX:-UsePerfData: the JVM's performance counters stay in memory, not in a file of /tmp;
 # -XX:+UseCompactObjectHeaders: smaller objects, less memory for a document
-# doccomparator.aot, Java's AOT cache of the program (scripts/package.sh makes it), for a faster start; read only, and
-# silently passed over should it not match the jar or the JRE.
+# doccomparator.aot, Java's AOT cache of the program (pom.xml makes it), for a faster start; read only, and
+# silently passed over should it not match the runtime.
 aot="$dir/doccomparator.aot"
 if [ -f "$aot" ]; then
   exec "$dir/jre/bin/java" -XX:-UsePerfData -XX:+UseCompactObjectHeaders \

@@ -101,7 +101,7 @@ final class HelpMenu {
 
     /** What the program is: its version, what it does, its licence, its home page, the runtime it runs on. */
     static String aboutText() {
-        String version = HelpMenu.class.getPackage().getImplementationVersion();
+        String version = Launcher.version();
         return (version == null ? I18n.text("about.version.classes") : I18n.text("about.version", version))
                 + PARAGRAPH + I18n.text("about.description")
                 + PARAGRAPH + I18n.text("about.licence")

@@ -42,9 +42,18 @@
   </files>
 
   <fileSets>
-    <!-- Ant's untar does not keep permissions: restore the executable bits here. -->
+    <!-- Java's AOT cache of the program, when it could be made (see pom.xml, profile dist) -->
     <fileSet>
-      <directory>${project.build.directory}/jre/linux</directory>
+      <directory>${project.build.directory}</directory>
+      <outputDirectory>.</outputDirectory>
+      <includes>
+        <include>doccomparator.aot</include>
+      </includes>
+      <fileMode>0644</fileMode>
+    </fileSet>
+    <!-- the runtime, its commands executable -->
+    <fileSet>
+      <directory>${runtime.image}</directory>
       <outputDirectory>jre</outputDirectory>
       <includes>
         <include>bin/**</include>
@@ -55,7 +64,7 @@
       <directoryMode>0755</directoryMode>
     </fileSet>
     <fileSet>
-      <directory>${project.build.directory}/jre/linux</directory>
+      <directory>${runtime.image}</directory>
       <outputDirectory>jre</outputDirectory>
       <excludes>
         <exclude>bin/**</exclude>

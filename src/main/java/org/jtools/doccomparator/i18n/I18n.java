@@ -20,7 +20,11 @@ package org.jtools.doccomparator.i18n;
  * #L%
  */
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.MissingResourceException;
+import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 
 /**
@@ -29,11 +33,6 @@ import java.util.ResourceBundle;
  * would eat the apostrophes French is full of.
  */
 public final class I18n {
-
-    private static final String BUNDLE = "org.jtools.doccomparator.i18n.messages";
-    /** Only the file of the language asked for: none taken from the machine's locale instead. */
-    private static final ResourceBundle.Control EXACTLY = ResourceBundle.Control.getNoFallbackControl(
-            ResourceBundle.Control.FORMAT_PROPERTIES);
 
     private static volatile I18nLanguage language = I18nLanguage.DEFAULT;
     private static volatile ResourceBundle texts = load(I18nLanguage.DEFAULT);
@@ -69,7 +68,20 @@ public final class I18n {
         return text;
     }
 
+    /**
+     * The file of the language asked for, and only it: none taken from the machine's locale instead. Read as a resource
+     * of this class, as the program runs from its jar or from its runtime image, where it is a module (and where
+     * ResourceBundle.getBundle refuses a Control).
+     */
     private static ResourceBundle load(I18nLanguage language) {
-        return ResourceBundle.getBundle(BUNDLE, language.locale(), I18n.class.getClassLoader(), EXACTLY);
+        String file = "messages_" + language.code() + ".properties";
+        try (InputStream in = I18n.class.getResourceAsStream(file)) {
+            if (in == null) {
+                throw new MissingResourceException("no " + file, I18n.class.getName(), file);
+            }
+            return new PropertyResourceBundle(in);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }
