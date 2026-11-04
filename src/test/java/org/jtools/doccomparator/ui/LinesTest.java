@@ -61,7 +61,7 @@ class LinesTest {
     @Test
     void aMovedParagraphLinksToItsMatchBothWays() throws IOException {
         List<Line> lines = Lines.of(compare("procedure-revB.docx"), Shown.ALL, FONTS, Palette.LIGHT);
-        int left = lineWith(lines, "Wear safety glasses", true);
+        int left = lineWith(lines, "Wear safety glasses", Side.LEFT);
         LineSide side = lines.get(left).left;
         assertTrue(side.moved());
         Line match = lines.get(side.counterpartLine);
@@ -73,7 +73,7 @@ class LinesTest {
     @Test
     void paragraphsAloneShareLinesSideBySide() throws IOException {
         List<Line> lines = Lines.of(compare("training-handbook.docx"), Shown.ALL, FONTS, Palette.LIGHT);
-        int line = lineWith(lines, "Document KP-MP-012", true);
+        int line = lineWith(lines, "Document KP-MP-012", Side.LEFT);
         assertEquals("Trainer: J. Petit. Duration: half a day, on the bench, in groups of four.",
                 lines.get(line).right.text.text());
         assertEquals(LineSide.Marking.ORPHAN, lines.get(line).marking());
@@ -96,9 +96,9 @@ class LinesTest {
     @Test
     void listItemsAreNumberedAsWordShowsThem() throws IOException {
         List<Line> lines = Lines.of(compare("training-handbook.docx"), Shown.ALL, FONTS, Palette.LIGHT);
-        assertEquals("3.", lines.get(lineWith(lines, "Unscrew the cover of the filter", false)).right.marker);
-        assertEquals("2.", lines.get(lineWith(lines, "Where do you record", false)).right.marker, "a list of its own");
-        assertEquals("•", lines.get(lineWith(lines, "Replacement of the suction filter", true)).left.marker);
+        assertEquals("3.", lines.get(lineWith(lines, "Unscrew the cover of the filter", Side.RIGHT)).right.marker);
+        assertEquals("2.", lines.get(lineWith(lines, "Where do you record", Side.RIGHT)).right.marker, "a list of its own");
+        assertEquals("•", lines.get(lineWith(lines, "Replacement of the suction filter", Side.LEFT)).left.marker);
     }
 
     @Test
@@ -109,7 +109,7 @@ class LinesTest {
         assertTrue(only.size() < all.size());
         assertTrue(only.stream().allMatch(line -> line.isTitle() || line.differs()));
         assertEquals(all.stream().filter(Line::differs).count(), only.stream().filter(Line::differs).count());
-        int left = lineWith(only, "Wear safety glasses", true);
+        int left = lineWith(only, "Wear safety glasses", Side.LEFT);
         assertEquals(left, only.get(only.get(left).left.counterpartLine).right.counterpartLine, "links still right");
     }
 
@@ -122,11 +122,11 @@ class LinesTest {
                 assertTrue(line.left.counterpartLine >= 0, "alone, it is moved: " + line.left.text);
             }
         }
-        lineWith(comparable, "This module describes", false);
-        lineWith(comparable, "The module does not cover", false);
-        assertThrows(AssertionError.class, () -> lineWith(comparable, "Why must you wait", false), "the quiz");
-        assertThrows(AssertionError.class, () -> lineWith(comparable, "Scope", true));
-        int left = lineWith(comparable, "Wear safety glasses", true);
+        lineWith(comparable, "This module describes", Side.RIGHT);
+        lineWith(comparable, "The module does not cover", Side.RIGHT);
+        assertThrows(AssertionError.class, () -> lineWith(comparable, "Why must you wait", Side.RIGHT), "the quiz");
+        assertThrows(AssertionError.class, () -> lineWith(comparable, "Scope", Side.LEFT));
+        int left = lineWith(comparable, "Wear safety glasses", Side.LEFT);
         LineSide moved = comparable.get(left).left;
         assertEquals(left, comparable.get(moved.counterpartLine).right.counterpartLine, "links still right");
         long tableRows = comparable.stream().filter(l -> l.left != null && l.left.columns != null).count();
@@ -139,7 +139,7 @@ class LinesTest {
 
     @Test
     void aDocumentAloneIsShownOnItsSideAsItIs() throws IOException {
-        List<Line> lines = Lines.alone(DocxReader.read(Path.of("samples", "procedure-revA.docx")), false,
+        List<Line> lines = Lines.alone(DocxReader.read(Path.of("samples", "procedure-revA.docx")), Side.RIGHT,
                 Shown.ALL.withOnlyDifferences(true), FONTS, Palette.LIGHT);
         assertEquals(List.of("Body", "Headers and footers", "Footnotes and endnotes"),
                 lines.stream().filter(Line::isTitle).map(line -> line.title).toList(), "no difference counted");
@@ -181,10 +181,10 @@ class LinesTest {
         Graphics2D g = image.createGraphics();
         view.paint(g);
         g.dispose();
-        LineSide title = lines.get(lineWith(lines, "Maintenance Procedure", true)).left;
-        LineSide body = lines.get(lineWith(lines, "Document KP-MP-012", true)).left;
+        LineSide title = lines.get(lineWith(lines, "Maintenance Procedure", Side.LEFT)).left;
+        LineSide body = lines.get(lineWith(lines, "Document KP-MP-012", Side.LEFT)).left;
         assertTrue(title.height() > body.height(), "the title's style is larger than Normal");
-        LineSide indented = lines.get(lineWith(lines, "The parts needed", false)).right;
+        LineSide indented = lines.get(lineWith(lines, "The parts needed", Side.RIGHT)).right;
         assertNotNull(indented.text, "laid out");
     }
 
@@ -196,18 +196,18 @@ class LinesTest {
     void theDocumentViewShowsWhereEachPageBegins() throws IOException {
         List<Line> lines = Lines.of(compare("procedure-revB.docx"), Shown.ALL.withDocumentView(true), FONTS,
                 Palette.LIGHT);
-        assertEquals(List.of("Page break \u2014 page 2"), lines.get(lineWith(lines, "Safety", true)).left.text.pageMarks(),
+        assertEquals(List.of("Page break \u2014 page 2"), lines.get(lineWith(lines, "Safety", Side.LEFT)).left.text.pageMarks(),
                 "asked for, and Word's record of it at the same place said once");
-        assertEquals(List.of("Page 3"), lines.get(lineWith(lines, "Remove the old filter", true)).left.text.pageMarks(),
+        assertEquals(List.of("Page 3"), lines.get(lineWith(lines, "Remove the old filter", Side.LEFT)).left.text.pageMarks(),
                 "Word's own");
-        assertEquals(List.of("Page break \u2014 page 4"), lines.get(lineWith(lines, "Records", true)).left.text.pageMarks(),
+        assertEquals(List.of("Page break \u2014 page 4"), lines.get(lineWith(lines, "Records", Side.LEFT)).left.text.pageMarks(),
                 "an empty paragraph's, said before the next");
-        assertEquals(List.of("Page 2"), lines.get(lineWith(lines, "Restart the pump", false)).right.text.pageMarks());
-        assertEquals(List.of("Page break \u2014 page 3"), lines.get(lineWith(lines, "Safety", false)).right.text.pageMarks());
-        assertEquals(List.of("Page break \u2014 page 4"), lines.get(lineWith(lines, "Records", false)).right.text.pageMarks());
-        assertEquals(List.of(), lines.get(lineWith(lines, "Purpose", true)).left.text.pageMarks());
+        assertEquals(List.of("Page 2"), lines.get(lineWith(lines, "Restart the pump", Side.RIGHT)).right.text.pageMarks());
+        assertEquals(List.of("Page break \u2014 page 3"), lines.get(lineWith(lines, "Safety", Side.RIGHT)).right.text.pageMarks());
+        assertEquals(List.of("Page break \u2014 page 4"), lines.get(lineWith(lines, "Records", Side.RIGHT)).right.text.pageMarks());
+        assertEquals(List.of(), lines.get(lineWith(lines, "Purpose", Side.LEFT)).left.text.pageMarks());
         List<Line> diff = Lines.of(compare("procedure-revB.docx"), Shown.ALL, FONTS, Palette.LIGHT);
-        assertEquals(List.of(), diff.get(lineWith(diff, "Records", true)).left.text.pageMarks(), "the diff view has none");
+        assertEquals(List.of(), diff.get(lineWith(diff, "Records", Side.LEFT)).left.text.pageMarks(), "the diff view has none");
     }
 
     /** Pictures: drawn at their size in the document view, a sign in the diff view. */
@@ -242,12 +242,12 @@ class LinesTest {
     void theDocumentViewShowsListNumbersInTheText() throws IOException {
         List<Line> document = Lines.of(compare("procedure-revB.docx"), Shown.ALL.withDocumentView(true), FONTS,
                 Palette.LIGHT);
-        LineSide step = document.get(lineWith(document, "Unscrew the filter cover", false)).right;
+        LineSide step = document.get(lineWith(document, "Unscrew the filter cover", Side.RIGHT)).right;
         assertEquals("4.", step.text.number());
         assertNull(step.marker, "not in the margin as well");
-        assertEquals("\u2022", document.get(lineWith(document, "Replacement of the suction", true)).left.text.number());
+        assertEquals("\u2022", document.get(lineWith(document, "Replacement of the suction", Side.LEFT)).left.text.number());
         List<Line> diff = Lines.of(compare("procedure-revB.docx"), Shown.ALL, FONTS, Palette.LIGHT);
-        LineSide plain = diff.get(lineWith(diff, "Unscrew the filter cover", false)).right;
+        LineSide plain = diff.get(lineWith(diff, "Unscrew the filter cover", Side.RIGHT)).right;
         assertEquals("4.", plain.marker);
         assertNull(plain.text.number());
     }
@@ -279,15 +279,15 @@ class LinesTest {
 
     /** The differences marked in the left text of the line starting so: none, "". */
     private static String lines(List<Line> lines, String start) {
-        Line line = lines.get(lineWith(lines, start, true));
+        Line line = lines.get(lineWith(lines, start, Side.LEFT));
         assertEquals(LineSide.Marking.SAME, line.marking());
         return line.left.text.text().equals(line.right.text.text()) ? "" : "differs";
     }
 
-    private static int lineWith(List<Line> lines, String start, boolean onLeft) {
+    private static int lineWith(List<Line> lines, String start, Side side) {
         for (int i = 0; i < lines.size(); i++) {
-            LineSide side = onLeft ? lines.get(i).left : lines.get(i).right;
-            if (side != null && side.text != null && side.text.text().startsWith(start)) {
+            LineSide shown = side.of(lines.get(i).left, lines.get(i).right);
+            if (shown != null && shown.text != null && shown.text.text().startsWith(start)) {
                 return i;
             }
         }

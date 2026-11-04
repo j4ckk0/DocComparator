@@ -44,9 +44,9 @@ final class ClipboardMenu extends JPopupMenu {
     ClipboardMenu(ComparisonView view, Action paste, I18nLabels labels) {
         this.view = view;
         JMenuItem copyLeft = labels.text(new JMenuItem(), "copy.left");
-        copyLeft.addActionListener(e -> copy(true));
+        copyLeft.addActionListener(e -> copy(Side.LEFT));
         JMenuItem copyRight = labels.text(new JMenuItem(), "copy.right");
-        copyRight.addActionListener(e -> copy(false));
+        copyRight.addActionListener(e -> copy(Side.RIGHT));
         add(copyLeft);
         add(copyRight);
         addSeparator();
@@ -65,13 +65,13 @@ final class ClipboardMenu extends JPopupMenu {
     }
 
     /** The current line's text on a side: a paragraph's, or a row's cells, a tab between them; "[picture]" for each. */
-    private void copy(boolean left) {
+    private void copy(Side from) {
         int current = view.current();
         if (current < 0) {
             return;
         }
         Line line = view.lines().get(current);
-        LineSide side = left ? line.left : line.right;
+        LineSide side = from.of(line.left, line.right);
         if (side == null) {
             return;
         }

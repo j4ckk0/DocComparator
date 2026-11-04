@@ -38,11 +38,11 @@ class DropHandlerTest {
 
     /** What was asked of the comparison, said: "paste left: …", "refused: …". */
     private final List<String> asked = new ArrayList<>();
-    private boolean leftChosen = true;
+    private Side chosen = Side.LEFT;
     private final DocumentOpener opener = new DocumentOpener() {
         @Override
-        public void open(boolean onLeft, Path path) {
-            asked.add("open " + (onLeft ? "left" : "right") + ": " + path);
+        public void open(Side side, Path path) {
+            asked.add("open " + side.of("left", "right") + ": " + path);
         }
 
         @Override
@@ -51,13 +51,13 @@ class DropHandlerTest {
         }
 
         @Override
-        public void paste(boolean onLeft, String text) {
-            asked.add("paste " + (onLeft ? "left" : "right") + ": " + text);
+        public void paste(Side side, String text) {
+            asked.add("paste " + side.of("left", "right") + ": " + text);
         }
 
         @Override
-        public boolean leftChosen() {
-            return leftChosen;
+        public Side chosenSide() {
+            return chosen;
         }
 
         @Override
@@ -69,7 +69,7 @@ class DropHandlerTest {
     @Test
     void textGoesToTheSideGiven() {
         JPanel area = new JPanel();
-        assertTrue(new DropHandler(opener, area, false).importData(new TransferSupport(area, new StringSelection("a\nb"))));
+        assertTrue(new DropHandler(opener, area, Side.RIGHT).importData(new TransferSupport(area, new StringSelection("a\nb"))));
         assertEquals(List.of("paste right: a\nb"), asked);
     }
 
@@ -78,7 +78,7 @@ class DropHandlerTest {
         JPanel area = new JPanel();
         DropHandler handler = new DropHandler(opener, area, null);
         handler.importData(new TransferSupport(area, new StringSelection("first")));
-        leftChosen = false;
+        chosen = Side.RIGHT;
         handler.importData(new TransferSupport(area, new StringSelection("second")));
         assertEquals(List.of("paste left: first", "paste right: second"), asked);
     }
@@ -86,14 +86,14 @@ class DropHandlerTest {
     @Test
     void blanksAreRefused() {
         JPanel area = new JPanel();
-        assertFalse(new DropHandler(opener, area, true).importData(new TransferSupport(area, new StringSelection(" \n\t"))));
+        assertFalse(new DropHandler(opener, area, Side.LEFT).importData(new TransferSupport(area, new StringSelection(" \n\t"))));
         assertEquals(List.of("refused"), asked);
     }
 
     @Test
     void textOnThePathFieldIsTypedInIt() {
         JTextField path = new JTextField();
-        DropHandler handler = new DropHandler(opener, new JPanel(), true, path.getTransferHandler());
+        DropHandler handler = new DropHandler(opener, new JPanel(), Side.LEFT, path.getTransferHandler());
         assertTrue(handler.importData(new TransferSupport(path, new StringSelection("C:\\docs\\a.docx"))));
         assertEquals("C:\\docs\\a.docx", path.getText());
         assertTrue(asked.isEmpty(), "nothing compared");

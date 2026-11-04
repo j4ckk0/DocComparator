@@ -49,7 +49,7 @@ import org.jtools.doccomparator.i18n.I18nLabels;
  */
 final class DocumentHeader extends JPanel {
 
-    private final boolean onLeft;
+    private final Side side;
     private final DocumentOpener opener;
     private final JTextField path = new JTextField();
     private final JLabel about = new FaintLabel(" ", JLabel.LEADING, true);
@@ -61,12 +61,12 @@ final class DocumentHeader extends JPanel {
      * The head of the left side or the right; open chooses its document; area is what documents are dropped on; its
      * labels bound with these.
      */
-    DocumentHeader(boolean onLeft, Action open, DocumentOpener opener, JComponent area, I18nLabels labels) {
+    DocumentHeader(Side side, Action open, DocumentOpener opener, JComponent area, I18nLabels labels) {
         super(new BorderLayout(4, 2));
         setBorder(BorderFactory.createEmptyBorder(4, 4, 4 + UNDERLINE, 4));
-        this.onLeft = onLeft;
+        this.side = side;
         this.opener = opener;
-        labels.tip(path, onLeft ? "header.path.left.tip" : "header.path.right.tip");
+        labels.tip(path, side.of("header.path.left.tip", "header.path.right.tip"));
         path.addActionListener(e -> typed());
         JButton choose = new JButton(open);
         labels.text(choose, "header.open");
@@ -75,8 +75,8 @@ final class DocumentHeader extends JPanel {
         add(choose, BorderLayout.EAST);
         add(about, BorderLayout.SOUTH);
         // documents dropped on the head, or its path, open on its side; text dropped on the path is typed in it
-        setTransferHandler(new DropHandler(opener, area, onLeft));
-        path.setTransferHandler(new DropHandler(opener, area, onLeft, path.getTransferHandler()));
+        setTransferHandler(new DropHandler(opener, area, side));
+        path.setTransferHandler(new DropHandler(opener, area, side, path.getTransferHandler()));
     }
 
     /** Whether its side is the one text pasted goes to: shown tinted and underlined. */
@@ -123,7 +123,7 @@ final class DocumentHeader extends JPanel {
                 Toolkit.getDefaultToolkit().beep();
                 return;
             }
-            opener.open(onLeft, typed);
+            opener.open(side, typed);
         } catch (InvalidPathException e) {
             opener.refuse(I18n.text("header.notAPath", text));
             Toolkit.getDefaultToolkit().beep();

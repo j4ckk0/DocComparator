@@ -26,16 +26,16 @@ import java.nio.file.Path;
 interface DocumentOpener {
 
     /** Opens this document on its side, the other side kept. */
-    void open(boolean onLeft, Path path);
+    void open(Side side, Path path);
 
     /** Opens two documents, left and right. */
     void open(Path left, Path right);
 
     /** Compares this text on its side, as a document of a paragraph a line, the other side kept. */
-    void paste(boolean onLeft, String text);
+    void paste(Side side, String text);
 
-    /** Whether the side chosen, where text pasted goes, is the left: the side last clicked. */
-    boolean leftChosen();
+    /** The side chosen, where text pasted goes: the side last clicked. */
+    Side chosenSide();
 
     /** Says, in the status line, why what was asked was not done. */
     void refuse(String why);

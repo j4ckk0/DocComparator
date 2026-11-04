@@ -33,7 +33,7 @@ them.
 
 ## Findings
 
-### 1. A side has four representations
+### 1. A side has four representations — done (in `ui`; `compare` keeps its booleans)
 
 **Where:**
 - `boolean onLeft` in `ComparatorPanel`, `DocumentOpener`, `DocumentHeader`, `DropHandler`, `Lines`, `TableComparer`,

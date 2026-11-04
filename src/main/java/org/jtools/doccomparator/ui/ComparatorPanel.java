@@ -81,14 +81,14 @@ public final class ComparatorPanel extends JPanel {
     private final I18nLabels labels = new I18nLabels();
     private final StatusLine statusLine = new StatusLine(labels);
     private final Action openLeft = action("action.openLeft", "action.openLeft.tip",
-            KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK), () -> choose(true));
+            KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK), () -> choose(Side.LEFT));
     private final Action openRight = action("action.openRight", "action.openRight.tip",
             KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK),
-            () -> choose(false));
+            () -> choose(Side.RIGHT));
     private final Action pasteHere = action("action.pasteHere", "action.pasteHere.tip",
-            KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK), () -> paste(view.leftChosen()));
-    private final Action pasteLeft = action("action.pasteLeft", "action.pasteLeft.tip", null, () -> paste(true));
-    private final Action pasteRight = action("action.pasteRight", "action.pasteRight.tip", null, () -> paste(false));
+            KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK), () -> paste(view.chosenSide()));
+    private final Action pasteLeft = action("action.pasteLeft", "action.pasteLeft.tip", null, () -> paste(Side.LEFT));
+    private final Action pasteRight = action("action.pasteRight", "action.pasteRight.tip", null, () -> paste(Side.RIGHT));
     private final Action swap = action("action.swap", "action.swap.tip", null, this::swap);
     private final Action previous = action("action.previous", "action.previous.tip",
             KeyStroke.getKeyStroke(KeyEvent.VK_F7, InputEvent.SHIFT_DOWN_MASK), () -> goToDifference(false));
@@ -97,8 +97,8 @@ public final class ComparatorPanel extends JPanel {
     private final OptionControls controls = new OptionControls(labels, this::compare, this::shownChanged);
     private final DocumentOpener opener = new DocumentOpener() {
         @Override
-        public void open(boolean onLeft, Path path) {
-            ComparatorPanel.this.open(onLeft, path);
+        public void open(Side side, Path path) {
+            ComparatorPanel.this.open(side, path);
         }
 
         @Override
@@ -107,13 +107,13 @@ public final class ComparatorPanel extends JPanel {
         }
 
         @Override
-        public void paste(boolean onLeft, String text) {
-            ComparatorPanel.this.paste(onLeft, text);
+        public void paste(Side side, String text) {
+            ComparatorPanel.this.paste(side, text);
         }
 
         @Override
-        public boolean leftChosen() {
-            return view.leftChosen();
+        public Side chosenSide() {
+            return view.chosenSide();
         }
 
         @Override
@@ -135,8 +135,8 @@ public final class ComparatorPanel extends JPanel {
 
     public ComparatorPanel() {
         super(new BorderLayout());
-        leftHeader = new DocumentHeader(true, openLeft, opener, this, labels);
-        rightHeader = new DocumentHeader(false, openRight, opener, this, labels);
+        leftHeader = new DocumentHeader(Side.LEFT, openLeft, opener, this, labels);
+        rightHeader = new DocumentHeader(Side.RIGHT, openRight, opener, this, labels);
         showEmptySides();
         scroll.getVerticalScrollBar().setUnitIncrement(24);
         scroll.setBorder(BorderFactory.createEmptyBorder());
@@ -245,17 +245,17 @@ public final class ComparatorPanel extends JPanel {
         compare();
     }
 
-    void open(boolean onLeft, Path path) {
-        put(onLeft, new DocumentSource.File(path));
+    void open(Side side, Path path) {
+        put(side, new DocumentSource.File(path));
     }
 
     /** Compares this text on a side, as a document of a paragraph a line (TextReader). */
-    void paste(boolean onLeft, String text) {
-        put(onLeft, new DocumentSource.Pasted(text));
+    void paste(Side side, String text) {
+        put(side, new DocumentSource.Pasted(text));
     }
 
-    private void put(boolean onLeft, DocumentSource source) {
-        if (onLeft) {
+    private void put(Side side, DocumentSource source) {
+        if (side == Side.LEFT) {
             left = source;
             leftDocument = null;
         } else {
@@ -266,7 +266,7 @@ public final class ComparatorPanel extends JPanel {
     }
 
     /** What the clipboard holds, on a side: text compared as a document, documents opened as dropped ones are. */
-    private void paste(boolean onLeft) {
+    private void paste(Side side) {
         Transferable held;
         try {
             held = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);
@@ -277,17 +277,17 @@ public final class ComparatorPanel extends JPanel {
             statusLine.say(I18n.text("paste.nothing"));
             return;
         }
-        new DropHandler(opener, this, onLeft).importData(new TransferHandler.TransferSupport(this, held));
+        new DropHandler(opener, this, side).importData(new TransferHandler.TransferSupport(this, held));
     }
 
-    private void choose(boolean onLeft) {
+    private void choose(Side side) {
         JFileChooser chooser = new JFileChooser(lastDirectory);
-        chooser.setDialogTitle(I18n.text(onLeft ? "chooser.left" : "chooser.right"));
+        chooser.setDialogTitle(I18n.text(side.of("chooser.left", "chooser.right")));
         chooser.setFileFilter(new FileNameExtensionFilter(I18n.text("chooser.wordDocuments"),
                 "docx", "docm", "dotx", "dotm"));
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             lastDirectory = chooser.getCurrentDirectory();
-            open(onLeft, chooser.getSelectedFile().toPath());
+            open(side, chooser.getSelectedFile().toPath());
         }
     }
 
@@ -319,12 +319,12 @@ public final class ComparatorPanel extends JPanel {
         if (left == null && right == null) {
             comparison = null;
             showEmptyView();
-            view.setWaitingSide(-1);
+            view.setWaitingSide(null);
             statusLine.say("");
             return;
         }
         if (left == null || right == null) {
-            showAlone(left != null);
+            showAlone(left != null ? Side.LEFT : Side.RIGHT);
             return;
         }
         DocumentSource leftSource = left;
@@ -348,16 +348,16 @@ public final class ComparatorPanel extends JPanel {
      * One document open, the other not yet: the one shown on its side as it is, nothing compared; the other side a
      * place for its document — as Beyond Compare shows a file before the other.
      */
-    private void showAlone(boolean onLeft) {
+    private void showAlone(Side side) {
         comparison = null;
-        DocumentSource source = onLeft ? left : right;
-        WordDocument known = onLeft ? leftDocument : rightDocument;
+        DocumentSource source = side.of(left, right);
+        WordDocument known = side.of(leftDocument, rightDocument);
         inBackground("status.reading", () -> {
             WordDocument document = known != null ? known : source.read();
             PictureImages.prepare(document);
             return document;
         }, document -> {
-            if (onLeft) {
+            if (side == Side.LEFT) {
                 leftDocument = document;
                 leftHeader.show(source, document);
             } else {
@@ -366,8 +366,8 @@ public final class ComparatorPanel extends JPanel {
             }
             Lines.Shown shown = controls.shown();
             Palette palette = Palette.of(shown.documentView());
-            view.setLines(Lines.alone(document, onLeft, shown, view.fonts(), palette), -1, palette);
-            view.setWaitingSide(onLeft ? 1 : 0);
+            view.setLines(Lines.alone(document, side, shown, view.fonts(), palette), -1, palette);
+            view.setWaitingSide(side.other());
             statusLine.say(I18n.text("status.openTheOther"));
             updateActions();
         }, "status.notRead", "dialog.cannotRead");
@@ -412,8 +412,8 @@ public final class ComparatorPanel extends JPanel {
 
     /** The head of the side text pasted goes to, shown so. */
     private void showChosenSide() {
-        leftHeader.setChosen(view.leftChosen());
-        rightHeader.setChosen(!view.leftChosen());
+        leftHeader.setChosen(view.chosenSide() == Side.LEFT);
+        rightHeader.setChosen(view.chosenSide() == Side.RIGHT);
     }
 
     /** No document open: the two empty sides, in the colours of the look in use. */
@@ -445,7 +445,7 @@ public final class ComparatorPanel extends JPanel {
         leftHeader.show(left, result.left());
         rightHeader.show(right, result.right());
         Point at = scroll.getViewport().getViewPosition();
-        view.setWaitingSide(-1);
+        view.setWaitingSide(null);
         Lines.Shown shown = controls.shown();
         Palette palette = Palette.of(shown.documentView());
         view.setLines(Lines.of(result, shown, view.fonts(), palette), -1, palette);

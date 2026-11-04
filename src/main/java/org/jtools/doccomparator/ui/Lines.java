@@ -21,6 +21,7 @@ package org.jtools.doccomparator.ui;
  */
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -90,15 +91,14 @@ final class Lines {
     private final Shown shown;
     private final CompareOptions options;
     /** The document view: each paragraph as its document's styles lay it out; null for the diff view. */
-    private final StyleSheet[] styles;
+    private final Map<Side, StyleSheet> styles;
     /** The document view: where pages begin, by paragraph, on each side (PageMarks). */
-    private final List<Map<Paragraph, List<DocumentLook.PageMark>>> pageMarks = new ArrayList<>();
+    private final Map<Side, Map<Paragraph, List<DocumentLook.PageMark>>> pageMarks = new EnumMap<>(Side.class);
     private final List<Line> lines = new ArrayList<>();
     /** The numbers the lists are at, on each side, counted again in each part. */
-    private ListNumbers leftNumbers = new ListNumbers();
-    private ListNumbers rightNumbers = new ListNumbers();
+    private final Map<Side, ListNumbers> numbers = new EnumMap<>(Side.class);
 
-    private Lines(Fonts fonts, Palette palette, Shown shown, CompareOptions options, StyleSheet[] styles) {
+    private Lines(Fonts fonts, Palette palette, Shown shown, CompareOptions options, Map<Side, StyleSheet> styles) {
         this.fonts = fonts;
         this.palette = palette;
         this.shown = shown;
@@ -111,7 +111,7 @@ final class Lines {
      * nothing compared — until the other document is there. Of what is shown, only the view counts: with nothing
      * compared, every line is shown.
      */
-    static List<Line> alone(WordDocument document, boolean onLeft, Shown shown, Fonts fonts, Palette palette) {
+    static List<Line> alone(WordDocument document, Side side, Shown shown, Fonts fonts, Palette palette) {
         Comparison itself = DocumentComparer.compare(document, document,
                 CompareOptions.TEXT_ONLY.with(Aspect.HEADERS_AND_FOOTERS, true));
         List<Line> lines = new ArrayList<>();
@@ -120,7 +120,7 @@ final class Lines {
                 int dash = line.title.indexOf(TITLE_COUNT);
                 lines.add(Line.title(dash < 0 ? line.title : line.title.substring(0, dash)));
             } else {
-                lines.add(onLeft ? Line.of(line.left, null) : Line.of(null, line.right));
+                lines.add(side.of(Line.of(line.left, null), Line.of(null, line.right)));
             }
         }
         return lines;
@@ -132,10 +132,11 @@ final class Lines {
      */
     static List<Line> of(Comparison comparison, Shown shown, Fonts fonts, Palette palette) {
         Lines lines = new Lines(fonts, palette, shown, comparison.options(), shown.documentView()
-                ? new StyleSheet[] {comparison.left().styles(), comparison.right().styles()} : null);
+                ? new EnumMap<>(Map.of(Side.LEFT, comparison.left().styles(), Side.RIGHT, comparison.right().styles()))
+                : null);
         if (shown.documentView()) {
-            lines.pageMarks.add(PageMarks.of(comparison.left(), comparison.options().blanks()));
-            lines.pageMarks.add(PageMarks.of(comparison.right(), comparison.options().blanks()));
+            lines.pageMarks.put(Side.LEFT, PageMarks.of(comparison.left(), comparison.options().blanks()));
+            lines.pageMarks.put(Side.RIGHT, PageMarks.of(comparison.right(), comparison.options().blanks()));
         }
         lines.addDocument(comparison.documentDifferences());
         for (StoryComparison story : comparison.stories()) {
@@ -162,8 +163,9 @@ final class Lines {
         }
         int titleLine = lines.size();
         lines.add(Line.title(story.title()));
-        leftNumbers = new ListNumbers();
-        rightNumbers = new ListNumbers();
+        for (Side side : Side.values()) {
+            numbers.put(side, new ListNumbers());
+        }
         Map<Integer, Integer> lineOfPairing = new HashMap<>();
         Map<LineSide, Integer> moved = new HashMap<>();
         int r = 0;
@@ -175,7 +177,7 @@ final class Lines {
                 continue;
             }
             if (pairing.left() != null && pairing.right() != null) {
-                add(Line.of(side(pairing, true), side(pairing, false)), true, lineOfPairing, moved, r);
+                add(Line.of(side(pairing, Side.LEFT), side(pairing, Side.RIGHT)), true, lineOfPairing, moved, r);
                 r++;
                 continue;
             }
@@ -192,15 +194,15 @@ final class Lines {
                         || rightIndex >= 0 && pairings.get(rightIndex).moved();
                 if (shown.onlyComparable()) {   // a moved one alone on its line: its neighbour may be one not comparable
                     if (leftIndex >= 0 && pairings.get(leftIndex).moved()) {
-                        add(Line.of(side(pairings.get(leftIndex), true), null), true, lineOfPairing, moved, leftIndex);
+                        add(Line.of(side(pairings.get(leftIndex), Side.LEFT), null), true, lineOfPairing, moved, leftIndex);
                     }
                     if (rightIndex >= 0 && pairings.get(rightIndex).moved()) {
-                        add(Line.of(null, side(pairings.get(rightIndex), false)), true, lineOfPairing, moved, rightIndex);
+                        add(Line.of(null, side(pairings.get(rightIndex), Side.RIGHT)), true, lineOfPairing, moved, rightIndex);
                     }
                     continue;
                 }
-                add(Line.of(leftIndex < 0 ? null : side(pairings.get(leftIndex), true),
-                        rightIndex < 0 ? null : side(pairings.get(rightIndex), false)), comparable, lineOfPairing, moved,
+                add(Line.of(leftIndex < 0 ? null : side(pairings.get(leftIndex), Side.LEFT),
+                        rightIndex < 0 ? null : side(pairings.get(rightIndex), Side.RIGHT)), comparable, lineOfPairing, moved,
                         leftIndex, rightIndex);
             }
         }
@@ -248,71 +250,71 @@ final class Lines {
         TableComparison table = pairing.table();
         LineSide.Marking tableMarking = marking(pairing);
         boolean comparable = pairing.left() != null && pairing.right() != null || pairing.moved();
-        add(Line.of(pairing.left() == null ? null : tableHeader(pairing, true, tableMarking),
-                pairing.right() == null ? null : tableHeader(pairing, false, tableMarking)), comparable, lineOfPairing, moved, index);
+        add(Line.of(pairing.left() == null ? null : tableHeader(pairing, Side.LEFT, tableMarking),
+                pairing.right() == null ? null : tableHeader(pairing, Side.RIGHT, tableMarking)), comparable, lineOfPairing, moved, index);
         for (int r = 0; r < table.rows().size(); r++) {
             Slot slot = table.rows().get(r);
             boolean rowComparable = comparable && (slot.left() >= 0 && slot.right() >= 0 || slot.moved());
-            add(Line.of(slot.left() < 0 || pairing.left() == null ? null : tableRow(pairing, r, true),
-                    slot.right() < 0 || pairing.right() == null ? null : tableRow(pairing, r, false)), rowComparable,
+            add(Line.of(slot.left() < 0 || pairing.left() == null ? null : tableRow(pairing, r, Side.LEFT),
+                    slot.right() < 0 || pairing.right() == null ? null : tableRow(pairing, r, Side.RIGHT)), rowComparable,
                     lineOfPairing, moved, index);
         }
     }
 
-    private LineSide tableHeader(Pairing pairing, boolean onLeft, LineSide.Marking marking) {
+    private LineSide tableHeader(Pairing pairing, Side side, LineSide.Marking marking) {
         TableComparison table = pairing.table();
         List<LineSide> columns = new ArrayList<>();
         for (int c : shownColumns(table)) {
             Slot slot = table.columns().get(c);
-            int column = onLeft ? slot.left() : slot.right();
+            int column = side.of(slot.left(), slot.right());
             if (column < 0) {
                 columns.add(null);
                 continue;
             }
             LineSide.Marking columnMarking = marking(slot);
             String said = I18n.text(slot.moved() ? "line.column.moved" : slot.left() < 0 || slot.right() < 0
-                    ? (onLeft ? "line.column.removed" : "line.column.added") : "line.column", columnName(column));
+                    ? side.of("line.column.removed", "line.column.added") : "line.column", columnName(column));
             columns.add(new LineSide(columnMarking, null, null, null,
                     TextBlock.plain(said, fonts.small(), palette.faint, palette), null, null));
         }
-        Item item = onLeft ? pairing.left() : pairing.right();
-        String notes = notes(pairing, onLeft, List.of());
+        Item item = side.of(pairing.left(), pairing.right());
+        String notes = notes(pairing, side, List.of());
         return new LineSide(marking, pairing, null, TextBlock.plain(location(item, true), fonts.small(), palette.faint, palette),
                 null, columns, notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), palette.faint, palette));
     }
 
-    private LineSide tableRow(Pairing pairing, int r, boolean onLeft) {
+    private LineSide tableRow(Pairing pairing, int r, Side side) {
         TableComparison table = pairing.table();
         Slot rowSlot = table.rows().get(r);
         LineSide.Marking marking = marking(rowSlot);
         List<LineSide> columns = new ArrayList<>();
         for (int c : shownColumns(table)) {
             Slot columnSlot = table.columns().get(c);
-            if ((onLeft ? columnSlot.left() : columnSlot.right()) < 0) {
+            if (side.of(columnSlot.left(), columnSlot.right()) < 0) {
                 columns.add(null);
                 continue;
             }
             Pairing cell = table.cell(r, c);
-            if (cell == null || (onLeft ? cell.left() : cell.right()) == null) {
+            if (cell == null || side.of(cell.left(), cell.right()) == null) {
                 columns.add(new LineSide(LineSide.Marking.SAME, null, null, null,
                         TextBlock.plain("", fonts.text(), palette.text, palette), null, null));   // under a merged cell
                 continue;
             }
             LineSide.Marking cellMarking = marking(cell).stronger(marking(columnSlot)).stronger(marking(rowSlot));
-            LineSide shown = side(cell, onLeft, cellMarking);
+            LineSide shown = side(cell, side, cellMarking);
             if (styles != null) {
-                shown.shading = DocumentLook.shading((onLeft ? cell.left() : cell.right()).cell());
+                shown.shading = DocumentLook.shading(side.of(cell.left(), cell.right()).cell());
             }
             columns.add(shown);
             marking = marking.stronger(cellMarking);
         }
-        int number = (onLeft ? rowSlot.left() : rowSlot.right()) + 1;
+        int number = side.of(rowSlot.left(), rowSlot.right()) + 1;
         List<PropertyDifference> rowProperties = table.rowProperties().get(r);
         if (!rowProperties.isEmpty()) {
             marking = marking.stronger(LineSide.Marking.OTHERWISE);
         }
         String notes = String.join(BETWEEN_NOTES, rowProperties.stream()
-                .map(d -> I18n.text("line.property", d.property(), onLeft ? d.left() : d.right())).toList());
+                .map(d -> I18n.text("line.property", d.property(), side.of(d.left(), d.right()))).toList());
         return new LineSide(marking, pairing, String.valueOf(number), null, null, columns,
                 notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), palette.faint, palette));
     }
@@ -369,23 +371,23 @@ final class Lines {
     // -----------------------------------------------------------------------------------------------------------------
     // Paragraphs
 
-    private LineSide side(Pairing pairing, boolean onLeft) {
-        return side(pairing, onLeft, marking(pairing));
+    private LineSide side(Pairing pairing, Side side) {
+        return side(pairing, side, marking(pairing));
     }
 
-    private LineSide side(Pairing pairing, boolean onLeft, LineSide.Marking marking) {
-        Item item = onLeft ? pairing.left() : pairing.right();
+    private LineSide side(Pairing pairing, Side side, LineSide.Marking marking) {
+        Item item = side.of(pairing.left(), pairing.right());
         // alone: nothing on the other side compared with it (a moved row of a table is compared with its match)
         boolean alone = (pairing.left() == null || pairing.right() == null) && !pairing.moved()
-                && (onLeft ? pairing.diff().right() : pairing.diff().left()).isEmpty();
-        List<Span> spans = alone ? List.of() : onLeft ? pairing.diff().left() : pairing.diff().right();
-        List<FormatSpan> formatting = onLeft ? pairing.diff().leftFormatting() : pairing.diff().rightFormatting();
+                && side.other().of(pairing.diff().left(), pairing.diff().right()).isEmpty();
+        List<Span> spans = alone ? List.of() : side.of(pairing.diff().left(), pairing.diff().right());
+        List<FormatSpan> formatting = side.of(pairing.diff().leftFormatting(), pairing.diff().rightFormatting());
         boolean heading = item.paragraph().headingLevel() > 0;
         boolean inTable = !item.places().isEmpty() && !item.places().getLast().textBox();
-        DocumentLook laidOut = styles == null ? null : DocumentLook.of(styles[onLeft ? 0 : 1], item.paragraph());
-        String marker = inTable ? null : marker(item, onLeft ? leftNumbers : rightNumbers);
+        DocumentLook laidOut = styles == null ? null : DocumentLook.of(styles.get(side), item.paragraph());
+        String marker = inTable ? null : marker(item, numbers.get(side));
         if (laidOut != null && !pageMarks.isEmpty()) {
-            List<DocumentLook.PageMark> pages = pageMarks.get(onLeft ? 0 : 1).get(item.paragraph());
+            List<DocumentLook.PageMark> pages = pageMarks.get(side).get(item.paragraph());
             if (pages != null) {
                 laidOut = laidOut.withMarks(pages);
             }
@@ -398,7 +400,7 @@ final class Lines {
                 palette.text, palette, spans, formatting, I18n.text("line.emptyParagraph"), laidOut).withPictures(pictures(item));
         String location = inTable ? null : location(item, false);
         TextBlock caption = location == null ? null : TextBlock.plain(location, fonts.small(), palette.faint, palette);
-        String notes = notes(pairing, onLeft, formatting);
+        String notes = notes(pairing, side, formatting);
         return new LineSide(marking, inTable ? null : pairing, marker, caption, text, null,
                 notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), palette.faint, palette));
     }
@@ -439,10 +441,10 @@ final class Lines {
     }
 
     /** What else differs, this side's values: "heading: heading 2 · formatting (dotted): bold: true → (none)". */
-    private static String notes(Pairing pairing, boolean onLeft, List<FormatSpan> formatting) {
+    private static String notes(Pairing pairing, Side side, List<FormatSpan> formatting) {
         List<String> notes = new ArrayList<>();
         for (PropertyDifference difference : pairing.diff().properties()) {
-            notes.add(I18n.text("line.property", difference.property(), onLeft ? difference.left() : difference.right()));
+            notes.add(I18n.text("line.property", difference.property(), side.of(difference.left(), difference.right())));
         }
         Set<PropertyDifference> formats = new LinkedHashSet<>();
         formatting.forEach(span -> formats.addAll(span.differences()));

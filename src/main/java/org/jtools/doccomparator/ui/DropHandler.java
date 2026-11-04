@@ -46,15 +46,16 @@ final class DropHandler extends TransferHandler {
     private final DocumentOpener opener;
     /** What a document dropped without a side is dropped on: on its left half, it goes to the left. */
     private final JComponent area;
-    private final Boolean side;
+    /** The side what is dropped goes to; null for the side it is dropped on. */
+    private final Side side;
     private final TransferHandler otherwise;
 
     /** Documents dropped on the area: on the side given, or the half they are dropped on (side null). */
-    DropHandler(DocumentOpener opener, JComponent area, Boolean side) {
+    DropHandler(DocumentOpener opener, JComponent area, Side side) {
         this(opener, area, side, null);
     }
 
-    DropHandler(DocumentOpener opener, JComponent area, Boolean side, TransferHandler otherwise) {
+    DropHandler(DocumentOpener opener, JComponent area, Side side, TransferHandler otherwise) {
         this.opener = opener;
         this.area = area;
         this.side = side;
@@ -108,8 +109,7 @@ final class DropHandler extends TransferHandler {
         if (files.size() >= 2) {
             opener.open(files.get(0), files.get(1));
         } else {
-            boolean onLeft = side != null ? side : leftHalf(support);
-            opener.open(onLeft, files.getFirst());
+            opener.open(side != null ? side : sideOf(support), files.getFirst());
         }
         return true;
     }
@@ -128,16 +128,17 @@ final class DropHandler extends TransferHandler {
             opener.refuse(I18n.text("paste.nothing"));
             return false;
         }
-        opener.paste(side != null ? side : leftHalf(support), text);
+        opener.paste(side != null ? side : sideOf(support), text);
         return true;
     }
 
-    private boolean leftHalf(TransferSupport support) {
+    /** The side of the area it is dropped on, by halves; pasted, the side chosen, as every paste. */
+    private Side sideOf(TransferSupport support) {
         if (!support.isDrop()) {
-            return opener.leftChosen();   // pasted: on the side chosen, as every paste
+            return opener.chosenSide();
         }
         Point at = SwingUtilities.convertPoint(support.getComponent(), support.getDropLocation().getDropPoint(), area);
-        return at.x < area.getWidth() / 2;
+        return at.x < area.getWidth() / 2 ? Side.LEFT : Side.RIGHT;
     }
 
     private List<Path> files(TransferSupport support) {

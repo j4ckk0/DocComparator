@@ -228,8 +228,8 @@ class ComparatorPanelTest {
         ComparatorPanel[] panel = new ComparatorPanel[1];
         SwingUtilities.invokeAndWait(() -> {
             panel[0] = new ComparatorPanel();
-            panel[0].paste(true, "one\ntwo\nthree");
-            panel[0].paste(false, "one\r\n2\r\nthree\r\n");
+            panel[0].paste(Side.LEFT, "one\ntwo\nthree");
+            panel[0].paste(Side.RIGHT, "one\r\n2\r\nthree\r\n");
         });
         int[] differences = new int[1];
         for (int wait = 0; wait < 500 && differences[0] == 0; wait++) {   // compared away from the window's thread
@@ -328,11 +328,11 @@ class ComparatorPanelTest {
         SwingUtilities.invokeAndWait(() -> {
             ComparisonView view = new ComparisonView();
             view.setSize(1000, 600);
-            assertTrue(view.leftChosen(), "the left at first");
+            assertEquals(Side.LEFT, view.chosenSide(), "the left at first");
             press(view, 800, MouseEvent.BUTTON1);
-            assertFalse(view.leftChosen(), "the right, clicked");
+            assertEquals(Side.RIGHT, view.chosenSide(), "the right, clicked");
             press(view, 100, MouseEvent.BUTTON3);
-            assertTrue(view.leftChosen(), "the left, right-clicked");
+            assertEquals(Side.LEFT, view.chosenSide(), "the left, right-clicked");
         });
         List<String> menu = new ArrayList<>();
         SwingUtilities.invokeAndWait(() -> {
@@ -368,16 +368,16 @@ class ComparatorPanelTest {
         SwingUtilities.invokeAndWait(() -> {
             ComparisonView view = new ComparisonView();
             try {
-                view.setLines(Lines.alone(DocxReader.read(Path.of("samples", "procedure-revA.docx")), true,
+                view.setLines(Lines.alone(DocxReader.read(Path.of("samples", "procedure-revA.docx")), Side.LEFT,
                         Lines.Shown.ALL, view.fonts(), Palette.LIGHT), -1, Palette.LIGHT);
             } catch (IOException e) {
                 throw new IllegalStateException(e);
             }
-            view.setWaitingSide(1);
+            view.setWaitingSide(Side.RIGHT);
             view.setSize(1000, 600);
             press(view, 800, MouseEvent.BUTTON1);
             assertEquals(-1, view.current(), "no line selected from the side waiting");
-            assertFalse(view.leftChosen(), "the side waiting, chosen");
+            assertEquals(Side.RIGHT, view.chosenSide(), "the side waiting, chosen");
             press(view, 200, MouseEvent.BUTTON1);
             assertTrue(view.current() >= 0, "a line of the side shown, selected");
         });

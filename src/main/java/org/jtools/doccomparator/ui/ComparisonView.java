@@ -33,7 +33,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import javax.swing.JComponent;
 import javax.swing.JViewport;
@@ -54,7 +56,7 @@ final class ComparisonView extends JComponent implements Scrollable {
 
     static final String CURRENT_LINE = "currentLine";
     static final String LINES = "lines";
-    /** Told when another side is clicked: the one text pasted goes to (leftChosen). */
+    /** Told when another side is clicked: the one text pasted goes to (chosenSide). */
     static final String CHOSEN_SIDE = "chosenSide";
 
     static final int GUTTER = 26;
@@ -73,12 +75,13 @@ final class ComparisonView extends JComponent implements Scrollable {
     record EmptySide(boolean opened, String title, List<String> lines) {
     }
 
-    private EmptySide[] emptySides = {new EmptySide(false, "", List.of()), new EmptySide(false, "", List.of())};
+    private final Map<Side, EmptySide> emptySides = new EnumMap<>(Map.of(Side.LEFT, new EmptySide(false, "", List.of()),
+            Side.RIGHT, new EmptySide(false, "", List.of())));
     private int laidOutWidth = -1;
     private int totalHeight;
     private int current = -1;
     /** The side last clicked, where text pasted goes: the left until one is. */
-    private boolean leftChosen = true;
+    private Side chosen = Side.LEFT;
 
     ComparisonView() {
         fonts = lookFonts();
@@ -90,11 +93,11 @@ final class ComparisonView extends JComponent implements Scrollable {
             @Override
             public void mousePressed(MouseEvent e) {
                 requestFocusInWindow();
-                boolean left = e.getX() < getWidth() / 2;
-                if (left != leftChosen) {
-                    leftChosen = left;
+                Side clicked = e.getX() < getWidth() / 2 ? Side.LEFT : Side.RIGHT;
+                if (clicked != chosen) {
+                    chosen = clicked;
                     repaint();
-                    firePropertyChange(CHOSEN_SIDE, !left, left);
+                    firePropertyChange(CHOSEN_SIDE, clicked.other(), clicked);
                 }
                 clicked(e);
             }
@@ -139,9 +142,9 @@ final class ComparisonView extends JComponent implements Scrollable {
         firePropertyChange(CURRENT_LINE, -2, this.current);
     }
 
-    /** Whether the side last clicked, left or right-clicked, is the left: the one text pasted goes to. */
-    boolean leftChosen() {
-        return leftChosen;
+    /** The side last clicked, left or right-clicked: the one text pasted goes to. */
+    Side chosenSide() {
+        return chosen;
     }
 
     List<Line> lines() {
@@ -157,18 +160,19 @@ final class ComparisonView extends JComponent implements Scrollable {
      * open it, or the one opened, waiting for the other.
      */
     void setEmptySides(EmptySide left, EmptySide right) {
-        emptySides = new EmptySide[] {left, right};
+        emptySides.put(Side.LEFT, left);
+        emptySides.put(Side.RIGHT, right);
         repaint();
     }
 
-    /** The side waiting for its document while the other's is shown (0 left, 1 right); -1 for none. */
-    private int waitingSide = -1;
+    /** The side waiting for its document while the other's is shown; null for none. */
+    private Side waitingSide;
 
-    void setWaitingSide(int side) {
+    void setWaitingSide(Side side) {
         waitingSide = side;
         if (getParent() instanceof JViewport viewport) {
             // the waiting side stays where it is as the other scrolls: the view drawn anew, not shifted, at each step
-            viewport.setScrollMode(side >= 0 ? JViewport.SIMPLE_SCROLL_MODE : JViewport.BLIT_SCROLL_MODE);
+            viewport.setScrollMode(side != null ? JViewport.SIMPLE_SCROLL_MODE : JViewport.BLIT_SCROLL_MODE);
         }
         repaint();
     }
@@ -242,7 +246,10 @@ final class ComparisonView extends JComponent implements Scrollable {
     /** Whether this point is on the side waiting for its document, the gutter next to it included: no line there. */
     boolean onWaitingSide(int x) {
         int column = columnWidth(getWidth());
-        return waitingSide == 0 ? x < column + GUTTER : waitingSide == 1 && x >= column;
+        if (waitingSide == null) {
+            return false;
+        }
+        return waitingSide == Side.LEFT ? x < column + GUTTER : x >= column;
     }
 
     private void layoutLines(int width) {
@@ -334,7 +341,7 @@ final class ComparisonView extends JComponent implements Scrollable {
                 paintLine(g, lines.get(i), i == current);
             }
             paintGutterBelow(g, clip);
-            if (waitingSide >= 0) {
+            if (waitingSide != null) {
                 paintSide(g, waitingSide, true);   // over its empty half, where it stays as the other scrolls
             }
         } finally {
@@ -347,8 +354,8 @@ final class ComparisonView extends JComponent implements Scrollable {
      * to open it — two documents, side by side, as they will be compared.
      */
     private void paintEmpty(Graphics2D g) {
-        paintSide(g, 0, false);
-        paintSide(g, 1, false);
+        paintSide(g, Side.LEFT, false);
+        paintSide(g, Side.RIGHT, false);
     }
 
     /** The gutter under the last line, down to the bottom: the two sides kept apart where they have no lines. */
@@ -373,26 +380,26 @@ final class ComparisonView extends JComponent implements Scrollable {
      * A side waiting for its document, or opened: a place framed with dashes, saying so; the side chosen, framed in its
      * colour.
      */
-    private void paintSide(Graphics2D g, int side, boolean overLines) {
+    private void paintSide(Graphics2D g, Side side, boolean overLines) {
         Rectangle visible = getVisibleRect();
         int column = columnWidth(getWidth());
-        int left = side == 0 ? 0 : column + GUTTER;
-        int sideWidth = side == 0 ? column : getWidth() - column - GUTTER;
+        int left = side.of(0, column + GUTTER);
+        int sideWidth = side.of(column, getWidth() - column - GUTTER);
         if (overLines) {   // the gutter too: the side shown ends where its column does
             g.setColor(palette.background);
-            g.fillRect(side == 0 ? 0 : column, visible.y, sideWidth + GUTTER, visible.height);
+            g.fillRect(side.of(0, column), visible.y, sideWidth + GUTTER, visible.height);
         }
         int x = left + 16;
         int y = visible.y + 16;
         int width = sideWidth - 32;
         int height = Math.max(120, visible.height - 32);
-        EmptySide says = emptySides[side];
+        EmptySide says = emptySides.get(side);
         boolean opened = says.opened();
-        boolean chosen = (side == 0) == leftChosen;
-        g.setColor(opened ? palette.background : chosen ? palette.chosenSideInside : palette.noSide);
+        boolean isChosen = side == chosen;
+        g.setColor(opened ? palette.background : isChosen ? palette.chosenSideInside : palette.noSide);
         g.fillRoundRect(x, y, width, height, 16, 16);
-        g.setColor(chosen ? palette.chosenSide : opened ? palette.grid : palette.faint);
-        g.setStroke(new BasicStroke(chosen ? 3 : 2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1,
+        g.setColor(isChosen ? palette.chosenSide : opened ? palette.grid : palette.faint);
+        g.setStroke(new BasicStroke(isChosen ? 3 : 2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1,
                 new float[] {8, 6}, 0));
         g.drawRoundRect(x, y, width, height, 16, 16);
         g.setStroke(new BasicStroke(1));
