@@ -2,7 +2,7 @@
 
 [![build](https://github.com/j4ckk0/DocComparator/actions/workflows/build.yml/badge.svg)](https://github.com/j4ckk0/DocComparator/actions/workflows/build.yml)
 [![Licence: Apache 2.0](https://img.shields.io/badge/licence-Apache%202.0-blue)](LICENSE)
-![Java 21](https://img.shields.io/badge/Java-21-orange)
+![Java 25](https://img.shields.io/badge/Java-25-orange)
 ![Windows | Linux](https://img.shields.io/badge/runs%20on-Windows%20%7C%20Linux-lightgrey)
 
 **See what changed between two Word documents.** DocComparator puts two `.docx` files side by side, paragraph beside

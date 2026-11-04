@@ -51,7 +51,7 @@ final class HelpMenu {
     static final String HOME_PAGE = "https://github.com/j4ckk0/DocComparator";
     /** Where the runtime's builds come from, and its sources. */
     static final String TEMURIN_RELEASES = "https://adoptium.net/temurin/releases/";
-    static final String OPENJDK_SOURCES = "https://github.com/openjdk/jdk21u";
+    static final String OPENJDK_SOURCES = "https://github.com/openjdk/jdk25u";
     /** The program's licence, packed in it beside its classes (pom.xml). */
     private static final String LICENCE = "LICENSE";
     /** The licence of the runtime's base module, where every JDK keeps it: java.home/legal/java.base/LICENSE. */

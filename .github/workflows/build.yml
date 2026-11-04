@@ -1,4 +1,4 @@
-# Build and test on every push and pull request: JDK 21 + Maven, then keep the jar as a workflow artefact (the
+# Build and test on every push and pull request: JDK 25 + Maven, then keep the jar as a workflow artefact (the
 # distributions, with their bundled JRE, are built by the release workflow on a tag, or by scripts/package.sh).
 name: build
 
@@ -20,7 +20,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           cache: maven
 
       - name: Build and test

@@ -56,9 +56,9 @@ if ! $dry && ! git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/nu
   echo "tag $tag is not on GitHub - git push origin $tag" >&2; exit 1
 fi
 
-# The bundled runtime's version, from the JRE archive externals.conf names (…_21.0.12.1_1.tar.gz → 21.0.12.1).
+# The bundled runtime's version, from the JRE archive externals.conf names (…_25.0.5_8.tar.gz → 25.0.5).
 jre_version=$(sed -n 's/^JRE_LINUX=.*_\([0-9][0-9.]*\)_[0-9]*\.tar\.gz$/\1/p' externals.conf)
-[ -n "$jre_version" ] || jre_version=21
+[ -n "$jre_version" ] || jre_version=25
 
 body=$(
   echo "DocComparator $version — compare two Word documents (\`.docx\`) side by side: paragraphs paired even when moved, their differences marked word by word, tables row by row and column by column, each kind of layout on its own switch. Self-contained, and it never reaches the network."

@@ -19,7 +19,7 @@ Embedded Java runtime
 =====================
 
 The self-contained distributions — the Windows and Linux archives — bundle an Eclipse
-Temurin 21 Java runtime (JRE). The jar published on Maven Central carries no runtime
+Temurin 25 Java runtime (JRE). The jar published on Maven Central carries no runtime
 and is not concerned by this section.
 
 Eclipse Temurin (OpenJDK) is licensed under the GNU General Public License, version 2,
@@ -36,8 +36,8 @@ each distribution:
 The exact runtime build is recorded in jre/release.
 
 Source code for the OpenJDK runtime is available from:
-  - Eclipse Temurin:  https://adoptium.net/temurin/releases/?version=21
-  - OpenJDK project:  https://github.com/openjdk/jdk21u
+  - Eclipse Temurin:  https://adoptium.net/temurin/releases/?version=25
+  - OpenJDK project:  https://github.com/openjdk/jdk25u
 
 
 Sample files
