@@ -3,7 +3,7 @@
 What each version brought, newest first. The GitHub Releases carry the same notes with the downloads and their
 checksums.
 
-## 1.6 — not released yet
+## 1.6 — 2026-11-04
 
 - **A Help menu**: the program's licence and the embedded Java runtime's, read from the program and its runtime
   (no file to find, no browser), and *About DocComparator*: its version, its home page to copy, the Java it runs on.
