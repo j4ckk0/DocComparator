@@ -3,6 +3,10 @@
 What each version brought, newest first. The GitHub Releases carry the same notes with the downloads and their
 checksums.
 
+## 1.10 — 2026-11-05
+
+- No change to what the program does: the code says, with Java's `_`, every value it is given and does not use.
+
 ## 1.9 — 2026-11-05
 
 - **A faster start on Windows too**: the Windows distribution now carries Java's AOT cache of the program, as the
