@@ -142,9 +142,11 @@ final class TextBlock {
         }
 
         LineBreakMeasurer measurer = new LineBreakMeasurer(attributed.getIterator(), context);
+        List<DocumentLook.PageMark> marks = look == null ? List.of() : look.marks();
+        int mark = 0;
         float top = 0;
-        if (laidOut && look.breakBefore() != null) {
-            breaks.add(new Break(top + breakHeight / 2, look.breakBefore()));
+        for (; mark < marks.size() && marks.get(mark).offset() <= 0; mark++) {   // before the paragraph
+            breaks.add(new Break(top + breakHeight / 2, marks.get(mark).label()));
             top += breakHeight;
         }
         top += before;
@@ -175,20 +177,22 @@ final class TextBlock {
                     }
                 }
             }
+            // a page beginning in this line: before it — Word's lines are not quite ours, its page began about there
+            for (; mark < marks.size() && marks.get(mark).offset() < measurer.getPosition()
+                    && marks.get(mark).offset() < shown.length(); mark++) {
+                breaks.add(new Break(top + breakHeight / 2, marks.get(mark).label()));
+                top += breakHeight;
+            }
             layouts.add(layout);
             starts.add(start);
             xs.add(x);
             tops.add(top);
             top += lineHeight(layout, pixels, laidOut);
-            if (laidOut && text.charAt(measurer.getPosition() - 1) == '\f') {   // a page break ends the line
-                breaks.add(new Break(top + breakHeight / 2, DocumentLook.PAGE_BREAK));
-                top += breakHeight;
-            }
             firstOne = false;
         }
         top += after;
-        if (laidOut && look.breakAfter() != null) {
-            breaks.add(new Break(top + breakHeight / 2, look.breakAfter()));
+        for (; mark < marks.size(); mark++) {   // after the paragraph: a page break ending it, the section ending
+            breaks.add(new Break(top + breakHeight / 2, marks.get(mark).label()));
             top += breakHeight;
         }
         height = (int) Math.ceil(top);
@@ -226,9 +230,9 @@ final class TextBlock {
         return text;
     }
 
-    /** The break shown before the text (the document view): "Page break", "Section break"; null for none. */
-    String breakBefore() {
-        return look == null ? null : look.breakBefore();
+    /** The pages beginning in the text, and the section ending (the document view): their names, in order. */
+    List<String> pageMarks() {
+        return look == null ? List.of() : look.marks().stream().map(DocumentLook.PageMark::label).toList();
     }
 
     /** A list item's number, shown in the text (the document view); null for none. */

@@ -2,7 +2,6 @@ package org.jtools.doccomparator.ui;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -20,13 +19,11 @@ import org.jtools.doccomparator.compare.Slot;
 import org.jtools.doccomparator.compare.Span;
 import org.jtools.doccomparator.compare.StoryComparison;
 import org.jtools.doccomparator.compare.TableComparison;
-import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.ListItem;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
-import org.jtools.doccomparator.document.TextBox;
 import org.jtools.doccomparator.document.WordDocument;
 
 /**
@@ -46,11 +43,8 @@ final class Lines {
     private final CompareOptions options;
     /** The document view: each paragraph as its document's styles lay it out; null for the diff view. */
     private final StyleSheet[] styles;
-    /**
-     * The document view, the blanks left out: the breaks of empty paragraphs, which are not shown, carried over to the
-     * paragraph after them, on each side.
-     */
-    private final List<Map<Paragraph, String>> carriedBreaks = new ArrayList<>();
+    /** The document view: where pages begin, by paragraph, on each side (PageMarks). */
+    private final List<Map<Paragraph, List<DocumentLook.PageMark>>> pageMarks = new ArrayList<>();
     private final List<Line> lines = new ArrayList<>();
     /** The numbers lists are at, on each side: by list, a counter for each level. */
     private final Map<String, int[]> leftNumbers = new HashMap<>();
@@ -100,9 +94,9 @@ final class Lines {
                          Fonts fonts) {
         Lines lines = new Lines(fonts, onlyDifferences, onlyComparable, comparison.options(), documentView
                 ? new StyleSheet[] {comparison.left().styles(), comparison.right().styles()} : null);
-        if (documentView && !comparison.options().blanks()) {
-            lines.carriedBreaks.add(carriedBreaks(comparison.left()));
-            lines.carriedBreaks.add(carriedBreaks(comparison.right()));
+        if (documentView) {
+            lines.pageMarks.add(PageMarks.of(comparison.left(), comparison.options().blanks()));
+            lines.pageMarks.add(PageMarks.of(comparison.right(), comparison.options().blanks()));
         }
         lines.addDocument(comparison.documentDifferences());
         for (StoryComparison story : comparison.stories()) {
@@ -296,48 +290,6 @@ final class Lines {
         return shown;
     }
 
-    /**
-     * The breaks of a document's empty paragraphs — a page break alone on its line, a section's end — by the paragraph
-     * after them, which shows them in their place: the empty ones are left out with the blanks.
-     */
-    private static Map<Paragraph, String> carriedBreaks(WordDocument document) {
-        Map<Paragraph, String> carried = new IdentityHashMap<>();
-        List<Story> stories = new ArrayList<>(List.of(document.body()));
-        stories.addAll(document.headersAndFooters());
-        stories.addAll(document.notes());
-        for (Story story : stories) {
-            String[] pending = {null};
-            carry(story.blocks(), document.styles(), carried, pending);
-        }
-        return carried;
-    }
-
-    private static void carry(List<Block> blocks, StyleSheet styles, Map<Paragraph, String> carried, String[] pending) {
-        for (Block block : blocks) {
-            switch (block) {
-                case Paragraph paragraph -> {
-                    if (paragraph.text().codePoints().allMatch(c -> Character.isWhitespace(c) || Character.isSpaceChar(c))) {
-                        boolean breaks = paragraph.text().indexOf('\f') >= 0
-                                || "true".equals(styles.effectiveParagraph(paragraph).get("pageBreakBefore"));
-                        if (breaks) {
-                            pending[0] = DocumentLook.PAGE_BREAK;
-                        }
-                        if (paragraph.endsSection()) {
-                            pending[0] = DocumentLook.SECTION_BREAK;
-                        }
-                    } else if (pending[0] != null) {
-                        carried.put(paragraph, pending[0]);
-                        pending[0] = null;
-                    }
-                }
-                case TextBox box -> carry(box.blocks(), styles, carried, pending);
-                case Table table -> {
-                    // a table is not a paragraph: what was pending waits for the paragraph after it
-                }
-            }
-        }
-    }
-
     /** A column by its letters, as a spreadsheet names it: A to Z, then AA… */
     static String columnName(int column) {
         StringBuilder name = new StringBuilder();
@@ -393,10 +345,10 @@ final class Lines {
         boolean inTable = !item.places().isEmpty() && !item.places().getLast().textBox();
         DocumentLook laidOut = styles == null ? null : DocumentLook.of(styles[onLeft ? 0 : 1], item.paragraph());
         String marker = inTable ? null : marker(item, onLeft ? leftNumbers : rightNumbers);
-        if (laidOut != null && !carriedBreaks.isEmpty()) {
-            String carried = carriedBreaks.get(onLeft ? 0 : 1).get(item.paragraph());
-            if (carried != null) {
-                laidOut = laidOut.withBreakBefore(carried);
+        if (laidOut != null && !pageMarks.isEmpty()) {
+            List<DocumentLook.PageMark> pages = pageMarks.get(onLeft ? 0 : 1).get(item.paragraph());
+            if (pages != null) {
+                laidOut = laidOut.withMarks(pages);
             }
         }
         if (laidOut != null && item.paragraph().listItem() != null && marker != null) {

@@ -304,6 +304,10 @@ def page_number(style):
 # ---------------------------------------------------------------------------------------------------------------------
 # The procedure, revision A and revision B
 
+# Where Word's layout began a page when Word last saved the document (w:lastRenderedPageBreak), as Word writes it: the
+# samples are not laid out by Word, so their pages are said here, as if they had been.
+WORD_PAGE = '<w:r><w:lastRenderedPageBreak/></w:r>'
+
 PROCEDURE_IDS = {role: role for role in ("Normal", "Title", "Heading1", "Heading2", "ListParagraph", "FootnoteText",
                                          "FootnoteReference", "Header", "Footer", "TableGrid")}
 
@@ -332,7 +336,7 @@ def procedure_revision_a():
         paragraph("Repairs of the motor and of the electrical cabinet are not covered by this document; they are "
                   "described in procedure KP-MP-020."),
 
-        paragraph("Safety", style=ids["Heading1"], extra="<w:pageBreakBefore/>"),               # a new page
+        paragraph(WORD_PAGE, "Safety", style=ids["Heading1"], extra="<w:pageBreakBefore/>"),               # a new page
         paragraph("Before any operation, the pump must be stopped, isolated and locked out with a personal padlock."),
         paragraph("The residual pressure in the circuit can reach 12 bar for several minutes after the stop",
                   footnote_reference(1, ids["FootnoteReference"]),
@@ -343,7 +347,7 @@ def procedure_revision_a():
         step("Stop the pump and lock out the main switch."),
         step("Place a drip tray under the filter housing."),
         step("Unscrew the filter cover by hand, without any tool."),
-        step("Remove the old filter element and discard it with the oily waste."),
+        step(WORD_PAGE, "Remove the old filter element and discard it with the oily waste."),   # Word's page 3
         step("Fit a new element, reference KP-F-110, and screw the cover back."),
         step("Restart the pump and check that no leak appears around the cover."),
         paragraph("The parts needed for one maintenance are listed below."),
@@ -353,7 +357,7 @@ def procedure_revision_a():
                ["Hydraulic oil ISO VG 46", "KP-H-046", "2 litres"]], ids["TableGrid"]),
 
         paragraph('<w:r><w:br w:type="page"/></w:r>'),                                          # a page break, alone
-        h1("Records"),
+        paragraph(WORD_PAGE, "Records", style=ids["Heading1"]),   # Word's record of the page the break began
         paragraph("Record the date, the outlet pressure and your name in the maintenance log kept next to the bench. "
                   "A pressure below 180 bar ", run("must", b=True),
                   " be reported to the workshop manager the same day."),
@@ -404,7 +408,7 @@ def procedure_revision_b():
         step("Remove the old filter element and discard it with the oily waste."),
         step("Fit a new element, reference KP-F-110, and screw the cover back",
              inserted(" and tighten it to 25 N·m"), "."),                                     # tracked insertion
-        step("Restart the pump, wait two minutes and check that no leak appears around the cover."),  # changed
+        step(WORD_PAGE, "Restart the pump, wait two minutes and check that no leak appears around the cover."),
         paragraph("The parts needed for one maintenance are listed below.",
                   extra='<w:ind w:left="720"/>'),                                                  # now indented
         table([["Part", "Reference", "Quantity"],
@@ -415,7 +419,7 @@ def procedure_revision_b():
               header_fill="D9E2F3", header_height=400,                                             # header shaded, taller
               borders={(4, 2): 12}),                                                               # a red border under 3 litres
 
-        paragraph("Safety", style=ids["Heading1"], extra="<w:pageBreakBefore/>"),               # a new page
+        paragraph(WORD_PAGE, "Safety", style=ids["Heading1"], extra="<w:pageBreakBefore/>"),               # a new page
         paragraph("Before any operation, the pump must be stopped, isolated and locked out with a personal padlock."),
         paragraph("The residual pressure in the circuit can reach 15 bar for several minutes after the stop",
                   footnote_reference(1, ids["FootnoteReference"]),

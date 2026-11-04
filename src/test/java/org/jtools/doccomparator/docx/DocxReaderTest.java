@@ -159,6 +159,22 @@ class DocxReaderTest {
         assertEquals(List.of("within"), texts(paragraphs(within.rows().getFirst().cells().getFirst().blocks())));
     }
 
+    /** Where Word's pages began at its last layout: kept, as offsets in the text; after a page break, once. */
+    @Test
+    void wordsOwnPagesAreKeptWhereTheyBegan() throws IOException {
+        WordDocument document = read(TestDocx.body("""
+                <w:p><w:r><w:t xml:space="preserve">The end of a page </w:t></w:r>
+                  <w:r><w:lastRenderedPageBreak/><w:t>and the next.</w:t></w:r></w:p>
+                <w:p><w:r><w:t>Before a break.</w:t><w:br w:type="page"/></w:r></w:p>
+                <w:p><w:r><w:lastRenderedPageBreak/><w:t>After it.</w:t></w:r></w:p>
+                """));
+        List<Paragraph> paragraphs = paragraphs(document.body());
+        assertEquals(List.of(18), paragraphs.get(0).pageStarts(), "before \"and the next.\"");
+        assertEquals(List.of(), paragraphs.get(1).pageStarts());
+        assertEquals(List.of(), paragraphs.get(2).pageStarts(), "the page the break began: said once, by the break");
+        assertEquals("The end of a page and the next.", paragraphs.get(0).text(), "no text of its own");
+    }
+
     @Test
     void rowsAndCellsChangedWithTrackChangesAreReadAsAccepted() throws IOException {
         WordDocument document = read(TestDocx.body("""

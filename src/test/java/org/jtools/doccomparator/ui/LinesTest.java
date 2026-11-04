@@ -165,19 +165,25 @@ class LinesTest {
         assertNotNull(indented.text, "laid out");
     }
 
-    /** Page breaks in the document view: a paragraph's own, and one of an empty paragraph carried over to the next. */
+    /**
+     * Pages in the document view, numbered on each side: a paragraph's "page break before", Word's own pages, a page
+     * break alone in an empty paragraph said before the next — and Word's record of that same page said once.
+     */
     @Test
-    void theDocumentViewShowsPageBreaks() throws IOException {
-        List<Line> document = Lines.of(compare("procedure-revB.docx"), false, false, true, FONTS);
-        assertEquals(DocumentLook.PAGE_BREAK,
-                document.get(lineWith(document, "Safety", true)).left.text.breakBefore(), "page break before");
-        assertEquals(DocumentLook.PAGE_BREAK,
-                document.get(lineWith(document, "Records", true)).left.text.breakBefore(), "an empty paragraph's");
-        assertEquals(DocumentLook.PAGE_BREAK,
-                document.get(lineWith(document, "Records", false)).right.text.breakBefore());
-        assertNull(document.get(lineWith(document, "Purpose", true)).left.text.breakBefore());
+    void theDocumentViewShowsWhereEachPageBegins() throws IOException {
+        List<Line> lines = Lines.of(compare("procedure-revB.docx"), false, false, true, FONTS);
+        assertEquals(List.of("Page break \u2014 page 2"), lines.get(lineWith(lines, "Safety", true)).left.text.pageMarks(),
+                "asked for, and Word's record of it at the same place said once");
+        assertEquals(List.of("Page 3"), lines.get(lineWith(lines, "Remove the old filter", true)).left.text.pageMarks(),
+                "Word's own");
+        assertEquals(List.of("Page break \u2014 page 4"), lines.get(lineWith(lines, "Records", true)).left.text.pageMarks(),
+                "an empty paragraph's, said before the next");
+        assertEquals(List.of("Page 2"), lines.get(lineWith(lines, "Restart the pump", false)).right.text.pageMarks());
+        assertEquals(List.of("Page break \u2014 page 3"), lines.get(lineWith(lines, "Safety", false)).right.text.pageMarks());
+        assertEquals(List.of("Page break \u2014 page 4"), lines.get(lineWith(lines, "Records", false)).right.text.pageMarks());
+        assertEquals(List.of(), lines.get(lineWith(lines, "Purpose", true)).left.text.pageMarks());
         List<Line> diff = Lines.of(compare("procedure-revB.docx"), false, FONTS);
-        assertNull(diff.get(lineWith(diff, "Records", true)).left.text.breakBefore(), "the diff view has none");
+        assertEquals(List.of(), diff.get(lineWith(diff, "Records", true)).left.text.pageMarks(), "the diff view has none");
     }
 
     /** List items: in the document view, their number in their text, where Word puts it; in the diff view, in the margin. */

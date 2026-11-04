@@ -114,11 +114,14 @@ paragraph beside its match, as high as the taller.
   and after, line spacing; a paragraph's and a cell's shading — at a scale that fits a page's width in each side. A
   font the machine has not got is shown in one made to take its place (Carlito for Calibri, Liberation for Arial and
   Times New Roman, on Linux), else in Java's own. Paragraphs stay side by side, paired, their differences marked over
-  their formatting. List items show their numbers and bullets at the start of their line, the text at the list's indent. Page and
-  section breaks the document states are drawn across the page where they are: a page break in the text, a paragraph's
-  "page break before", a section's end — one of an empty paragraph, which is left out with the blanks, above the
-  paragraph after it. The program does not lay out pages: where Word's pages end of themselves is not shown. Not shown
-  either: pictures.
+  their formatting. List items show their numbers and bullets at the start of their line, the text at the list's indent. Where each
+  page begins is drawn across the page, dashed, numbered on each side: the pages the document asks for ("Page break —
+  page 3": a page break in the text, a paragraph's "page break before") and those Word's layout gave it when Word last
+  saved it ("Page 3": Word keeps a record of them in the file, `w:lastRenderedPageBreak`; a document Word never laid out
+  has none); and where sections end. The program does not lay pages out itself: its lines are not quite Word's, so a
+  page Word began within a paragraph is shown before the line holding where it began; one begun in a table counts but is
+  not shown. What begins in an empty paragraph, left out with the blanks, is shown before the paragraph after it. Word's
+  record of its pages is not compared: it is no part of the content, and changes with the printer. Not shown: pictures.
 - **Colours**, after Beyond Compare's: red, the text differs, the very words or letters marked darker; purple, on one
   side only; teal, moved; amber, the same text but its structure or style differs. A red bar marks where the other side has text this one has not; a dotted line, text formatted otherwise (its
   tooltip says how). A sign between the sides says the same at a glance.
@@ -215,7 +218,7 @@ run it again after a change: it writes the same files):
 
 | Document | What it is |
 |---|---|
-| `procedure-revA.docx` | the reference: a maintenance procedure, revision A |
+| `procedure-revA.docx` | the reference: a maintenance procedure, revision A, with page breaks, and Word's record of its pages |
 | `procedure-revB.docx` | its next version: paragraphs added, sentences changed, two sections swapped, a table row added, formatting and heading levels changed, a paragraph indented, the table's header row shaded and taller, a cell's border, blanks added, tracked changes, another footer and template |
 | `training-handbook.docx` | another document, on another template, with other headings and styles, that copied paragraphs from revision A, in another order, and changed pieces of them |
 
@@ -276,7 +279,7 @@ Both are built from either system. Previous versions' archives are removed from 
 | `…/document/` | what a Word document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
 | `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `StylesReader`, `Numbering`, `FormattingReader` |
 | `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Row`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `PropertyNames` |
-| `…/ui/` | `ComparatorPanel` (the ribbon, the sides' heads, the status line), `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `FontFamilies`, `FileUris` (files dropped from Linux) |
+| `…/ui/` | `ComparatorPanel` (the ribbon, the sides' heads, the status line), `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `FontFamilies`, `FileUris` (files dropped from Linux) |
 | `src/main/resources/META-INF/services/` | what installs `NoNetworkResolver` |
 | `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `compare/`: each step, tables, and `SamplesTest`; `ui/LinesTest`, the view, drawn without a screen |
 | `samples/` | the sample documents, and the script that writes them (see "Samples") |

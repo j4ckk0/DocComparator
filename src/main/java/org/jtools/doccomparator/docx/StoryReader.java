@@ -48,6 +48,12 @@ final class StoryReader {
         return trackedChanges;
     }
 
+    /**
+     * A page break of the text was read, and no text since: Word's own record of the page beginning there
+     * (w:lastRenderedPageBreak), which follows, is the same page.
+     */
+    private boolean pageJustBroken;
+
     /** The sections the body has closed so far: one per w:sectPr. */
     int sections() {
         return sections;
@@ -111,6 +117,10 @@ final class StoryReader {
         final SortedMap<String, String> properties = new TreeMap<>();
         final List<Run> runs = new ArrayList<>();
         final List<TextBox> textBoxes = new ArrayList<>();
+        /** Where Word's pages began, in the paragraph's text, when Word last laid it out. */
+        final List<Integer> pageStarts = new ArrayList<>();
+        /** The length of the runs' text so far. */
+        int length;
         boolean endsSection;
 
         /** Joined to the run before when it looks the same: Word splits runs for its own reasons (revision ids…). */
@@ -118,6 +128,7 @@ final class StoryReader {
             if (text.isEmpty()) {
                 return;
             }
+            length += text.length();
             if (!runs.isEmpty()) {
                 Run last = runs.getLast();
                 if (Objects.equals(last.styleId(), styleId) && last.formatting().equals(formatting)) {
@@ -143,7 +154,7 @@ final class StoryReader {
         String outline = direct.get("outlineLvl");
         int headingLevel = outline != null ? StyleSheet.headingLevelOfOutline(outline) : styles.headingLevel(styleId);
         blocks.add(new Paragraph(styleId, direct.without("pStyle", "numPr"), headingLevel, listItem(direct, styleId),
-                content.endsSection, content.runs));
+                content.endsSection, content.runs, content.pageStarts));
         blocks.addAll(content.textBoxes);
     }
 
@@ -239,11 +250,26 @@ final class StoryReader {
                     }
                 }
             }
-            case "t" -> text.append(xml.text());
+            case "t" -> {
+                String shown = xml.text();
+                text.append(shown);
+                if (!shown.isBlank()) {
+                    pageJustBroken = false;
+                }
+            }
+            case "lastRenderedPageBreak" -> {
+                // where Word's layout began a page; after a page break of the text, the same page, said once
+                if (!pageJustBroken) {
+                    content.pageStarts.add(content.length + text.length());
+                }
+                pageJustBroken = false;
+                xml.skip();
+            }
             case "tab", "ptab" -> append(xml, text, "\t");
             case "br" -> {
                 String type = xml.wordAttribute("type");
                 append(xml, text, "page".equals(type) || "column".equals(type) ? "\f" : "\n");
+                pageJustBroken |= "page".equals(type);
             }
             case "cr" -> append(xml, text, "\n");
             case "noBreakHyphen" -> append(xml, text, "‑");
