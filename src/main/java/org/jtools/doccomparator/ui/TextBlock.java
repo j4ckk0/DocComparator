@@ -45,6 +45,8 @@ final class TextBlock {
     private final List<FormatSpan> formatting;
     private final String placeholder;
     private final DocumentLook look;
+    /** The colours it is drawn in: those of the lines it is part of. */
+    private final Palette palette;
     /** Its pictures, by their offset in its text. */
     private Map<Integer, Picture> pictures = Map.of();
 
@@ -70,13 +72,14 @@ final class TextBlock {
     private float numberX;
 
     /** A text and its differences; placeholder: what is shown, faint, for an empty text. */
-    TextBlock(String text, Font font, Color color, List<Span> spans, List<FormatSpan> formatting, String placeholder) {
-        this(text, font, color, spans, formatting, placeholder, null);
+    TextBlock(String text, Font font, Color color, Palette palette, List<Span> spans, List<FormatSpan> formatting,
+              String placeholder) {
+        this(text, font, color, palette, spans, formatting, placeholder, null);
     }
 
     /** The same, as the document lays it out (look), or plainly (null). */
-    TextBlock(String text, Font font, Color color, List<Span> spans, List<FormatSpan> formatting, String placeholder,
-              DocumentLook look) {
+    TextBlock(String text, Font font, Color color, Palette palette, List<Span> spans, List<FormatSpan> formatting,
+              String placeholder, DocumentLook look) {
         this.text = text;
         this.font = font;
         this.color = color;
@@ -84,6 +87,7 @@ final class TextBlock {
         this.formatting = formatting;
         this.placeholder = placeholder;
         this.look = look;
+        this.palette = palette;
     }
 
     /** The same, with its pictures, by their offset in its text. */
@@ -92,8 +96,8 @@ final class TextBlock {
         return this;
     }
 
-    static TextBlock plain(String text, Font font, Color color) {
-        return new TextBlock(text, font, color, List.of(), List.of(), " ");
+    static TextBlock plain(String text, Font font, Color color, Palette palette) {
+        return new TextBlock(text, font, color, palette, List.of(), List.of(), " ");
     }
 
     int layout(FontRenderContext context, float width) {
@@ -157,8 +161,8 @@ final class TextBlock {
                 int at = picture.getKey();
                 if (at < shown.length()) {
                     attributed.addAttribute(TextAttribute.CHAR_REPLACEMENT, laidOut
-                            ? PictureGraphic.shown(picture.getValue(), pixels, width - left - right, labels)
-                            : PictureGraphic.sign(picture.getValue(), font), at, at + 1);
+                            ? PictureGraphic.shown(picture.getValue(), pixels, width - left - right, labels, palette)
+                            : PictureGraphic.sign(picture.getValue(), font, palette), at, at + 1);
                 }
             }
         }
@@ -289,7 +293,7 @@ final class TextBlock {
                 paintHighlights(g, layout, start, end, lineX, baseline);
                 paintBehind(g, layout, start, end, lineX, baseline);
             }
-            g.setColor(text.isEmpty() ? Palette.FAINT : color);
+            g.setColor(text.isEmpty() ? palette.faint : color);
             layout.draw(g, lineX, baseline);
             if (!text.isEmpty()) {
                 paintMarks(g, layout, start, end, lineX, baseline, i == layouts.size() - 1);
@@ -316,7 +320,7 @@ final class TextBlock {
         AffineTransform at = AffineTransform.getTranslateInstance(x, baseline);
         for (Span span : spans) {
             Color behind = switch (span.kind()) {
-                case CHANGED, ONLY_HERE -> Palette.CHANGED_TEXT;
+                case CHANGED, ONLY_HERE -> palette.changedText;
                 default -> null;
             };
             if (behind != null && span.start() < end && span.end() > start) {
@@ -337,7 +341,7 @@ final class TextBlock {
             if (span.kind() == Span.Kind.ABSENT && at0 >= start && (at0 < end || last && at0 == end)) {
                 Rectangle caret = at.createTransformedShape(layout.getCaretShape(TextHitInfo.leading(at0 - start)))
                         .getBounds();
-                g.setColor(Palette.ABSENT_MARK);
+                g.setColor(palette.absentMark);
                 g.fillRect(caret.x - 1, (int) (baseline - layout.getAscent()), 3, lineHeight);
             }
         }
@@ -359,7 +363,7 @@ final class TextBlock {
             if (span.start() < end && span.end() > start) {
                 Rectangle under = at.createTransformedShape(layout.getLogicalHighlightShape(
                         Math.max(span.start(), start) - start, Math.min(span.end(), end) - start)).getBounds();
-                g.setColor(Palette.FORMATTING_MARK);
+                g.setColor(palette.formattingMark);
                 int lineY = (int) (baseline + Math.max(2, layout.getDescent() - 1));
                 for (int dot = under.x; dot < under.x + under.width; dot += 3) {
                     g.fillRect(dot, lineY, 2, 2);
@@ -392,16 +396,16 @@ final class TextBlock {
     /** A break across the page, dashed, its name in the middle: "Page break", "Section break". */
     private void paintBreak(Graphics2D g, float x, float y, String label) {
         Graphics2D dashed = (Graphics2D) g.create();
-        dashed.setColor(Palette.FAINT);
+        dashed.setColor(palette.faint);
         dashed.setStroke(new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1, new float[] {6, 4}, 0));
         dashed.draw(new Line2D.Float(x, y, x + blockWidth, y));
         dashed.setFont(font.deriveFont(Font.PLAIN, Math.max(9, font.getSize2D() - 2)));
         FontMetrics metrics = dashed.getFontMetrics();
         int width = metrics.stringWidth(label) + 12;
         float left = x + (blockWidth - width) / 2;
-        dashed.setColor(Palette.BACKGROUND);
+        dashed.setColor(palette.background);
         dashed.fill(new Rectangle2D.Float(left, y - metrics.getHeight() / 2f, width, metrics.getHeight()));
-        dashed.setColor(Palette.FAINT);
+        dashed.setColor(palette.faint);
         dashed.drawString(label, left + 6, y + metrics.getAscent() / 2f - 1);
         dashed.dispose();
     }

@@ -44,6 +44,8 @@ final class ComparisonView extends JComponent implements Scrollable {
     private Fonts fonts;
     private final FontRenderContext context = new FontRenderContext(null, true, true);
     private List<Line> lines = List.of();
+    /** The colours the lines were built in, which the view draws around them. */
+    private Palette palette = Palette.LIGHT;
     /** What a side says while there are no lines: whether its document is open, a title, then lines of text. */
     record EmptySide(boolean opened, String title, List<String> lines) {
     }
@@ -56,7 +58,7 @@ final class ComparisonView extends JComponent implements Scrollable {
     ComparisonView() {
         fonts = lookFonts();
         setOpaque(true);
-        setBackground(Palette.BACKGROUND);
+        setBackground(Palette.LIGHT.background);
         setFocusable(true);
         setToolTipText("");   // tooltips on: their text depends on the point
         MouseAdapter mouse = new MouseAdapter() {
@@ -92,10 +94,12 @@ final class ComparisonView extends JComponent implements Scrollable {
     // -----------------------------------------------------------------------------------------------------------------
     // The lines
 
-    /** Shows these lines, the current one this (-1 for none). */
-    void setLines(List<Line> lines, int current) {
+    /** Shows these lines, built in this palette; the current one this (-1 for none). */
+    void setLines(List<Line> lines, int current, Palette palette) {
         List<Line> old = this.lines;
         this.lines = List.copyOf(lines);
+        this.palette = palette;
+        setBackground(palette.background);
         this.current = Math.min(current, lines.size() - 1);
         laidOutWidth = -1;
         revalidate();
@@ -106,6 +110,10 @@ final class ComparisonView extends JComponent implements Scrollable {
 
     List<Line> lines() {
         return lines;
+    }
+
+    Palette palette() {
+        return palette;
     }
 
     /**
@@ -267,7 +275,7 @@ final class ComparisonView extends JComponent implements Scrollable {
             g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             Rectangle clip = g.getClipBounds() == null ? new Rectangle(0, 0, getWidth(), getHeight()) : g.getClipBounds();
-            g.setColor(Palette.BACKGROUND);
+            g.setColor(palette.background);
             g.fill(clip);
             layoutLines(getWidth());
             if (lines.isEmpty()) {
@@ -302,7 +310,7 @@ final class ComparisonView extends JComponent implements Scrollable {
         int left = side == 0 ? 0 : column + GUTTER;
         int sideWidth = side == 0 ? column : getWidth() - column - GUTTER;
         if (overLines) {
-            g.setColor(Palette.BACKGROUND);
+            g.setColor(palette.background);
             g.fillRect(left, visible.y, sideWidth, visible.height);
         }
         int x = left + 16;
@@ -311,20 +319,20 @@ final class ComparisonView extends JComponent implements Scrollable {
         int height = Math.max(120, visible.height - 32);
         EmptySide says = emptySides[side];
         boolean opened = says.opened();
-        g.setColor(opened ? Palette.BACKGROUND : Palette.NO_SIDE);
+        g.setColor(opened ? palette.background : palette.noSide);
         g.fillRoundRect(x, y, width, height, 16, 16);
-        g.setColor(opened ? Palette.GRID : Palette.FAINT);
+        g.setColor(opened ? palette.grid : palette.faint);
         g.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1, new float[] {8, 6}, 0));
         g.drawRoundRect(x, y, width, height, 16, 16);
         g.setStroke(new BasicStroke(1));
         Font title = fonts.heading().deriveFont(fonts.heading().getSize2D() + 4);
         int lineY = y + height / 2 - ((says.lines().size() + 1) * g.getFontMetrics(fonts.text()).getHeight()) / 2;
         g.setFont(title);
-        g.setColor(Palette.TEXT);
+        g.setColor(palette.text);
         g.drawString(says.title(), x + Math.max(8, (width - g.getFontMetrics().stringWidth(says.title())) / 2), lineY);
         lineY += g.getFontMetrics().getHeight() + 8;
         g.setFont(fonts.text());
-        g.setColor(Palette.FAINT);
+        g.setColor(palette.faint);
         for (String line : says.lines()) {
             g.drawString(line, x + Math.max(8, (width - g.getFontMetrics().stringWidth(line)) / 2), lineY);
             lineY += g.getFontMetrics().getHeight();
@@ -334,9 +342,9 @@ final class ComparisonView extends JComponent implements Scrollable {
     private void paintLine(Graphics2D g, Line line, boolean isCurrent) {
         int width = getWidth();
         if (line.isTitle()) {
-            g.setColor(Palette.TITLE);
+            g.setColor(palette.title);
             g.fillRect(0, line.top, width, line.height);
-            g.setColor(Palette.TITLE_TEXT);
+            g.setColor(palette.titleText);
             g.setFont(fonts.heading());
             TextLayout title = new TextLayout(line.title, fonts.heading(), context);
             title.draw(g, 10, line.top + (line.height + title.getAscent() - title.getDescent()) / 2f);
@@ -345,11 +353,11 @@ final class ComparisonView extends JComponent implements Scrollable {
             paintCell(g, line.left, 0, line.top, column, line.height - 1);
             paintCell(g, line.right, column + GUTTER, line.top, width - column - GUTTER, line.height - 1);
             paintGutter(g, line, column, line.top, line.height - 1);
-            g.setColor(Palette.SEPARATOR);
+            g.setColor(palette.separator);
             g.drawLine(0, line.top + line.height - 1, width, line.top + line.height - 1);
         }
         if (isCurrent) {
-            g.setColor(Palette.CURRENT);
+            g.setColor(palette.current);
             g.setStroke(new BasicStroke(2));
             g.drawRect(1, line.top + 1, width - 3, line.height - 2);
             g.setStroke(new BasicStroke(1));
@@ -361,10 +369,10 @@ final class ComparisonView extends JComponent implements Scrollable {
             hatch(g, x, y, width, height);
             return;
         }
-        g.setColor(Palette.line(cell.look));
+        g.setColor(palette.line(cell.look));
         g.fillRect(x, y, width, height);
         if (cell.marker != null) {
-            g.setColor(Palette.FAINT);
+            g.setColor(palette.faint);
             g.setFont(fonts.small());
             // on the first line of the text: below the space a paragraph keeps before it (the document view)
             float baseline = cell.text != null ? cell.text.firstBaseline() : g.getFontMetrics().getAscent() + 1;
@@ -408,20 +416,20 @@ final class ComparisonView extends JComponent implements Scrollable {
                 hatch(g, left, top, right - left, height);
             } else {
                 g.setColor(column.look == Cell.Look.SAME && column.shading != null ? column.shading
-                        : Palette.line(column.look));
+                        : palette.line(column.look));
                 g.fillRect(left, top, right - left, height);
                 paintContent(g, column, left + Cell.PADDING, top);
             }
-            g.setColor(Palette.GRID);
+            g.setColor(palette.grid);
             g.drawRect(left, top, right - left - 1, height - 1);
         }
     }
 
-    private static void hatch(Graphics2D g, int x, int y, int width, int height) {
-        g.setColor(Palette.NO_SIDE);
+    private void hatch(Graphics2D g, int x, int y, int width, int height) {
+        g.setColor(palette.noSide);
         g.fillRect(x, y, width, height);
         Graphics2D hatch = (Graphics2D) g.create(x, y, width, height);
-        hatch.setColor(Palette.NO_SIDE_HATCH);
+        hatch.setColor(palette.noSideHatch);
         for (int d = -height; d < width; d += 10) {
             hatch.drawLine(d, height, d + height, 0);
         }
@@ -432,12 +440,12 @@ final class ComparisonView extends JComponent implements Scrollable {
     private void paintGutter(Graphics2D g, Line line, int x, int y, int height) {
         Cell.Look look = line.look();
         if (look == Cell.Look.SAME) {
-            g.setColor(Palette.BACKGROUND);
+            g.setColor(palette.background);
             g.fillRect(x, y, GUTTER, height);
             return;
         }
-        Color mark = Palette.mark(look);
-        g.setColor(Palette.line(look));
+        Color mark = palette.mark(look);
+        g.setColor(palette.line(look));
         g.fillRect(x, y, GUTTER, height);
         g.setColor(mark);
         g.fillRect(x, y, 3, height);

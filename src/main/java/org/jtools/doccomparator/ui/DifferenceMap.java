@@ -67,7 +67,8 @@ final class DifferenceMap extends JComponent {
     @Override
     protected void paintComponent(Graphics graphics) {
         Graphics2D g = (Graphics2D) graphics;
-        g.setColor(Palette.NO_SIDE);
+        Palette palette = view.palette();
+        g.setColor(palette.noSide);
         g.fillRect(0, 0, getWidth(), getHeight());
         double scale = scale();
         if (scale <= 0) {
@@ -75,13 +76,13 @@ final class DifferenceMap extends JComponent {
         }
         for (Line line : view.lines()) {
             if (line.differs()) {
-                g.setColor(Palette.mark(line.look()));
+                g.setColor(palette.mark(line.look()));
                 int y = INSET + (int) (line.top * scale);
                 g.fillRect(INSET + 1, y, getWidth() - 2 * INSET - 2, Math.max(2, (int) Math.ceil(line.height * scale)));
             }
         }
         Rectangle visible = viewport.getViewRect();
-        g.setColor(Palette.CURRENT);
+        g.setColor(palette.current);
         g.drawRect(0, INSET + (int) (visible.y * scale), getWidth() - 1,
                 Math.max(4, (int) (visible.height * scale)));
     }

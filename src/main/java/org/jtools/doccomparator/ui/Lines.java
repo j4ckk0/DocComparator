@@ -61,6 +61,7 @@ final class Lines {
     }
 
     private final Fonts fonts;
+    private final Palette palette;
     private final Shown shown;
     private final CompareOptions options;
     /** The document view: each paragraph as its document's styles lay it out; null for the diff view. */
@@ -72,8 +73,9 @@ final class Lines {
     private ListNumbers leftNumbers = new ListNumbers();
     private ListNumbers rightNumbers = new ListNumbers();
 
-    private Lines(Fonts fonts, Shown shown, CompareOptions options, StyleSheet[] styles) {
+    private Lines(Fonts fonts, Palette palette, Shown shown, CompareOptions options, StyleSheet[] styles) {
         this.fonts = fonts;
+        this.palette = palette;
         this.shown = shown;
         this.options = options;
         this.styles = styles;
@@ -83,11 +85,12 @@ final class Lines {
      * The lines of one document alone, on its side, the other empty: its parts, paragraphs and tables as they are,
      * nothing compared — until the other document is there.
      */
-    static List<Line> alone(WordDocument document, boolean onLeft, boolean documentView, Fonts fonts) {
+    static List<Line> alone(WordDocument document, boolean onLeft, boolean documentView, Fonts fonts,
+                            Palette palette) {
         Comparison itself = DocumentComparer.compare(document, document,
                 CompareOptions.TEXT_ONLY.with(Aspect.HEADERS_AND_FOOTERS, true));
         List<Line> lines = new ArrayList<>();
-        for (Line line : of(itself, Shown.ALL.withDocumentView(documentView), fonts)) {
+        for (Line line : of(itself, Shown.ALL.withDocumentView(documentView), fonts, palette)) {
             if (line.isTitle()) {
                 int dash = line.title.indexOf(" \u2014 ");
                 lines.add(Line.title(dash < 0 ? line.title : line.title.substring(0, dash)));
@@ -102,8 +105,8 @@ final class Lines {
      * The lines of a comparison, as shown: only what is comparable leaves out a paragraph, a table, a row of a table on
      * one side only.
      */
-    static List<Line> of(Comparison comparison, Shown shown, Fonts fonts) {
-        Lines lines = new Lines(fonts, shown, comparison.options(), shown.documentView()
+    static List<Line> of(Comparison comparison, Shown shown, Fonts fonts, Palette palette) {
+        Lines lines = new Lines(fonts, palette, shown, comparison.options(), shown.documentView()
                 ? new StyleSheet[] {comparison.left().styles(), comparison.right().styles()} : null);
         if (shown.documentView()) {
             lines.pageMarks.add(PageMarks.of(comparison.left(), comparison.options().blanks()));
@@ -180,7 +183,7 @@ final class Lines {
             int target = lineOfRow.get(cell.row.counterpart());
             // the way to its match, said unless the text is left out: a move is a matter of text
             boolean said = options.text() && !(cell.caption == null && cell.columns != null);
-            cell.linkTo(target, target > line, said ? fonts.small() : null);
+            cell.linkTo(target, target > line, said ? fonts.small() : null, palette);
         });
         long differences = lines.subList(titleLine, lines.size()).stream().filter(Line::differs).count();
         lines.set(titleLine, Line.title(story.title() + " \u2014 " + count(differences)));
@@ -245,12 +248,12 @@ final class Lines {
             String said = slot.moved() ? " (moved)" : slot.left() < 0 || slot.right() < 0
                     ? (onLeft ? " (removed)" : " (added)") : "";
             columns.add(new Cell(columnLook, null, null, null,
-                    TextBlock.plain(columnName(column) + said, fonts.small(), Palette.FAINT), null, null));
+                    TextBlock.plain(columnName(column) + said, fonts.small(), palette.faint, palette), null, null));
         }
         Item item = onLeft ? row.left() : row.right();
         String notes = notes(row, onLeft, List.of());
-        return new Cell(look, row, null, TextBlock.plain(location(item, true), fonts.small(), Palette.FAINT), null,
-                columns, notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), Palette.FAINT));
+        return new Cell(look, row, null, TextBlock.plain(location(item, true), fonts.small(), palette.faint, palette),
+                null, columns, notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), palette.faint, palette));
     }
 
     private Cell tableRow(Row row, int r, boolean onLeft) {
@@ -267,7 +270,7 @@ final class Lines {
             Row cell = table.cell(r, c);
             if (cell == null || (onLeft ? cell.left() : cell.right()) == null) {
                 columns.add(new Cell(Cell.Look.SAME, null, null, null,
-                        TextBlock.plain("", fonts.text(), Palette.TEXT), null, null));   // covered by a merged cell
+                        TextBlock.plain("", fonts.text(), palette.text, palette), null, null));   // under a merged cell
                 continue;
             }
             Cell.Look cellLook = look(cell).stronger(look(columnSlot)).stronger(look(rowSlot));
@@ -286,7 +289,7 @@ final class Lines {
         String notes = String.join("  \u00B7  ", rowProperties.stream()
                 .map(d -> d.property() + ": " + (onLeft ? d.left() : d.right())).toList());
         return new Cell(look, row, String.valueOf(number), null, null, columns,
-                notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), Palette.FAINT));
+                notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), palette.faint, palette));
     }
 
     /** The columns shown: all; only what is comparable, those with a match on the other side, moved or not. */
@@ -367,12 +370,12 @@ final class Lines {
             marker = null;
         }
         TextBlock text = new TextBlock(item.text(), heading && laidOut == null ? fonts.heading() : fonts.text(),
-                Palette.TEXT, spans, formatting, "(empty paragraph)", laidOut).withPictures(pictures(item));
+                palette.text, palette, spans, formatting, "(empty paragraph)", laidOut).withPictures(pictures(item));
         String location = inTable ? null : location(item, false);
-        TextBlock caption = location == null ? null : TextBlock.plain(location, fonts.small(), Palette.FAINT);
+        TextBlock caption = location == null ? null : TextBlock.plain(location, fonts.small(), palette.faint, palette);
         String notes = notes(row, onLeft, formatting);
         return new Cell(look, inTable ? null : row, marker, caption, text, null,
-                notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), Palette.FAINT));
+                notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), palette.faint, palette));
     }
 
     /** A property of the document, its value on one side. */
@@ -381,7 +384,7 @@ final class Lines {
         List<Span> spans = List.of(new Span(0, property.length() + 2, Span.Kind.SAME),
                 new Span(property.length() + 2, text.length(), Span.Kind.CHANGED));
         return new Cell(Cell.Look.CHANGED, null, null, null,
-                new TextBlock(text, fonts.text(), Palette.TEXT, spans, List.of(), " "), null, null);
+                new TextBlock(text, fonts.text(), palette.text, palette, spans, List.of(), " "), null, null);
     }
 
     /** A paragraph's pictures, by their offset in its text. */

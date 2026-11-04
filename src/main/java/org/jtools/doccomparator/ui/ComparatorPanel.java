@@ -235,11 +235,10 @@ public final class ComparatorPanel extends JPanel {
             running = null;
             setCursor(null);
         }
-        Palette.use(Palette.lookIsDark() && !shown.documentView());
         showEmptySides();
         if (leftPath == null && rightPath == null) {
             comparison = null;
-            view.setLines(List.of(), -1);
+            view.setLines(List.of(), -1, Palette.of(shown.documentView()));
             view.setWaitingSide(-1);
             status.setText(" ");
             return;
@@ -324,8 +323,9 @@ public final class ComparatorPanel extends JPanel {
                         rightDocument = document;
                         rightHeader.show(path, document);
                     }
-                    Palette.use(Palette.lookIsDark() && !shown.documentView());
-                    view.setLines(Lines.alone(document, onLeft, shown.documentView(), view.fonts()), -1);
+                    Palette palette = Palette.of(shown.documentView());
+                    view.setLines(Lines.alone(document, onLeft, shown.documentView(), view.fonts(), palette), -1,
+                            palette);
                     view.setWaitingSide(onLeft ? 1 : 0);
                     status.setText("Open the other document to compare.");
                     updateActions();
@@ -373,8 +373,8 @@ public final class ComparatorPanel extends JPanel {
         rightHeader.show(rightPath, result.right());
         Point at = scroll.getViewport().getViewPosition();
         view.setWaitingSide(-1);
-        Palette.use(Palette.lookIsDark() && !shown.documentView());   // a page is white: the document view stays light
-        view.setLines(Lines.of(result, shown, view.fonts()), -1);
+        Palette palette = Palette.of(shown.documentView());
+        view.setLines(Lines.of(result, shown, view.fonts(), palette), -1, palette);
         SwingUtilities.invokeLater(() -> scroll.getViewport().setViewPosition(new Point(0, Math.min(at.y,
                 Math.max(0, view.getHeight() - scroll.getViewport().getHeight())))));
         int[] count = view.differenceCount();

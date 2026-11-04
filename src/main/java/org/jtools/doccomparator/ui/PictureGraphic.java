@@ -23,18 +23,21 @@ final class PictureGraphic extends GraphicAttribute {
     private final float width;
     private final float height;
     private final Font font;
+    private final Palette palette;
 
-    private PictureGraphic(Picture picture, BufferedImage image, float width, float height, Font font) {
+    private PictureGraphic(Picture picture, BufferedImage image, float width, float height, Font font,
+                           Palette palette) {
         super(BOTTOM_ALIGNMENT);
         this.picture = picture;
         this.image = image;
         this.width = width;
         this.height = height;
         this.font = font;
+        this.palette = palette;
     }
 
     /** As the document shows it: its size in points at so many pixels each, no wider than the line. */
-    static PictureGraphic shown(Picture picture, float pixelsPerPoint, float widest, Font font) {
+    static PictureGraphic shown(Picture picture, float pixelsPerPoint, float widest, Font font, Palette palette) {
         BufferedImage image = PictureImages.of(picture);
         float width = picture.width() > 0 ? picture.width() * pixelsPerPoint
                 : image != null ? image.getWidth() * 0.75f * pixelsPerPoint : 144 * pixelsPerPoint;
@@ -44,13 +47,13 @@ final class PictureGraphic extends GraphicAttribute {
             height *= widest / width;
             width = widest;
         }
-        return new PictureGraphic(picture, image, Math.max(8, width), Math.max(8, height), font);
+        return new PictureGraphic(picture, image, Math.max(8, width), Math.max(8, height), font, palette);
     }
 
     /** A picture's sign, in a line of plain text. */
-    static PictureGraphic sign(Picture picture, Font font) {
+    static PictureGraphic sign(Picture picture, Font font, Palette palette) {
         float size = font.getSize2D();
-        return new PictureGraphic(picture, null, size * 1.3f, size * 0.95f, null);
+        return new PictureGraphic(picture, null, size * 1.3f, size * 0.95f, null, palette);
     }
 
     @Override
@@ -79,9 +82,9 @@ final class PictureGraphic extends GraphicAttribute {
                 return;
             }
             Rectangle2D frame = new Rectangle2D.Float(x + 1, top + 1, width - 2, height - 2);
-            drawn.setColor(Palette.NO_SIDE);
+            drawn.setColor(palette.noSide);
             drawn.fill(frame);
-            drawn.setColor(Palette.FAINT);
+            drawn.setColor(palette.faint);
             drawn.setStroke(new BasicStroke(1));
             drawn.draw(frame);
             if (font == null) {   // a sign: a mountain in a frame

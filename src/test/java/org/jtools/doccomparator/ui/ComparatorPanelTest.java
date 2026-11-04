@@ -102,18 +102,18 @@ class ComparatorPanelTest {
                 } catch (IOException e) {
                     throw new IllegalStateException(e);
                 }
-                assertTrue(Palette.isDark(), "the diff view, dark");
+                ComparisonView view = (ComparisonView) find(panel, ComparisonView.class);
+                assertTrue(view.palette().dark, "the diff view, dark");
                 buttons(panel);   // the panel made, its parts there
                 for (Component radio : radios(panel)) {
                     if (radio instanceof JRadioButton button && button.getText().equals("Document")) {
                         button.doClick();
                     }
                 }
-                assertFalse(Palette.isDark(), "the document view: a white page");
+                assertFalse(view.palette().dark, "the document view: a white page");
             });
         } finally {
             UIManager.setLookAndFeel(before);
-            Palette.use(false);
         }
     }
 

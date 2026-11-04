@@ -68,11 +68,11 @@ final class Cell {
     }
 
     /** For a moved paragraph or table: its match is on that line, above or below; said, if said is given. */
-    void linkTo(int line, boolean below, Font said) {
+    void linkTo(int line, boolean below, Font said, Palette palette) {
         counterpartLine = line;
         if (said != null) {
             link = TextBlock.plain("Moved — its match is " + (below ? "below ↓" : "above ↑")
-                    + " (click to go there)", said, Palette.LINK);
+                    + " (click to go there)", said, palette.link, palette);
         }
     }
 
