@@ -29,7 +29,7 @@ final class Palette {
     final Color separator;
     final Color grid;
     final Color current;
-    /** The side text pasted goes to: its outer edge, its frame while it waits, and the inside of that frame. */
+    /** The side text pasted goes to: its frame, dashed while it waits, and the inside of that frame. */
     final Color chosenSide;
     final Color chosenSideInside;
     final Color title;

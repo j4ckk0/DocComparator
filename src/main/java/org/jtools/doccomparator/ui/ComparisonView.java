@@ -36,8 +36,9 @@ final class ComparisonView extends JComponent implements Scrollable {
     static final String LINES = "lines";
 
     private static final int GUTTER = 26;
-    /** The width of the band down the outer edge of the side chosen. */
-    private static final int CHOSEN_EDGE = 4;
+    /** The frame of the side chosen: its line's width, and how far in from the side's edges, the gutter's included. */
+    private static final int CHOSEN_LINE = 2;
+    private static final int CHOSEN_INSET = 4;
     private static final int MARGIN = 28;
     private static final int RIGHT_PADDING = 8;
     private static final int TITLE_HEIGHT = 26;
@@ -145,11 +146,17 @@ final class ComparisonView extends JComponent implements Scrollable {
 
     void setWaitingSide(int side) {
         waitingSide = side;
-        if (getParent() instanceof JViewport viewport) {
-            // the waiting side stays where it is as the other scrolls: the view drawn anew, not shifted, at each step
-            viewport.setScrollMode(side >= 0 ? JViewport.SIMPLE_SCROLL_MODE : JViewport.BLIT_SCROLL_MODE);
-        }
         repaint();
+    }
+
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        if (getParent() instanceof JViewport viewport) {
+            // the frame of the side chosen, and a side waiting, stay where they are as the lines scroll: the view drawn
+            // anew, not shifted, at each step
+            viewport.setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
+        }
     }
 
     int current() {
@@ -301,7 +308,7 @@ final class ComparisonView extends JComponent implements Scrollable {
             for (int i = first; i < lines.size() && lines.get(i).top < clip.y + clip.height; i++) {
                 paintLine(g, lines.get(i), i == current);
             }
-            paintChosenSide(g, clip);
+            paintChosenSide(g);
             if (waitingSide >= 0) {
                 paintSide(g, waitingSide, true);   // over its empty half, where it stays as the other scrolls
             }
@@ -320,12 +327,18 @@ final class ComparisonView extends JComponent implements Scrollable {
     }
 
     /**
-     * The side text pasted goes to, a band down its outer edge — the gutter between the sides left to both: drawn the
-     * whole height of the view, it scrolls with the lines.
+     * The side text pasted goes to, framed where it is seen, a little inside its edges: the gutter between the sides
+     * left to both.
      */
-    private void paintChosenSide(Graphics2D g, Rectangle clip) {
+    private void paintChosenSide(Graphics2D g) {
+        Rectangle visible = getVisibleRect();
+        int column = columnWidth(getWidth());
+        int x = (leftChosen ? 0 : column + GUTTER) + CHOSEN_INSET;
+        int width = (leftChosen ? column : getWidth() - column - GUTTER) - 2 * CHOSEN_INSET;
         g.setColor(palette.chosenSide);
-        g.fillRect(leftChosen ? 0 : getWidth() - CHOSEN_EDGE, clip.y, CHOSEN_EDGE, clip.height);
+        g.setStroke(new BasicStroke(CHOSEN_LINE));
+        g.drawRoundRect(x, visible.y + CHOSEN_INSET, width, visible.height - 2 * CHOSEN_INSET, 10, 10);
+        g.setStroke(new BasicStroke(1));
     }
 
     /**
