@@ -149,7 +149,7 @@ A reader finds two rules and has to work out that the second does not happen: ev
 
 **Effort / risk:** small.
 
-### 7. The comparison's results are already in the user's language
+### 7. The comparison's results are already in the user's language — done (`Story.Name`, `StoryComparison.Part`, `Said`; the view says them through `ComparisonWords`; a language change re-shows, nothing read or compared again)
 
 **Where:** the text is produced in `compare` and `docx`, not in `ui`:
 - `Story.label` ("Body", "Footnote 3") in `docx`;

@@ -184,13 +184,17 @@ public final class ComparatorPanel extends JPanel {
     }
 
     /**
-     * The language has changed: every label in it, and the documents read again — the names of their parts, and what
-     * the comparison says of them, are written in it as they are read and compared.
+     * The language has changed: every label in it, and what is shown said again — the comparison holds no words of its
+     * own, the view puts it into words as it shows it: nothing is read or compared again.
      */
     public void languageChanged() {
         labels.apply();
-        sides.replaceAll((side, state) -> state.unread());
-        compare();
+        namesListener.accept(documentNames());
+        if (comparison != null) {
+            show(comparison);
+        } else {
+            compare();   // one document alone, or none: shown again from what is read already
+        }
     }
 
     /** Told the documents' names each time they change (documentNames()), for the window's title. */

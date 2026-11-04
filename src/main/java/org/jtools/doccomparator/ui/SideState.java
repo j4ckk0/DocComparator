@@ -47,11 +47,6 @@ record SideState(DocumentSource source, WordDocument read) {
         return new SideState(source, document);
     }
 
-    /** The same source, to be read again: what is read is written in the language in use. */
-    SideState unread() {
-        return of(source);
-    }
-
     /** Its document: the one read, else read now from its source — away from the window's thread. */
     WordDocument document() throws IOException {
         return read != null ? read : source.read();

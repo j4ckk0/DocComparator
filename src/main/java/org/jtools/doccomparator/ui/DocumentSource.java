@@ -27,7 +27,7 @@ import org.jtools.doccomparator.docx.DocxReader;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.text.TextReader;
 
-/** What a side compares: a Word document's file, or text pasted on it. Read again each time the language changes. */
+/** What a side compares: a Word document's file, or text pasted on it. */
 sealed interface DocumentSource {
 
     /** Its name, as the title and the side say it. */

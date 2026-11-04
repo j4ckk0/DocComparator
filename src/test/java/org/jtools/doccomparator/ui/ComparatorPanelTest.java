@@ -187,6 +187,27 @@ class ComparatorPanelTest {
         });
     }
 
+    /**
+     * A comparison shown, another language: the comparison said in it at once — its parts' titles, its counts — without
+     * being read or compared again, which would happen away from the window's thread, later.
+     */
+    @Test
+    void aComparisonIsSaidAgainInAnotherLanguageAtOnce() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            ComparatorPanel panel = new ComparatorPanel();
+            try {
+                panel.show(DocumentComparer.compare(DocxReader.read(Path.of("samples", "procedure-revA.docx")),
+                        DocxReader.read(Path.of("samples", "procedure-revB.docx")), CompareOptions.DEFAULT));
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+            assertTrue(view(panel).lines().getFirst().title.startsWith("Body — "), view(panel).lines().getFirst().title);
+            I18n.use(I18nLanguage.FRENCH);
+            panel.languageChanged();
+            assertTrue(view(panel).lines().getFirst().title.startsWith("Corps — "), view(panel).lines().getFirst().title);
+        });
+    }
+
     /** Each label and tooltip of a component and of those it holds, menus' items included, " " for none. */
     private static void labels(Component component, Map<Component, List<String>> found) {
         List<String> labels = new ArrayList<>();
