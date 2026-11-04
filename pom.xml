@@ -13,9 +13,9 @@
   <description>Compares two Word documents (.docx), their text first, side by side; a desktop program with its own Java runtime that never reaches the network.</description>
 
   <properties>
-    <revision>0.1</revision>
+    <revision>1.0</revision>
     <!-- The same version in the four parts Windows wants of an .exe (launch4j refuses anything else). -->
-    <windowsVersion>0.1.0.0</windowsVersion>
+    <windowsVersion>1.0.0.0</windowsVersion>
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
