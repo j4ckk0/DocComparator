@@ -50,7 +50,6 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
-import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
@@ -343,10 +342,9 @@ public final class ComparatorPanel extends JPanel {
             }
         });
         bar.add(only);
-        JToggleButton comparable = new JToggleButton("Only what is comparable");
-        comparable.setFocusable(false);
-        comparable.setToolTipText("Hide what has no match on the other side: paragraphs, tables and rows of tables "
-                + "on one side only (moved ones have their match, and stay)");
+        JCheckBox comparable = new JCheckBox("Only what is comparable");
+        comparable.setToolTipText("Hide what has nothing in common with the other side: paragraphs, tables, rows and "
+                + "columns on one side only; the same paragraphs stay as they are, the close ones with their differences");
         comparable.addItemListener(e -> {
             onlyComparable = comparable.isSelected();
             if (comparison != null) {
