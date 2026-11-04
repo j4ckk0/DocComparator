@@ -21,6 +21,15 @@
       <fileMode>0755</fileMode>
     </file>
     <file>
+      <!-- the program's licence, and what it holds of others' -->
+      <source>LICENSE</source>
+      <lineEnding>unix</lineEnding>
+    </file>
+    <file>
+      <source>NOTICE</source>
+      <lineEnding>unix</lineEnding>
+    </file>
+    <file>
       <!-- the licence of FlatLaf, whose classes doccomparator.jar holds -->
       <source>src/dist/licenses/FlatLaf-LICENSE.txt</source>
       <outputDirectory>licenses</outputDirectory>

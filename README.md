@@ -333,8 +333,8 @@ installing where they are unpacked:
 | `doccomparator-<version>-linux.tar.gz` | `doccomparator.sh` |
 | `doccomparator-<version>-windows.zip` | `doccomparator.bat` (the signed `javaw.exe`, no console), or `DocComparator.exe` (not signed) |
 
-Both are built from either system, and hold, in `licenses/`, the licence of FlatLaf, whose classes `doccomparator.jar`
-holds. Previous versions' archives are removed from `releases/` once the new one is built.
+Both are built from either system, and hold the program's `LICENSE` and `NOTICE`, and, in `licenses/`, the licence
+of FlatLaf, whose classes `doccomparator.jar` holds. Previous versions' archives are removed from `releases/` once the new one is built.
 
 ## Layout
 
@@ -353,3 +353,10 @@ holds. Previous versions' archives are removed from `releases/` once the new one
 | `samples/` | the sample documents, and the script that writes them (see "Samples") |
 | `src/dist/`, `src/assembly/` | the launchers of the distributions, FlatLaf's licence, and what goes in them |
 | `scripts/` | the scripts above |
+
+## Licence
+
+DocComparator is licensed under the [Apache License, Version 2.0](LICENSE): free to use, change and distribute, in
+source or built, privately or commercially, provided the licence and the [`NOTICE`](NOTICE) go with it and changed
+files say so. Each source file carries the licence's short notice. It includes FlatLaf, licensed under the Apache
+License 2.0 too (`src/dist/licenses/FlatLaf-LICENSE.txt`, shipped in the distributions' `licenses/`).
