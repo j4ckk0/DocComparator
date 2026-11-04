@@ -100,13 +100,15 @@ paragraph beside its match, as high as the taller.
 - **Tables** take a line for their columns, lettered A, B, C… on each side, a column added, removed or moved said so,
   then a line for each row, its cells under their columns, an empty narrow place where a side has not got a column.
 - **The map** at the right shows every difference at its height in the documents; a click goes there.
-- **Previous and next difference**: F7 and Shift+F7, or the toolbar. *Only differences* hides the lines that are the
+- **The ribbon**, as Word has it: groups side by side, each its name under its buttons — *Go*, *Text*, *Structure*,
+  *Formatting*, *Document*, *Show*, *Presets*.
+- **Previous and next difference**: F7 and Shift+F7, or *Go*. *Only differences* hides the lines that are the
   same; *Only what is comparable* hides what has nothing in common with the other side — paragraphs, tables, rows and
   columns of tables on one side only — and shows the rest: the same paragraphs as they are, the close ones with their
   differences. To see two different documents by what they share.
-- **What is compared**: *Text* and *Blanks* in the toolbar, the layout under *Layout ▾*, by group (structure,
-  formatting, the document), with *Text only*, *Layout only*, *All*, *None*; the same in the *Compare* menu. Each
-  change compares again at once; the documents are not read again.
+- **What is compared**: a check box for each kind of difference, in the ribbon's groups *Text*, *Structure*,
+  *Formatting* and *Document*; *Presets* sets them all at once (*Text only*, *Layout only*, *All*); the same in the
+  *Compare* menu, with *None*. Each change compares again at once; the documents are not read again.
 - What is said under a paragraph, a cell or a row: what else differs (heading, style, indent, shading…), on each side
   its own value. A right click copies a side's text.
 
@@ -247,7 +249,7 @@ Both are built from either system. Previous versions' archives are removed from 
 | `…/document/` | what a Word document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
 | `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `StylesReader`, `Numbering`, `FormattingReader` |
 | `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Row`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `PropertyNames` |
-| `…/ui/` | `ComparatorPanel` (the toolbar, the sides, the status line), `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked), `FileUris` (files dropped from Linux) |
+| `…/ui/` | `ComparatorPanel` (the ribbon, the sides' heads, the status line), `ComparisonView` (the two sides, drawn line by line), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked), `FileUris` (files dropped from Linux) |
 | `src/main/resources/META-INF/services/` | what installs `NoNetworkResolver` |
 | `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `compare/`: each step, tables, and `SamplesTest`; `ui/LinesTest`, the view, drawn without a screen |
 | `samples/` | the sample documents, and the script that writes them (see "Samples") |

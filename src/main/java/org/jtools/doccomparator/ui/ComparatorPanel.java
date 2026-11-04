@@ -9,6 +9,7 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
@@ -36,6 +37,7 @@ import javax.swing.AbstractButton;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -50,7 +52,6 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
-import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
@@ -114,7 +115,7 @@ public final class ComparatorPanel extends JPanel {
         headers.add(leftHeader);
         headers.add(rightHeader);
         JPanel top = new JPanel(new BorderLayout());
-        top.add(toolBar(), BorderLayout.NORTH);
+        top.add(ribbon(), BorderLayout.NORTH);
         top.add(headers, BorderLayout.SOUTH);
         add(top, BorderLayout.NORTH);
 
@@ -320,19 +321,22 @@ public final class ComparatorPanel extends JPanel {
     // -----------------------------------------------------------------------------------------------------------------
     // The parts of the panel
 
-    private JToolBar toolBar() {
-        JToolBar bar = new JToolBar();
-        bar.setFloatable(false);
-        bar.add(button(swap));
-        bar.addSeparator();
-        bar.add(button(previous));
-        bar.add(button(next));
-        bar.addSeparator();
-        bar.add(new JLabel("Compare:  "));
-        bar.add(aspectBox(Aspect.TEXT));
-        bar.add(aspectBox(Aspect.BLANKS));
-        bar.add(layoutButton());
-        bar.addSeparator();
+    /**
+     * The ribbon, as Word has it: groups side by side, each its name under its buttons, set in columns — going
+     * through the differences, then what is compared (the text, then the layout by group), then what is shown.
+     */
+    private JPanel ribbon() {
+        JPanel ribbon = new JPanel();
+        ribbon.setLayout(new BoxLayout(ribbon, BoxLayout.X_AXIS));
+        ribbon.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, Palette.GRID),
+                BorderFactory.createEmptyBorder(4, 4, 2, 4)));
+        ribbon.add(group("Go", 3, button(previous), button(next), button(swap)));
+        ribbon.add(group("Text", 3, aspectBox(Aspect.TEXT), aspectBox(Aspect.BLANKS)));
+        for (Map.Entry<String, List<Aspect>> layout : LAYOUT) {
+            ribbon.add(group(layout.getKey(), 3,
+                    layout.getValue().stream().map(this::aspectBox).toArray(JComponent[]::new)));
+        }
         JCheckBox only = new JCheckBox("Only differences");
         only.setToolTipText("Hide the lines that are the same");
         only.addItemListener(e -> {
@@ -341,7 +345,6 @@ public final class ComparatorPanel extends JPanel {
                 show(comparison);
             }
         });
-        bar.add(only);
         JCheckBox comparable = new JCheckBox("Only what is comparable");
         comparable.setToolTipText("Hide what has nothing in common with the other side: paragraphs, tables, rows and "
                 + "columns on one side only; the same paragraphs stay as they are, the close ones with their differences");
@@ -351,15 +354,47 @@ public final class ComparatorPanel extends JPanel {
                 show(comparison);
             }
         });
-        bar.add(comparable);
-        bar.add(Box.createHorizontalGlue());
-        return bar;
+        ribbon.add(group("Show", 3, only, comparable));
+        ribbon.add(group("Presets", 3, preset("Text only", CompareOptions.TEXT_ONLY),
+                preset("Layout only", CompareOptions.LAYOUT_ONLY), preset("All", CompareOptions.ALL)));
+        ribbon.add(Box.createHorizontalGlue());
+        return ribbon;
+    }
+
+    /** A group of the ribbon: its items in columns of so many, top to bottom, then left to right; its name under them. */
+    private static JPanel group(String name, int rows, JComponent... items) {
+        int columns = (items.length + rows - 1) / rows;
+        JPanel grid = new JPanel(new GridLayout(rows, columns, 6, 0));
+        JComponent[] cells = new JComponent[rows * columns];
+        for (int i = 0; i < items.length; i++) {
+            cells[(i % rows) * columns + i / rows] = items[i];   // down the column first, as Word sets them
+        }
+        for (JComponent cell : cells) {
+            grid.add(cell == null ? new JLabel() : cell);
+        }
+        for (JComponent item : items) {
+            item.setFocusable(false);
+            if (item instanceof AbstractButton button) {
+                button.setMargin(new Insets(1, 4, 1, 4));
+            }
+        }
+        JLabel title = new JLabel(name, JLabel.CENTER);
+        title.setFont(title.getFont().deriveFont(title.getFont().getSize2D() - 1));
+        title.setForeground(Palette.FAINT);
+        JPanel group = new JPanel(new BorderLayout(0, 2));
+        group.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Palette.GRID),
+                BorderFactory.createEmptyBorder(0, 8, 0, 8)));
+        group.add(grid, BorderLayout.CENTER);
+        group.add(title, BorderLayout.SOUTH);
+        // as wide as it needs, as high as the highest group: every name on the same line
+        group.setMaximumSize(new Dimension(group.getPreferredSize().width, Integer.MAX_VALUE));
+        return group;
     }
 
     // -----------------------------------------------------------------------------------------------------------------
     // The options: a check box for each kind of difference, wherever it is shown, all kept alike
 
-    /** The kinds of layout, by group, in the Layout panel and the Compare menu. */
+    /** The kinds of layout, by group, in the ribbon and the Compare menu. */
     private static final List<Map.Entry<String, List<Aspect>>> LAYOUT = List.of(
             Map.entry("Structure", List.of(Aspect.HEADINGS, Aspect.LISTS, Aspect.SECTIONS, Aspect.TABLE_LAYOUT)),
             Map.entry("Formatting", List.of(Aspect.STYLES, Aspect.CHARACTERS, Aspect.INDENTATION, Aspect.SPACING,
@@ -367,7 +402,6 @@ public final class ComparatorPanel extends JPanel {
             Map.entry("Document", List.of(Aspect.TEMPLATE, Aspect.HEADERS_AND_FOOTERS)));
 
     private final Map<Aspect, List<AbstractButton>> aspectButtons = new EnumMap<>(Aspect.class);
-    private final List<Runnable> optionsShown = new ArrayList<>();
     private boolean showingOptions;
 
     /** A check box for a kind of difference, kept in step with the options. */
@@ -393,51 +427,10 @@ public final class ComparatorPanel extends JPanel {
         showingOptions = true;
         try {
             aspectButtons.forEach((aspect, buttons) -> buttons.forEach(b -> b.setSelected(options.has(aspect))));
-            optionsShown.forEach(Runnable::run);
         } finally {
             showingOptions = false;
         }
         compare();
-    }
-
-    /** "Layout ▾": a panel of the kinds of layout, by group, which stays open while they are ticked. */
-    private JButton layoutButton() {
-        JPopupMenu popup = new JPopupMenu();
-        JPanel panel = new JPanel(new GridLayout(1, LAYOUT.size(), 16, 0));
-        panel.setBorder(BorderFactory.createEmptyBorder(8, 10, 6, 10));
-        for (Map.Entry<String, List<Aspect>> group : LAYOUT) {
-            JPanel column = new JPanel(new GridLayout(0, 1, 0, 2));
-            JLabel title = new JLabel(group.getKey());
-            title.setFont(title.getFont().deriveFont(Font.BOLD));
-            column.add(title);
-            for (Aspect aspect : group.getValue()) {
-                column.add(aspectBox(aspect));
-            }
-            JPanel top = new JPanel(new BorderLayout());
-            top.add(column, BorderLayout.NORTH);
-            panel.add(top);
-        }
-        JPanel presets = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
-        presets.add(preset("Text only", CompareOptions.TEXT_ONLY));
-        presets.add(preset("Layout only", CompareOptions.LAYOUT_ONLY));
-        presets.add(preset("All", CompareOptions.ALL));
-        presets.add(preset("None", CompareOptions.TEXT_ONLY.with(Aspect.TEXT, false)));
-        JPanel content = new JPanel(new BorderLayout());
-        content.add(panel, BorderLayout.CENTER);
-        content.add(presets, BorderLayout.SOUTH);
-        popup.add(content);
-
-        JButton button = new JButton();
-        button.setFocusable(false);
-        button.setToolTipText("The layout to compare as well: structure, formatting, the document's own");
-        Runnable label = () -> {
-            long on = LAYOUT.stream().flatMap(group -> group.getValue().stream()).filter(options::has).count();
-            button.setText("Layout (" + on + ") \u25BE");
-        };
-        label.run();
-        optionsShown.add(label);
-        button.addActionListener(e -> popup.show(button, 0, button.getHeight()));
-        return button;
     }
 
     private JButton preset(String name, CompareOptions preset) {
@@ -463,7 +456,8 @@ public final class ComparatorPanel extends JPanel {
         }
         menu.addSeparator();
         for (Map.Entry<String, CompareOptions> preset : List.of(Map.entry("Text only", CompareOptions.TEXT_ONLY),
-                Map.entry("Layout only", CompareOptions.LAYOUT_ONLY), Map.entry("All", CompareOptions.ALL))) {
+                Map.entry("Layout only", CompareOptions.LAYOUT_ONLY), Map.entry("All", CompareOptions.ALL),
+                Map.entry("None", CompareOptions.TEXT_ONLY.with(Aspect.TEXT, false)))) {
             JMenuItem item = new JMenuItem(preset.getKey());
             item.addActionListener(e -> setOptions(preset.getValue()));
             menu.add(item);
