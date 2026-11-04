@@ -51,29 +51,29 @@ class OptionsTest {
 
     @Test
     void eachKindIsFoundWithItsSwitchOnlyAndNeverAsAnother() {
-        assertFound(Aspect.HEADINGS, "heading");
-        assertFound(Aspect.STYLES, "paragraph style");
-        assertFound(Aspect.CHARACTERS, "italic");
-        assertFound(Aspect.INDENTATION, "indent left");
-        assertFound(Aspect.SPACING, "spacing after");
-        assertFound(Aspect.TABLE_LAYOUT, "rows");
-        assertFound(Aspect.TABLE_LAYOUT, "row height");
-        assertFound(Aspect.CELLS, "cell shading");
-        assertFound(Aspect.CELLS, "cell bottom border");
-        assertFound(Aspect.TEMPLATE, "template");
+        assertFound(Aspect.HEADINGS, "compared.heading");
+        assertFound(Aspect.STYLES, "compared.paragraphStyle");
+        assertFound(Aspect.CHARACTERS, "i");
+        assertFound(Aspect.INDENTATION, "ind.left");
+        assertFound(Aspect.SPACING, "spacing.after");
+        assertFound(Aspect.TABLE_LAYOUT, "compared.rows");
+        assertFound(Aspect.TABLE_LAYOUT, "compared.ofRow(trHeight)");
+        assertFound(Aspect.CELLS, "compared.ofCell(shd)");
+        assertFound(Aspect.CELLS, "compared.ofCell(tcBorders.bottom)");
+        assertFound(Aspect.TEMPLATE, "compared.template");
     }
 
     @Test
     void aPropertyAndItsAttributesAreOneDifference() {
         List<PropertyDifference> cells = everyDifference(CompareOptions.TEXT_ONLY.with(Aspect.TEXT, false)
                 .with(Aspect.CELLS, true));
-        assertTrue(Paragraphs.said(cells).contains("CELLS cell shading: (none) → clear, color auto, fill D9E2F3"), cells.toString());
-        assertTrue(Paragraphs.said(cells).contains("CELLS cell bottom border: (none) → single, color C00000, space 0, sz 12"), cells.toString());
+        assertTrue(Paragraphs.said(cells).contains("CELLS compared.ofCell(shd): value.none → clear, color auto, fill D9E2F3"), cells.toString());
+        assertTrue(Paragraphs.said(cells).contains("CELLS compared.ofCell(tcBorders.bottom): value.none → single, color C00000, space 0, sz 12"), cells.toString());
     }
 
     @Test
     void wordsBandingFlagsAreNoDifference() {
-        assertTrue(everyDifference(CompareOptions.ALL).stream().noneMatch(d -> d.property().say().contains("cnfStyle")));
+        assertTrue(everyDifference(CompareOptions.ALL).stream().noneMatch(d -> d.property().toString().contains("cnfStyle")));
     }
 
     @Test
@@ -81,7 +81,7 @@ class OptionsTest {
         Pairing indented = pairing(DocumentComparer.compare(REVISION_A, REVISION_B,
                 CompareOptions.TEXT_ONLY.with(Aspect.INDENTATION, true)), "The parts needed");
         assertEquals(Pairing.Status.OTHERWISE, indented.status());
-        assertEquals(List.of("INDENTATION indent left: (none) → 720"),
+        assertEquals(List.of("INDENTATION ind.left: value.none → 720"),
                 Paragraphs.said(indented.diff().properties()));
     }
 
@@ -130,7 +130,7 @@ class OptionsTest {
     private static void assertFound(Aspect aspect, String property) {
         List<PropertyDifference> alone = everyDifference(CompareOptions.TEXT_ONLY.with(Aspect.TEXT, false)
                 .with(aspect, true));
-        assertTrue(alone.stream().anyMatch(d -> d.property().say().equals(property) && d.aspect() == aspect),
+        assertTrue(alone.stream().anyMatch(d -> d.property().toString().equals(property) && d.aspect() == aspect),
                 property + " with " + aspect + ": " + alone);
         assertTrue(alone.stream().allMatch(d -> d.aspect() == aspect), "nothing but " + aspect + ": " + alone);
         List<PropertyDifference> others = everyDifference(CompareOptions.ALL.with(aspect, false));

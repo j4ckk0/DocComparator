@@ -96,8 +96,8 @@ class ParagraphComparerTest {
         assertEquals(1, diff.leftFormatting().size());
         FormatSpan span = diff.leftFormatting().getFirst();
         assertEquals(List.of(11, 15), List.of(span.start(), span.end()));
-        assertEquals(List.of("CHARACTERS bold: true → (none)",
-                "CHARACTERS underline: (none) → true"), Paragraphs.said(span.differences()));
+        assertEquals(List.of("CHARACTERS b: true → value.none",
+                "CHARACTERS u: value.none → true"), Paragraphs.said(span.differences()));
         assertEquals(diff.leftFormatting(), diff.rightFormatting());
 
         assertFalse(compare(Paragraphs.FULL.with(Aspect.CHARACTERS, false), bold, underlined).otherwiseDiffers());
@@ -123,7 +123,7 @@ class ParagraphComparerTest {
         ParagraphDiff diff = new ParagraphComparer(CompareOptions.TEXT_ONLY.with(Aspect.SPACING, true), vocabulary,
                 tight, airy).compare(Paragraphs.unit(paragraph("Plain text."), false, vocabulary),
                 Paragraphs.unit(paragraph("Plain text."), false, vocabulary));
-        assertEquals(List.of("SPACING spacing after: 0 → 240"), Paragraphs.said(diff.properties()));
+        assertEquals(List.of("SPACING spacing.after: 0 → 240"), Paragraphs.said(diff.properties()));
     }
 
     private static StyleSheet normal(Map<String, String> paragraph) {
@@ -158,8 +158,8 @@ class ParagraphComparerTest {
         Paragraph heading = paragraph(null, 1, null, run("Records"));
         Paragraph item = paragraph(null, 0, new ListItem("4", 0, "decimal", "%1."), run("Records"));
         ParagraphDiff diff = compare(Paragraphs.FULL.with(Aspect.STYLES, false), heading, item);
-        assertEquals(List.of("HEADINGS heading: heading 1 → (none)",
-                "LISTS list: (none) → decimal \"%1.\", level 1"), Paragraphs.said(diff.properties()));
+        assertEquals(List.of("HEADINGS compared.heading: value.heading(1) → value.none",
+                "LISTS compared.list: value.none → value.listLevel(decimal \"%1.\", 1)"), Paragraphs.said(diff.properties()));
         assertFalse(compare(Paragraphs.FULL.with(Aspect.HEADINGS, false).with(Aspect.LISTS, false), heading, item)
                 .otherwiseDiffers());
     }

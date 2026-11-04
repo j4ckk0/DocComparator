@@ -82,7 +82,7 @@ public record Item(Story.Name story, List<Place> places, Paragraph paragraph, Ta
      * Where it is, as the structure compares it: in the flow of the text or in a text box — not which table, nor which
      * cell, which an inserted table, row or column would change for all those after it: those are compared as such.
      */
-    Said placeInStructure() {
-        return Said.of(places.stream().anyMatch(Place::textBox) ? "value.place.textBox" : "value.place.text");
+    Phrase placeInStructure() {
+        return Phrase.of(places.stream().anyMatch(Place::textBox) ? "value.place.textBox" : "value.place.text");
     }
 }

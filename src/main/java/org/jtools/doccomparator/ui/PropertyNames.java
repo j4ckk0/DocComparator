@@ -1,4 +1,4 @@
-package org.jtools.doccomparator.compare;
+package org.jtools.doccomparator.ui;
 
 /*-
  * #%L

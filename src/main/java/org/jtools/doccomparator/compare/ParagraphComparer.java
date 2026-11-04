@@ -343,7 +343,7 @@ final class ParagraphComparer {
     /** How two runs are formatted otherwise, as the options compare it: their character style, their own properties. */
     private List<PropertyDifference> runDifferences(Run a, Run b) {
         Differences differences = new Differences(options);
-        differences.add(Aspect.STYLES, Said.of("compared.characterStyle"), leftStyles.nameOf(a.styleId()),
+        differences.add(Aspect.STYLES, Phrase.of("compared.characterStyle"), leftStyles.nameOf(a.styleId()),
                 rightStyles.nameOf(b.styleId()));
         differences.formatting(Aspects.Source.RUN, a.formatting(), b.formatting());
         return differences.list();
@@ -355,16 +355,16 @@ final class ParagraphComparer {
      */
     private List<PropertyDifference> properties(Paragraph a, Paragraph b, Item itemA, Item itemB) {
         Differences differences = new Differences(options);
-        differences.add(Aspect.SECTIONS, Said.of("compared.story"), Said.of("value.story." + itemA.story().kind().name()),
-                Said.of("value.story." + itemB.story().kind().name()));
-        differences.add(Aspect.HEADINGS, Said.of("compared.heading"), heading(a.headingLevel()),
+        differences.add(Aspect.SECTIONS, Phrase.of("compared.story"), Phrase.of("value.story." + itemA.story().kind().name()),
+                Phrase.of("value.story." + itemB.story().kind().name()));
+        differences.add(Aspect.HEADINGS, Phrase.of("compared.heading"), heading(a.headingLevel()),
                 heading(b.headingLevel()));
-        differences.add(Aspect.LISTS, Said.of("compared.list"), list(a.listItem()), list(b.listItem()));
-        differences.add(Aspect.SECTIONS, Said.of("compared.place"), itemA.placeInStructure(),
+        differences.add(Aspect.LISTS, Phrase.of("compared.list"), list(a.listItem()), list(b.listItem()));
+        differences.add(Aspect.SECTIONS, Phrase.of("compared.place"), itemA.placeInStructure(),
                 itemB.placeInStructure());
-        differences.add(Aspect.SECTIONS, Said.of("compared.section"), a.endsSection() ? ENDS_HERE : null,
+        differences.add(Aspect.SECTIONS, Phrase.of("compared.section"), a.endsSection() ? ENDS_HERE : null,
                 b.endsSection() ? ENDS_HERE : null);
-        differences.add(Aspect.STYLES, Said.of("compared.paragraphStyle"), paragraphStyleName(leftStyles, a.styleId()),
+        differences.add(Aspect.STYLES, Phrase.of("compared.paragraphStyle"), paragraphStyleName(leftStyles, a.styleId()),
                 paragraphStyleName(rightStyles, b.styleId()));
 
         Formatting appliedA = leftStyles.effectiveParagraph(a);
@@ -382,19 +382,19 @@ final class ParagraphComparer {
     }
 
     /** Where a section ends: on this paragraph. */
-    private static final Said ENDS_HERE = Said.of("value.endsHere");
+    private static final Phrase ENDS_HERE = Phrase.of("value.endsHere");
 
-    private static Said heading(int level) {
-        return level == 0 ? null : Said.of("value.heading", level);
+    private static Phrase heading(int level) {
+        return level == 0 ? null : Phrase.of("value.heading", level);
     }
 
-    private static Said list(ListItem item) {
+    private static Phrase list(ListItem item) {
         if (item == null) {
             return null;
         }
-        Said format = item.numberFormat() == null ? Said.of("value.list") : Said.verbatim(item.numberFormat());
+        Phrase format = item.numberFormat() == null ? Phrase.of("value.list") : Phrase.verbatim(item.numberFormat());
         String text = item.levelText() == null || item.numberFormat() != null && item.numberFormat().equals("bullet")
                 ? "" : " \"" + item.levelText() + "\"";
-        return Said.of("value.listLevel", Said.joined(format, Said.verbatim(text)), item.level() + 1);
+        return Phrase.of("value.listLevel", Phrase.joined(format, Phrase.verbatim(text)), item.level() + 1);
     }
 }

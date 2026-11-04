@@ -33,7 +33,7 @@ name that does not say what kind of object it is.
 
 ## Findings
 
-### 1. Putting the comparison into words has two homes
+### 1. Putting the comparison into words has two homes — done (`Said` renamed `Phrase`, plain data; `ComparisonWords.say` and `PropertyNames` in `ui`; `compare` imports nothing from `i18n`, its tests read keys and Word's names)
 
 **Where:**
 - `compare/Said.java` says itself (`say()`, through `I18n`), and `compare/PropertyNames.java` names Word's properties

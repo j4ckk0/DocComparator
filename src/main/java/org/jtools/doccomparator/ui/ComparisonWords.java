@@ -22,16 +22,18 @@ package org.jtools.doccomparator.ui;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.jtools.doccomparator.compare.Item;
 import org.jtools.doccomparator.compare.PropertyDifference;
-import org.jtools.doccomparator.compare.Said;
+import org.jtools.doccomparator.compare.Phrase;
 import org.jtools.doccomparator.compare.StoryComparison;
 import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * What the comparison holds, said in the language in use: a story's name, where a paragraph is, a part's title, how
- * many differences, a property difference. The comparison keeps them as data; the view says them as it shows them.
+ * many differences, a property difference, any phrase of it. The comparison keeps them as data; the view says them,
+ * every word of them, as it shows them.
  */
 final class ComparisonWords {
 
@@ -83,6 +85,17 @@ final class ComparisonWords {
         return inBody ? Character.toUpperCase(said.charAt(0)) + said.substring(1) : said;
     }
 
+    /** A phrase of the comparison, in the language in use: a text with its arguments said, a value as it is. */
+    static String say(Phrase phrase) {
+        return switch (phrase) {
+            case Phrase.Text text -> I18n.text(text.key(),
+                    text.arguments().stream().map(a -> a instanceof Phrase inner ? say(inner) : a).toArray());
+            case Phrase.Verbatim verbatim -> verbatim.value();
+            case Phrase.Property property -> PropertyNames.of(property.wordName());
+            case Phrase.Joined joined -> joined.parts().stream().map(ComparisonWords::say).collect(Collectors.joining());
+        };
+    }
+
     /** How many differences: "no difference", "1 difference", "3 differences". */
     static String count(long differences) {
         return differences == 0 ? I18n.text("count.none") : differences == 1 ? I18n.text("count.one")
@@ -91,13 +104,13 @@ final class ComparisonWords {
 
     /** A property difference as the view says it: "shading: clear → fill D9E2F3". */
     static String change(PropertyDifference difference) {
-        return I18n.text("line.change", difference.property().say(), difference.left().say(), difference.right().say());
+        return I18n.text("line.change", say(difference.property()), say(difference.left()), say(difference.right()));
     }
 
     /** A property difference, one side's value: "heading: heading 2". */
     static String property(PropertyDifference difference, Side side) {
-        Said value = side.of(difference.left(), difference.right());
-        return I18n.text("line.property", difference.property().say(), value.say());
+        Phrase value = side.of(difference.left(), difference.right());
+        return I18n.text("line.property", say(difference.property()), say(value));
     }
 
     /** The title of a part of the documents: "Body", "Headers and footers", "Footnotes and endnotes". */

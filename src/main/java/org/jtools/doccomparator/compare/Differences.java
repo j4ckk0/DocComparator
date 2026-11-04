@@ -45,11 +45,11 @@ final class Differences {
     }
 
     /** Values as the documents have them, said the same in every language; null for none. */
-    void add(Aspect aspect, Said property, String left, String right) {
-        add(aspect, property, left == null ? null : Said.verbatim(left), right == null ? null : Said.verbatim(right));
+    void add(Aspect aspect, Phrase property, String left, String right) {
+        add(aspect, property, left == null ? null : Phrase.verbatim(left), right == null ? null : Phrase.verbatim(right));
     }
 
-    void add(Aspect aspect, Said property, Said left, Said right) {
+    void add(Aspect aspect, Phrase property, Phrase left, Phrase right) {
         if (aspect != null && options.has(aspect)) {
             PropertyDifference difference = PropertyDifference.of(aspect, property, left, right);
             if (difference != null) {
@@ -64,7 +64,7 @@ final class Differences {
     }
 
     /** The properties two formattings set from there differ in, each under its name as named says it ("cell {0}"). */
-    void formatting(Aspects.Source source, UnaryOperator<Said> named, Formatting a, Formatting b) {
+    void formatting(Aspects.Source source, UnaryOperator<Phrase> named, Formatting a, Formatting b) {
         formatting(source, named, a, b, aspect -> true);
     }
 
@@ -72,20 +72,20 @@ final class Differences {
      * The properties two formattings set from there differ in, of the kinds kept, each under its name as named says
      * it. A property and its attributes are one difference: "shading: clear, color auto, fill D9E2F3".
      */
-    void formatting(Aspects.Source source, UnaryOperator<Said> named, Formatting a, Formatting b,
+    void formatting(Aspects.Source source, UnaryOperator<Phrase> named, Formatting a, Formatting b,
                     Predicate<Aspect> kept) {
         for (Map.Entry<String, List<String>> property : properties(a, b).entrySet()) {
             Aspect aspect = Aspects.of(source, property.getKey());
             if (aspect != null && kept.test(aspect)) {
-                add(aspect, named.apply(Said.property(property.getKey())), value(a, property), value(b, property));
+                add(aspect, named.apply(Phrase.property(property.getKey())), value(a, property), value(b, property));
             }
         }
     }
 
     /** The properties two formattings set differ in, all of this kind, each under its name as named says it. */
-    void formattingAs(Aspect aspect, UnaryOperator<Said> named, Formatting a, Formatting b) {
+    void formattingAs(Aspect aspect, UnaryOperator<Phrase> named, Formatting a, Formatting b) {
         for (Map.Entry<String, List<String>> property : properties(a, b).entrySet()) {
-            add(aspect, named.apply(Said.property(property.getKey())), value(a, property), value(b, property));
+            add(aspect, named.apply(Phrase.property(property.getKey())), value(a, property), value(b, property));
         }
     }
 

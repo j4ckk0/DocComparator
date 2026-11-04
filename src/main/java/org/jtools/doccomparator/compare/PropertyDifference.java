@@ -25,18 +25,18 @@ package org.jtools.doccomparator.compare;
  * Something compared besides the text — a style, a heading level, a cell's shading — its value on each side, and the
  * kind of difference it is, which the options count or leave out.
  */
-public record PropertyDifference(CompareOptions.Aspect aspect, Said property, Said left, Said right) {
+public record PropertyDifference(CompareOptions.Aspect aspect, Phrase property, Phrase left, Phrase right) {
 
-    /** The difference, null when the values are the same; a null value is Said.NONE. */
-    static PropertyDifference of(CompareOptions.Aspect aspect, Said property, Said left, Said right) {
-        Said l = left == null ? Said.NONE : left;
-        Said r = right == null ? Said.NONE : right;
+    /** The difference, null when the values are the same; a null value is Phrase.NONE. */
+    static PropertyDifference of(CompareOptions.Aspect aspect, Phrase property, Phrase left, Phrase right) {
+        Phrase l = left == null ? Phrase.NONE : left;
+        Phrase r = right == null ? Phrase.NONE : right;
         return l.equals(r) ? null : new PropertyDifference(aspect, property, l, r);
     }
 
-    /** As it is said in the language in use: "heading: heading 1 → (none)". */
+    /** The same in every language, keys and Word's names: "compared.heading: value.heading(1) → value.none". */
     @Override
     public String toString() {
-        return property.say() + ": " + left.say() + " → " + right.say();
+        return property + ": " + left + " → " + right;
     }
 }

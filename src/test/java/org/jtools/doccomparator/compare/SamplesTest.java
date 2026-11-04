@@ -76,16 +76,16 @@ class SamplesTest {
 
         Pairing heading = rowOnRight(body, "Records");
         assertEquals(Pairing.Status.OTHERWISE, heading.status());
-        assertTrue(Paragraphs.said(heading.diff().properties()).contains("HEADINGS heading: heading 1 → heading 2"));
+        assertTrue(Paragraphs.said(heading.diff().properties()).contains("HEADINGS compared.heading: value.heading(1) → value.heading(2)"));
 
         Pairing underlined = rowOnRight(body, "Record the date");
         assertEquals(Pairing.Status.CHANGED, underlined.status());
-        assertEquals(List.of("CHARACTERS bold: true → (none)", "CHARACTERS underline: (none) → single"),
+        assertEquals(List.of("CHARACTERS b: true → value.none", "CHARACTERS u: value.none → single"),
                 Paragraphs.said(underlined.diff().rightFormatting().getFirst().differences()));
 
         Pairing table = body.stream().filter(r -> r.table() != null).findFirst().orElseThrow();
         assertEquals(Pairing.Status.CHANGED, table.status());
-        assertTrue(Paragraphs.said(table.diff().properties()).contains("TABLE_LAYOUT rows: 4 → 5"));
+        assertTrue(Paragraphs.said(table.diff().properties()).contains("TABLE_LAYOUT compared.rows: 4 → 5"));
         TableComparison cells = table.table();
         assertEquals(List.of(new Slot(0, 0, -1), new Slot(1, 1, -1), new Slot(2, 2, -1)), cells.columns());
         assertEquals(new Slot(-1, 3, -1), cells.rows().get(3), "a row added");
@@ -95,7 +95,7 @@ class SamplesTest {
         assertEquals("{2} litres", marked(quantity.left().text(), quantity.diff().left()).replace("|", ""));
         assertEquals(Pairing.Status.SAME, cells.cell(4, 0).status(), "the rows after the one added are in place");
 
-        assertTrue(Paragraphs.said(comparison.documentDifferences()).contains("TEMPLATE template: Keldar-Procedure.dotx → Keldar-Procedure-2026.dotx"));
+        assertTrue(Paragraphs.said(comparison.documentDifferences()).contains("TEMPLATE compared.template: Keldar-Procedure.dotx → Keldar-Procedure-2026.dotx"));
         StoryComparison headersAndFooters = comparison.stories().get(1);
         assertEquals(StoryComparison.Part.HEADERS_AND_FOOTERS, headersAndFooters.part());
         assertEquals(1, headersAndFooters.differences(), "the footer's revision");
@@ -131,7 +131,7 @@ class SamplesTest {
         }
         Pairing italic = rowOnRight(body, "Wear safety glasses");
         assertEquals(Pairing.Status.OTHERWISE, italic.status());
-        assertEquals(List.of("CHARACTERS italic: (none) → true"),
+        assertEquals(List.of("CHARACTERS i: value.none → true"),
                 Paragraphs.said(italic.diff().rightFormatting().getFirst().differences()));
         Pairing pressure = rowOnRight(body, "The residual pressure");
         assertEquals("The residual pressure in the circuit can reach |{15}| bar for several minutes after the stop; "
@@ -184,9 +184,9 @@ class SamplesTest {
             assertEquals(Pairing.Status.RIGHT_ONLY, rowOnRight(body, own).status(), own);
         }
         assertTrue(Paragraphs.said(comparison.documentDifferences()).contains(
-                "TEMPLATE template: Keldar-Procedure.dotx → Keldar-Training.dotx"));
+                "TEMPLATE compared.template: Keldar-Procedure.dotx → Keldar-Training.dotx"));
         assertFalse(comparison.documentDifferences().stream()
-                .anyMatch(difference -> difference.property().say().startsWith("style \"heading 1\" type")),
+                .anyMatch(difference -> difference.property().toString().startsWith("compared.styleType(heading 1)")),
                 "the styles are paired by name, not by id (Heading1, Titre1)");
     }
 

@@ -41,7 +41,7 @@ final class Paragraphs {
     private Paragraphs() {
     }
 
-    /** Property differences as they are said in English, each its kind first: "CHARACTERS bold: true → (none)". */
+    /** Property differences in words the same in every language, each its kind first: "CHARACTERS b: true → value.none". */
     static List<String> said(List<PropertyDifference> differences) {
         return differences.stream().map(d -> d.aspect() + " " + d).toList();
     }

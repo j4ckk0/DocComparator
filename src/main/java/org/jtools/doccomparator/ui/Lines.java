@@ -150,8 +150,9 @@ final class Lines {
         }
         lines.add(Line.title(I18n.text("line.document") + TITLE_COUNT + ComparisonWords.count(differences.size())));
         for (PropertyDifference difference : differences) {
-            lines.add(Line.of(property(difference.property().say(), difference.left().say()),
-                    property(difference.property().say(), difference.right().say())));
+            String property = ComparisonWords.say(difference.property());
+            lines.add(Line.of(property(property, ComparisonWords.say(difference.left())),
+                    property(property, ComparisonWords.say(difference.right()))));
         }
     }
 

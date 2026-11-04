@@ -134,10 +134,10 @@ class TableComparerTest {
         Table plain = table(PARTS);
         assertEquals(Pairing.Status.SAME, compare(styled, plain, CompareOptions.TEXT_ONLY).status());
         Pairing styles = compare(styled, plain, CompareOptions.TEXT_ONLY.with(Aspect.STYLES, true));
-        assertEquals(List.of("STYLES table style: TableGrid → (none)"),
+        assertEquals(List.of("STYLES compared.tableStyle: TableGrid → value.none"),
                 Paragraphs.said(styles.diff().properties()));
         Pairing layout = compare(styled, plain, CompareOptions.TEXT_ONLY.with(Aspect.TABLE_LAYOUT, true));
-        assertEquals(List.of("TABLE_LAYOUT table alignment: center → (none)"),
+        assertEquals(List.of("TABLE_LAYOUT compared.ofTable(jc): center → value.none"),
                 Paragraphs.said(layout.diff().properties()), "jc of a table places it: its layout");
     }
 
