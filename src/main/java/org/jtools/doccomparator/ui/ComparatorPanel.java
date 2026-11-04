@@ -269,9 +269,9 @@ public final class ComparatorPanel extends JPanel {
                 rightDocument = document;
                 rightHeader.show(path, document);
             }
-            boolean documentView = controls.shown().documentView();
-            Palette palette = Palette.of(documentView);
-            view.setLines(Lines.alone(document, onLeft, documentView, view.fonts(), palette), -1, palette);
+            Lines.Shown shown = controls.shown();
+            Palette palette = Palette.of(shown.documentView());
+            view.setLines(Lines.alone(document, onLeft, shown, view.fonts(), palette), -1, palette);
             view.setWaitingSide(onLeft ? 1 : 0);
             statusLine.say("Open the other document to compare.");
             updateActions();

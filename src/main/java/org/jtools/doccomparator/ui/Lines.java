@@ -83,14 +83,14 @@ final class Lines {
 
     /**
      * The lines of one document alone, on its side, the other empty: its parts, paragraphs and tables as they are,
-     * nothing compared — until the other document is there.
+     * nothing compared — until the other document is there. Of what is shown, only the view counts: with nothing
+     * compared, every line is shown.
      */
-    static List<Line> alone(WordDocument document, boolean onLeft, boolean documentView, Fonts fonts,
-                            Palette palette) {
+    static List<Line> alone(WordDocument document, boolean onLeft, Shown shown, Fonts fonts, Palette palette) {
         Comparison itself = DocumentComparer.compare(document, document,
                 CompareOptions.TEXT_ONLY.with(Aspect.HEADERS_AND_FOOTERS, true));
         List<Line> lines = new ArrayList<>();
-        for (Line line : of(itself, Shown.ALL.withDocumentView(documentView), fonts, palette)) {
+        for (Line line : of(itself, Shown.ALL.withDocumentView(shown.documentView()), fonts, palette)) {
             if (line.isTitle()) {
                 int dash = line.title.indexOf(" \u2014 ");
                 lines.add(Line.title(dash < 0 ? line.title : line.title.substring(0, dash)));
