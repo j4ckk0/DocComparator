@@ -3,7 +3,8 @@
 Compares two Word documents (`.docx`): two versions of one file, or two different documents, one of which took
 paragraphs from the other and changed pieces of their sentences. The text comes first; the structure, the blanks, the
 template, the headers and footers and the styles can each be compared or left out. Paragraphs that nearly match are
-shown side by side, their differences marked within them. *(To come: the window is still empty.)*
+shown side by side, their differences marked within them. *(To come: the window, still empty; the comparison itself
+is done — see "How it compares".)*
 
 DocComparator is a desktop program that runs on its own: each distribution carries its Java runtime, so nothing needs
 installing where it is unpacked, and it **never reaches the network** (see "No network").
@@ -75,6 +76,55 @@ downloads its plugins into `~/.m2`. After that, `mvn -o` builds offline.
 Not read yet: comments, pictures (but the text boxes they hold), the numbers a list shows (its format is read), what an
 abstract list borrows from a numbering style.
 
+## How it compares
+
+`DocumentComparer` compares two `WordDocument`s, with the JDK alone, in two steps, then lays out the rows of a
+side-by-side view (`Comparison`): the body, the headers and footers, the footnotes and endnotes, each on its own. Tables
+and text boxes are opened into their paragraphs, each knowing its place (table, row, cell): a paragraph that left a
+table is still found.
+
+**Step one, pairing the paragraphs** (`Pairer`). Two paragraphs go together when their text is the same, or close: their
+*similarity* is the share of their words they keep in order, from 0 to 1.
+
+- Pairs that keep the order of both documents come first: of all such sequences, the one that pairs the most text, which
+  favours a long paragraph over a short one and the same text over a close one (similarity 0.5 at least).
+- Paragraphs left over may have their match elsewhere: **moved**, each shown where it is on its side, its row naming the
+  other's. A moved pair needs more: the same text, found once on each side, or a similarity of 0.6 and three words at
+  least — so that a "Yes." or a "1" in a table is not linked across the document by chance.
+- Last, between two pairs in order, paragraphs left over on both sides are paired with less in common (0.4): in place,
+  a paragraph rewritten in good part is still the one that was there.
+
+This covers both cases the program is for: two versions of a document, mostly in order, and two documents of which one
+took paragraphs from the other, in any order, and changed pieces of them.
+
+**Step two, what differs within a pair** (`ParagraphComparer`). Word by word first: the fewest words removed and added.
+Then, where a word was replaced by one close to it (`colour` → `color`, `bench` → `benches`), character by character;
+numbers stay whole (`2025` → `2026`). Each side gets its spans: the same, changed, only on this side, absent here
+(where the other side has text), unimportant (blanks, when they are left out).
+
+**The options** (`CompareOptions`): the text is always compared; the rest can each be left out.
+
+| Option | Compared |
+|---|---|
+| structure | heading levels, lists, a paragraph's place (text, table cell, text box), the number of sections |
+| blanks | spaces, tabs and breaks as they are, and empty paragraphs; left out, a difference of blanks alone is shown, but does not count |
+| template | the template attached, the one named |
+| headers and footers | their paragraphs, as a story of their own |
+| styles | paragraph and character styles by name (the same in every language: "heading 1"), the formatting set on paragraphs and text, the documents' style definitions |
+
+## Samples
+
+`samples/` holds three documents to try the program on, written by `samples/make_samples.py` (Python's standard library;
+run it again after a change: it writes the same files):
+
+| Document | What it is |
+|---|---|
+| `procedure-revA.docx` | the reference: a maintenance procedure, revision A |
+| `procedure-revB.docx` | its next version: paragraphs added, sentences changed, two sections swapped, a table row added, formatting and heading levels changed, blanks added, tracked changes, another footer and template |
+| `training-handbook.docx` | another document, on another template, with other headings and styles, that copied paragraphs from revision A, in another order, and changed pieces of them |
+
+The script says what each change is; `SamplesTest` checks that the comparison finds them.
+
 ## Build and run
 
 Nothing to install: `scripts/setup.sh` deploys the JDK and Maven the scripts use (see "Externals").
@@ -129,7 +179,9 @@ Both are built from either system. Previous versions' archives are removed from 
 | `src/main/java/org/jtools/doccomparator/` | `Launcher` (the entry point), `MainWindow` (the window), `NoNetworkResolver` (see "No network") |
 | `…/document/` | what a Word document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
 | `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `StylesReader`, `Numbering`, `FormattingReader` |
+| `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Row`s), `Pairer` (step one), `ParagraphComparer` (step two), `Diff` (Myers' algorithm), `CompareOptions` |
 | `src/main/resources/META-INF/services/` | what installs `NoNetworkResolver` |
-| `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes |
+| `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `compare/`: each step, and `SamplesTest` |
+| `samples/` | the sample documents, and the script that writes them (see "Samples") |
 | `src/dist/`, `src/assembly/` | the launchers of the distributions, and what goes in them |
 | `scripts/` | the scripts above |
