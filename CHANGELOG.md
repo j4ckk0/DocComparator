@@ -3,6 +3,11 @@
 What each version brought, newest first. The GitHub Releases carry the same notes with the downloads and their
 checksums.
 
+## 2.1 — 2026-11-05
+
+- **Examples** ([examples/](examples/README.md)): comparing two files without a window, a reader of CSV files of
+  one's own, the comparison view in a window of one's own; each a single Java file, compiled at every build.
+
 ## 2.0 — 2026-11-05
 
 - **Three jars, for other programs too**: DocComparator is now built as three Java modules, each a jar —
