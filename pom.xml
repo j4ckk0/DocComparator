@@ -5,12 +5,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.jtools</groupId>
-  <artifactId>doccomparator</artifactId>
+  <artifactId>doccomparator-parent</artifactId>
   <version>${revision}</version>
-  <packaging>jar</packaging>
+  <packaging>pom</packaging>
 
-  <name>DocComparator</name>
-  <description>See what changed between two Word documents (.docx): side by side, paragraph by paragraph, the text first and each kind of layout on its own switch. A desktop program with its own Java runtime that never reaches the network.</description>
+  <name>DocComparator (parent)</name>
+  <description>See what changed between two documents — Word, Excel, PDF, text: side by side, paragraph by paragraph, the text first and each kind of layout on its own switch. Three jars: the comparison (doccomparator-core), its view (doccomparator-ui), the program (doccomparator).</description>
   <url>https://github.com/j4ckk0/DocComparator</url>
   <inceptionYear>2026</inceptionYear>
 
@@ -51,6 +51,13 @@
     <url>https://github.com/j4ckk0/DocComparator/issues</url>
   </issueManagement>
 
+  <!-- Built in this order, each a jar and a Java module: the comparison, its view, the program (README, "Layout"). -->
+  <modules>
+    <module>doccomparator-core</module>
+    <module>doccomparator-ui</module>
+    <module>doccomparator-app</module>
+  </modules>
+
   <properties>
     <revision>1.13</revision>
     <!-- The same version in the four parts Windows wants of an .exe (launch4j refuses anything else). -->
@@ -62,13 +69,36 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.jtools</groupId>
+        <artifactId>doccomparator-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <!-- core's tests' helpers, I18nEnglishInTests among them: the other modules' tests speak English too -->
+        <groupId>org.jtools</groupId>
+        <artifactId>doccomparator-core</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jtools</groupId>
+        <artifactId>doccomparator-ui</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <!-- The window's looks, a dark one among them: the program's alone -->
+        <groupId>com.formdev</groupId>
+        <artifactId>flatlaf</artifactId>
+        <version>${flatlaf.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
-    <dependency>
-      <!-- The window's looks, a dark one among them -->
-      <groupId>com.formdev</groupId>
-      <artifactId>flatlaf</artifactId>
-      <version>${flatlaf.version}</version>
-    </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
@@ -78,20 +108,42 @@
   </dependencies>
 
   <build>
-    <finalName>doccomparator</finalName>
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-      </resource>
-      <!-- The program's own licence, inside it: Help ▸ Licence shows it, with nothing else to open. -->
-      <resource>
-        <directory>${project.basedir}</directory>
-        <targetPath>org/jtools/doccomparator</targetPath>
-        <includes>
-          <include>LICENSE</include>
-        </includes>
-      </resource>
-    </resources>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.4.1</version>
+          <configuration>
+            <archive>
+              <manifest>
+                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              </manifest>
+            </archive>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>3.6.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>3.1.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>3.7.1</version>
+        </plugin>
+        <plugin>
+          <groupId>com.akathist.maven.plugins.launch4j</groupId>
+          <artifactId>launch4j-maven-plugin</artifactId>
+          <version>2.7.0</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
       <plugin>
         <!-- Apache 2.0 header at the top of every Java source (same convention as the jtools projects) -->
@@ -145,6 +197,9 @@
                     <exclude>*:*:*:*:system</exclude>
                   </excludes>
                   <includes>
+                    <!-- the jars of this build, each read by NoNetworkTest -->
+                    <include>org.jtools:doccomparator-core:${project.version}</include>
+                    <include>org.jtools:doccomparator-ui:${project.version}</include>
                     <!-- read by NoNetworkTest, this version only -->
                     <include>com.formdev:flatlaf:${flatlaf.version}</include>
                   </includes>
@@ -181,252 +236,12 @@
           <useModulePath>false</useModulePath>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.4.1</version>
-        <configuration>
-          <archive>
-            <manifest>
-              <mainClass>org.jtools.doccomparator.Launcher</mainClass>
-              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-            </manifest>
-          </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <!-- doccomparator.jar holds FlatLaf's classes too: one jar, the launchers as they are. Not its native
-             libraries, which it would unpack in a temporary directory: the program does without them. -->
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>3.6.0</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <createDependencyReducedPom>false</createDependencyReducedPom>
-              <filters>
-                <filter>
-                  <artifact>com.formdev:flatlaf</artifact>
-                  <excludes>
-                    <exclude>com/formdev/flatlaf/natives/**</exclude>
-                    <exclude>module-info.class</exclude>
-                    <exclude>META-INF/versions/*/module-info.class</exclude>
-                    <exclude>META-INF/MANIFEST.MF</exclude>
-                  </excludes>
-                </filter>
-                <filter>
-                  <!-- the jar holds FlatLaf's classes: it is no module requiring FlatLaf's -->
-                  <artifact>${project.groupId}:${project.artifactId}</artifact>
-                  <excludes>
-                    <exclude>module-info.class</exclude>
-                  </excludes>
-                </filter>
-              </filters>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <manifestEntries>
-                    <!-- FlatLaf's classes for later Javas, in META-INF/versions -->
-                    <Multi-Release>true</Multi-Release>
-                  </manifestEntries>
-                </transformer>
-              </transformers>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
 
   <profiles>
-    <!--
-      mvn package -Pdist
-      Builds the self-contained distribution of the system it runs on, into releases/ (not tracked, kept by
-      mvn clean; the previous versions' releases are removed by scripts/package.*):
-        releases/doccomparator-<version>-windows.zip    on Windows: DocComparator.exe, doccomparator.bat
-        releases/doccomparator-<version>-linux.tar.gz   on Linux: doccomparator.sh
-      Its runtime is linked here (jlink) from the JDK that builds, with the program in it as a module: jlink links
-      only for the system it runs on. Then Java's AOT cache of the program is made by running it once, on the two
-      sample procedures; with no display, or should that fail, the distribution goes without the cache.
-    -->
-    <profile>
-      <id>dist</id>
-      <properties>
-        <runtime.image>${project.build.directory}/runtime</runtime.image>
-        <jlink.dir>${project.build.directory}/jlink</jlink.dir>
-        <aot.cache>${project.build.directory}/doccomparator.aot</aot.cache>
-        <flatlaf.dir>${settings.localRepository}/com/formdev/flatlaf/${flatlaf.version}</flatlaf.dir>
-        <flatlaf.jar>${flatlaf.dir}/flatlaf-${flatlaf.version}.jar</flatlaf.jar>
-        <program.modules>${project.build.directory}/original-${project.build.finalName}.jar</program.modules>
-        <release.dir>${project.basedir}/releases</release.dir>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-antrun-plugin</artifactId>
-            <version>3.1.0</version>
-            <executions>
-              <execution>
-                <id>runtime</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-                <configuration>
-                  <target xmlns:if="ant:if">
-                    <!-- FlatLaf without its native libraries, as in the jar -->
-                    <delete dir="${jlink.dir}"/>
-                    <mkdir dir="${jlink.dir}"/>
-                    <zip destfile="${jlink.dir}/flatlaf.jar">
-                      <zipfileset src="${flatlaf.jar}" excludes="com/formdev/flatlaf/natives/**"/>
-                    </zip>
-                    <!-- The runtime: the program, FlatLaf, the JDK's modules they need (jdeps: java.desktop), French
-                         and English locale data (dates, numbers, Swing's dialogs), the screen readers' bridge
-                         (jdk.accessibility) and the less common charsets. -->
-                    <delete dir="${runtime.image}"/>
-                    <exec executable="${java.home}/bin/jlink${exe}" failonerror="true">
-                      <arg value="--module-path"/>
-                      <arg value="${program.modules}${path.separator}${jlink.dir}/flatlaf.jar"/>
-                      <arg value="--add-modules"/>
-                      <arg value="org.jtools.doccomparator,jdk.localedata,jdk.accessibility,jdk.charsets"/>
-                      <arg value="--include-locales=en,fr"/>
-                      <arg value="--strip-debug"/>
-                      <arg value="--no-header-files"/>
-                      <arg value="--no-man-pages"/>
-                      <!-- jre/release names the build as the JDK's does (its vendor, its exact version) -->
-                      <arg value="--release-info"/>
-                      <arg value="${java.home}/release"/>
-                      <arg value="--output"/>
-                      <arg value="${runtime.image}"/>
-                    </exec>
-                    <!-- The AOT cache, trained with an empty class path: the launchers' -jar doccomparator.jar then
-                         adds the jar, whose time (which a zip does not keep across time zones) the cache then does
-                         not check, the program's classes coming from the runtime. The launchers' JVM flags. -->
-                    <delete file="${aot.cache}"/>
-                    <exec executable="${runtime.image}/bin/java${exe}" timeout="300000" resultproperty="aot.trained"
-                        failonerror="false" failifexecutionfails="false">
-                      <arg value="-XX:-UsePerfData"/>
-                      <arg value="-XX:+UseCompactObjectHeaders"/>
-                      <arg value="-XX:AOTCacheOutput=${aot.cache}"/>
-                      <arg value="-Ddoccomparator.training=true"/>
-                      <arg value="--class-path="/>
-                      <arg value="org.jtools.doccomparator.Launcher"/>
-                      <arg value="${project.basedir}/samples/procedure-revA.docx"/>
-                      <arg value="${project.basedir}/samples/procedure-revB.docx"/>
-                    </exec>
-                    <!-- used as the launchers start the program, or refused (AOTMode=on fails rather than pass it
-                         over) -->
-                    <exec executable="${runtime.image}/bin/java${exe}" timeout="120000" resultproperty="aot.checked"
-                        failonerror="false" failifexecutionfails="false">
-                      <arg value="-XX:-UsePerfData"/>
-                      <arg value="-XX:+UseCompactObjectHeaders"/>
-                      <arg value="-XX:AOTMode=on"/>
-                      <arg value="-XX:AOTCache=${aot.cache}"/>
-                      <arg value="-Ddoccomparator.training=true"/>
-                      <arg value="-jar"/>
-                      <arg value="${project.build.directory}/${project.build.finalName}.jar"/>
-                    </exec>
-                    <condition property="aot.failed">
-                      <not>
-                        <and>
-                          <equals arg1="${aot.trained}" arg2="0"/>
-                          <equals arg1="${aot.checked}" arg2="0"/>
-                          <available file="${aot.cache}"/>
-                        </and>
-                      </not>
-                    </condition>
-                    <delete file="${aot.cache}" if:set="aot.failed"/>
-                    <echo if:set="aot.failed" level="warning"
-                        message="WARNING: no AOT cache (training ${aot.trained}, check ${aot.checked}): none shipped"/>
-                  </target>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <!-- DocComparator.exe: a Windows launcher without a console (GUI subsystem) that runs the bundled
-                 jre\ with doccomparator.jar; built on Windows only, with the Windows distribution. -->
-            <groupId>com.akathist.maven.plugins.launch4j</groupId>
-            <artifactId>launch4j-maven-plugin</artifactId>
-            <version>2.7.0</version>
-            <executions>
-              <execution>
-                <id>windows-launcher</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>launch4j</goal>
-                </goals>
-                <configuration>
-                  <skip>${launch4j.skip}</skip>
-                  <headerType>gui</headerType>
-                  <outfile>${project.build.directory}/DocComparator.exe</outfile>
-                  <dontWrapJar>true</dontWrapJar>
-                  <jar>doccomparator.jar</jar>
-                  <chdir>.</chdir>
-                  <errTitle>DocComparator</errTitle>
-                  <jre>
-                    <path>jre</path>
-                    <requiresJdk>false</requiresJdk>
-                    <requires64Bit>true</requires64Bit>
-                    <minVersion>25</minVersion>
-                    <opts>
-                      <!-- the JVM's performance counters in memory, not in a file of %TEMP% -->
-                      <opt>-XX:-UsePerfData</opt>
-                      <!-- smaller objects, less memory for a document -->
-                      <opt>-XX:+UseCompactObjectHeaders</opt>
-                      <!-- the AOT cache, a faster start; silently passed over should it be missing or not match -->
-                      <opt>"-XX:AOTCache=%EXEDIR%\doccomparator.aot"</opt>
-                      <opt>-Xlog:aot=off</opt>
-                      <opt>-Xlog:cds=off</opt>
-                    </opts>
-                  </jre>
-                  <versionInfo>
-                    <fileVersion>${windowsVersion}</fileVersion>
-                    <txtFileVersion>${project.version}</txtFileVersion>
-                    <fileDescription>DocComparator</fileDescription>
-                    <copyright>jtools.org</copyright>
-                    <productVersion>${windowsVersion}</productVersion>
-                    <txtProductVersion>${project.version}</txtProductVersion>
-                    <productName>DocComparator</productName>
-                    <internalName>doccomparator</internalName>
-                    <originalFilename>DocComparator.exe</originalFilename>
-                  </versionInfo>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <version>3.7.1</version>
-            <executions>
-              <execution>
-                <id>dist</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-                <configuration>
-                  <finalName>${project.artifactId}-${project.version}</finalName>
-                  <appendAssemblyId>true</appendAssemblyId>
-                  <!-- not artifacts of the project: never deployed (a release would upload the runtimes) -->
-                  <attach>false</attach>
-                  <outputDirectory>${release.dir}</outputDirectory>
-                  <descriptors>
-                    <descriptor>src/assembly/${dist.system}.xml</descriptor>
-                  </descriptors>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <!-- The distribution of the system that builds, for the dist profile: jlink links only for its own. -->
+    <!-- The distribution of the system that builds, for the program's dist profile (doccomparator-app):
+         jlink links only for its own. -->
     <profile>
       <id>dist-windows</id>
       <activation>

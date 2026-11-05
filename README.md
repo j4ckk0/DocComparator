@@ -84,7 +84,7 @@ the temporary directory unless told not to, is turned off as the program starts:
 
 Two checks run with every build, so a change that breaks the rule does not build:
 
-- **`NoNetworkTest`** reads every compiled class of the program and fails on any name of what the JDK reaches the network
+- **`NoNetworkTest`** reads every compiled class of the program, in its three modules, and fails on any name of what the JDK reaches the network
   with: the packages `java.net`, `javax.net`, `jdk.net`, `sun.net`, `com.sun.net`, `java.rmi`, `javax.rmi`,
   `javax.naming` and `javax.management.remote`; `java.awt.Desktop`, whose `browse()` and `mail()` start other programs
   that do; `ProcessBuilder` and `Runtime.exec`, since another program would do what this one may not; the JDK's XML
@@ -312,18 +312,21 @@ Windows program wrote). Markdown is compared as the text it is: its marks (`#`, 
 
 ## Languages
 
-Every text a user reads is in `src/main/resources/org/jtools/doccomparator/i18n/`, one file per language:
-`messages_fr.properties`, `messages_en.properties` — UTF-8, the same keys in each. A text's `{0}`, `{1}`… are replaced
+Every text a user reads is in a `messages_<code>.properties` file of its module, one file per language — UTF-8, the
+same keys in each: the comparison's in `doccomparator-core/…/i18n/texts/`, the view's in `doccomparator-ui/…/ui/texts/`,
+the window's in `doccomparator-app/…/texts/`. Each module provides its own as a service (`I18nTexts`), which `I18n`
+finds and speaks together; another jar adds its own the same way. A text's `{0}`, `{1}`… are replaced
 by its arguments as they are (no `MessageFormat`: an apostrophe is written as it is). The classes are
 `I18nLanguage` (the languages, French the default) and `I18n` (the texts of the language in use), in
 `org.jtools.doccomparator.i18n`; `I18nLabels` (a part of the window's labels, set again when the language changes) and
-`I18nLanguageBox` (the drop list), in `org.jtools.doccomparator.ui`. `I18nTest` checks that both files have the same keys, none blank, that every key the program names is in
-them and every key in them is named; the other tests speak English (`I18nEnglishInTests`, found by JUnit through
-`src/test/resources`).
+`I18nLanguageBox` (the drop list), in `org.jtools.doccomparator.ui`. Each module's tests check its texts
+(`TextsCheck`): the same keys in each language, none blank, none another module's; every key its sources name is
+there, and every key there is named. Every test speaks English (`I18nEnglishInTests`, found by JUnit through core's
+test resources, which the other modules' tests share).
 
-To add a language: a constant in `I18nLanguage` with its ISO 639 code, and its file, `messages_<code>.properties`, with
-every key of the others (`I18nTest` says which are missing); its name in itself goes in every file
-(`language.<code>`).
+To add a language: a constant in `I18nLanguage` with its ISO 639 code, and its file in each module,
+`messages_<code>.properties`, with every key of the others (`TextsCheck` says which are missing); its name in itself
+goes in core's (`language.<code>`).
 
 ## How it compares
 
@@ -421,7 +424,7 @@ Nothing to install: `scripts/setup.sh` deploys the JDK and Maven the scripts use
 
 ```bash
 scripts/setup.sh    # once: deploys the externals (JDK, Maven…) into external/
-scripts/run.sh      # builds target/doccomparator.jar if needed, then starts the program
+scripts/run.sh      # builds doccomparator-app/target/doccomparator.jar if needed, then starts the program
 scripts\setup.bat, scripts\run.bat    # same, on Windows
 ```
 
@@ -465,8 +468,8 @@ unpacked: `scripts/package.sh` on Linux, `scripts\package.bat` on Windows. A rel
 Each holds the program's `LICENSE` and `NOTICE`, and, in `licenses/`, the licence of FlatLaf, whose classes it holds.
 Previous versions' archives are removed from `releases/` once the new one is built.
 
-- **Its runtime, `jre/`**, is linked by `jlink` from the JDK that builds: the program and FlatLaf as modules
-  (`module-info.java`), and the JDK's modules they need — `java.desktop`, the French and English locale data, the
+- **Its runtime, `jre/`**, is linked by `jlink` from the JDK that builds: the program's three modules and FlatLaf
+  (each `module-info.java`), and the JDK's modules they need — `java.desktop`, the French and English locale data, the
   screen readers' bridge, the less common charsets. About half the size of a full JRE. `jlink` links only for the
   system it runs on, hence one build per system. `doccomparator.jar` is still there: the launchers start it, and Java
   takes its classes from the runtime.
@@ -487,25 +490,40 @@ to be published; the distributions, with their runtimes, are never uploaded ther
 
 ## Layout
 
+Three Maven modules, each a jar and a Java module, built in this order by the parent `pom.xml` (which holds the
+version, once, as `<revision>`):
+
+| Module | Jar, Java module | What it is |
+|---|---|---|
+| `doccomparator-core/` | `doccomparator-core`, `org.jtools.doccomparator.core` | the comparison, with no window: the documents' model, their readers, the comparison, its words, the languages; the JDK alone (`java.xml`) |
+| `doccomparator-ui/` | `doccomparator-ui`, `org.jtools.doccomparator.ui` | the comparison view, a Swing component another program can show (`ComparatorPanel`); core and `java.desktop`, no look of its own |
+| `doccomparator-app/` | `doccomparator`, `org.jtools.doccomparator` | the program: its window, menus, settings and looks (FlatLaf); its distributions (`-Pdist`) |
+
+What each exports, and so offers another program: core `document`, `reader`, `compare`, `report`, `i18n` and each
+format's reader (`docx`, `xlsx`, `pdf`, `text`); ui `ui`. What they share inside stays hidden: core's `ooxml`, each
+module's texts.
+
 | Path | What it holds |
 |---|---|
-| `src/main/java/org/jtools/doccomparator/` | `Launcher` (the entry point, given two documents or none), `MainWindow` (the window, its menus, its look), `HelpMenu` (the licences and About, read offline), `Settings` (kept beside the program), `Looks` (FlatLaf's looks, light and dark, its native libraries off), `NoNetworkResolver` (see "No network") |
-| `…/document/` | what a Word document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
-| `…/text/` | `TextReader` (text pasted, or a text file, into a `WordDocument`, a paragraph a line) |
-| `…/ooxml/` | what Word's and Excel's files share: `OoxmlPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `Relationship`, `OoxmlException` (a file that cannot be read, and why) |
-| `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `StoryReader`, `DrawingReader` (a drawing's pictures and text boxes), `StylesReader`, `Numbering`, `FormattingReader`, `Pictures` (a part's pictures, through its relationships, nothing outside fetched) |
-| `…/pdf/` | `PdfReader` (a .pdf into a `WordDocument`), `PdfFile` (its objects, through its cross-references and object streams, rebuilt when damaged), `StandardSecurity` (decryption, the empty password), `Lexer` (PDF's syntax), `Filters` (streams decoded, bounded), `ContentReader` (a page's glyphs, where they are drawn), `PdfFont`, `CMap`, `Encodings` and `StandardWidths` (what a code is, and its width), `TextLayout` (glyphs into lines, paragraphs, lists, running header and footer), `PdfException` |
-| `…/xlsx/` | `XlsxReader` (a .xlsx into a `WordDocument`, a sheet a heading and a table), `SheetReader` (a worksheet's cells, merges, widths and heights), `Styles` (Excel's look as Word's properties), `NumberFormats` (a value as Excel shows it), `Formulas` (references, shared formulas shifted), `Colors` (theme, tint, palette) |
-| `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Pairing`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `Phrase` (what a difference says, kept as data: the view puts it into words) |
-| `…/ui/` | `ComparatorPanel` (the documents, read and compared in the background by `BackgroundWork`; each `Side`'s `SideState`; the sides' heads laid out by `HeadsLayout`), `OptionControls` (the ribbon and the Compare and View menus, kept in step), `DocumentSource` (what a side compares: a file, read by the reader of its extension, text pasted, or a source of a host's own), `DocumentHeader` and `DropHandler` (a side's head, documents and text dropped or pasted), `StatusLine`, `ClipboardMenu` (the right-click menu: copy a line, paste on its side), `ComparisonView` (the two sides, line by line; `LinePainter` draws the lines, `EmptySide` a side waiting for its document), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `ListNumbers` (list items numbered as Word does), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux), `I18nLabels` and `I18nLanguageBox` (labels set again when the language changes; the languages' drop list); the small ones: `Line` and `LineSide` (a line of the view, and each side of it), `Palette` (the colours), `Fonts`, `DocumentOpener`, `RibbonEdge`, `FaintLabel`, `LookLine` |
-| `…/reader/` | what reads a file into a `WordDocument`: `DocumentReader` (a format's reader; another format's is added as a service), `AbstractDocumentReader` (its extensions and order), `DocumentReaders` (the readers there are, in their order) |
-| `…/report/` | what a comparison says, in the language in use: `ComparisonWords` (a story's name, where a paragraph is, a difference, any `Phrase`), `PropertyNames` (Word's property names as a reader says them) |
-| `…/i18n/` | the languages (see "Languages"): `I18nLanguage`, `I18n` |
-| `src/main/resources/org/jtools/doccomparator/i18n/` | the texts, one file per language |
-| `src/main/resources/META-INF/services/` | what installs `NoNetworkResolver` |
-| `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `text/TextReaderTest`; `reader/DocumentReadersTest`; `report/`, the words of a comparison; `xlsx/`, on workbooks `TestXlsx` builds; `pdf/PdfReaderTest`, on PDFs `TestPdf` writes and encrypted ones `make_encrypted.py` made, and `PdfSamplesTest`; `compare/`: each step, tables, and `SamplesTest`; `ui/LinesTest`, the view, drawn without a screen; `i18n/I18nTest`, the languages' files |
-| `samples/` | the sample documents, and the script that writes them (see "Samples") |
-| `src/dist/`, `src/assembly/` | the launchers of the distributions, FlatLaf's licence, and what goes in them |
+| `doccomparator-core/…/document/` | what a document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
+| `doccomparator-core/…/reader/` | what reads a file into a `WordDocument`: `DocumentReader` (a format's reader; another format's is added as a service), `AbstractDocumentReader` (its extensions and order), `DocumentReaders` (the readers there are, in their order) |
+| `doccomparator-core/…/text/` | `TextReader` (text pasted, or a text file, into a `WordDocument`, a paragraph a line) |
+| `doccomparator-core/…/ooxml/` | what Word's and Excel's files share: `OoxmlPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `Relationship`, `OoxmlException` (a file that cannot be read, and why) |
+| `doccomparator-core/…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `StoryReader`, `DrawingReader` (a drawing's pictures and text boxes), `StylesReader`, `Numbering`, `FormattingReader`, `Pictures` (a part's pictures, through its relationships, nothing outside fetched) |
+| `doccomparator-core/…/pdf/` | `PdfReader` (a .pdf into a `WordDocument`), `PdfFile` (its objects, through its cross-references and object streams, rebuilt when damaged), `StandardSecurity` (decryption, the empty password), `Lexer` (PDF's syntax), `Filters` (streams decoded, bounded), `ContentReader` (a page's glyphs, where they are drawn), `PdfFont`, `CMap`, `Encodings` and `StandardWidths` (what a code is, and its width), `TextLayout` (glyphs into lines, paragraphs, lists, running header and footer), `PdfException` |
+| `doccomparator-core/…/xlsx/` | `XlsxReader` (a .xlsx into a `WordDocument`, a sheet a heading and a table), `SheetReader` (a worksheet's cells, merges, widths and heights), `Styles` (Excel's look as Word's properties), `NumberFormats` (a value as Excel shows it), `Formulas` (references, shared formulas shifted), `Colors` (theme, tint, palette) |
+| `doccomparator-core/…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Pairing`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `Phrase` (what a difference says, kept as data: `report` puts it into words) |
+| `doccomparator-core/…/report/` | what a comparison says, in the language in use: `ComparisonWords` (a story's name, where a paragraph is, a difference, any `Phrase`), `PropertyNames` (Word's property names as a reader says them) |
+| `doccomparator-core/…/i18n/` | the languages (see "Languages"): `I18nLanguage`, `I18n`, `I18nTexts` (a jar's texts, as a service); `texts/`, core's own |
+| `doccomparator-ui/…/ui/` | `ComparatorPanel` (the documents, read and compared in the background by `BackgroundWork`; each `Side`'s `SideState`; the sides' heads laid out by `HeadsLayout`), `OptionControls` (the ribbon and the Compare and View menus, kept in step), `DocumentSource` (what a side compares: a file, read by the reader of its extension, text pasted, or a source of a host's own), `DocumentHeader` and `DropHandler` (a side's head, documents and text dropped or pasted), `StatusLine`, `ClipboardMenu` (the right-click menu: copy a line, paste on its side), `ComparisonView` (the two sides, line by line; `LinePainter` draws the lines, `EmptySide` a side waiting for its document), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `ListNumbers` (list items numbered as Word does), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux), `I18nLabels` and `I18nLanguageBox` (labels set again when the language changes; the languages' drop list); the small ones: `Line` and `LineSide` (a line of the view, and each side of it), `Palette` (the colours), `Fonts`, `DocumentOpener`, `RibbonEdge`, `FaintLabel`, `LookLine` |
+| `doccomparator-ui/…/ui/texts/` | the view's texts |
+| `doccomparator-app/…/` | `Launcher` (the entry point, given two documents or none), `MainWindow` (the window, its menus, its look), `HelpMenu` (the licences and About, read offline), `Settings` (kept beside the program), `Looks` (FlatLaf's looks, light and dark, its native libraries off), `NoNetworkResolver` (see "No network"); `texts/`, the window's texts |
+| `doccomparator-app/src/dist/`, `…/src/assembly/` | the launchers of the distributions, FlatLaf's licence, and what goes in them |
+| `*/src/main/resources/META-INF/services/` | each module's services: its texts, core's readers, the program's `NoNetworkResolver` |
+| `doccomparator-core/src/test/` | `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `text/TextReaderTest`; `reader/DocumentReadersTest`; `report/`, the words of a comparison; `xlsx/`, on workbooks `TestXlsx` builds; `pdf/PdfReaderTest`, on PDFs `TestPdf` writes and encrypted ones `make_encrypted.py` made, and `PdfSamplesTest`; `compare/`: each step, tables, and `SamplesTest`; `i18n/I18nTest`; `testing/`, what the other modules' tests share (`I18nEnglishInTests`, `TextsCheck`) |
+| `doccomparator-ui/src/test/` | `ui/LinesTest`, the view, drawn without a screen; `ComparatorPanelTest` and the rest of the view's |
+| `doccomparator-app/src/test/` | `NoNetworkTest` (all three modules' classes and FlatLaf's), `NoNetworkResolverTest` (see "No network"); the window's |
+| `samples/` | the sample documents, and the scripts that write them (see "Samples") |
 | `scripts/` | the scripts above, and `standard-widths.py` (the standard PDF fonts' widths, from their URW clones) |
 | `.github/workflows/` | `build.yml`, the build and the tests on every push; `release.yml`, the release on a tag `vX.Y` |
 

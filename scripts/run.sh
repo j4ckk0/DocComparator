@@ -26,7 +26,7 @@ done
 take_build_lock
 
 # Rebuild when asked, when the jar is missing, or when any source is newer than it.
-if $rebuild || [ ! -f "$JAR" ] || [ -n "$(find pom.xml src -newer "$JAR" -print -quit)" ]; then
+if $rebuild || [ ! -f "$JAR" ] || [ -n "$(find pom.xml doccomparator-*/pom.xml doccomparator-*/src -newer "$JAR" -print -quit)" ]; then
   echo "== building $JAR"
   mvn -q clean package   # clean: Maven leaves in target/ what the sources no longer have (a removed resource would still be shipped)
 fi

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Build target/doccomparator.jar (compile + tests).
+# Build the three modules and doccomparator-app/target/doccomparator.jar, the program (compile + tests).
 #
 #   scripts/build.sh
 #   scripts/build.sh -DskipTests        # extra arguments are passed to mvn

@@ -30,5 +30,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: doccomparator.jar
-          path: target/doccomparator.jar
+          path: doccomparator-app/target/doccomparator.jar
           if-no-files-found: error

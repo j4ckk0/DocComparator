@@ -1,0 +1,45 @@
+package org.jtools.doccomparator.testing;
+
+/*-
+ * #%L
+ * DocComparator
+ * %%
+ * Copyright (C) 2026 jtools.org
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
+
+import org.jtools.doccomparator.i18n.I18n;
+import org.jtools.doccomparator.i18n.I18nLanguage;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+
+/**
+ * Every test speaks English, whatever the program's default: the tests check the texts the program writes, in
+ * English. Before a test class (whose static fields may already read documents), and again before each test (one may
+ * have changed the language). Found by JUnit through its service file (src/test/resources).
+ */
+public final class I18nEnglishInTests implements BeforeAllCallback, BeforeEachCallback {
+
+    @Override
+    public void beforeAll(ExtensionContext context) {
+        I18n.use(I18nLanguage.ENGLISH);
+    }
+
+    @Override
+    public void beforeEach(ExtensionContext context) {
+        I18n.use(I18nLanguage.ENGLISH);
+    }
+}

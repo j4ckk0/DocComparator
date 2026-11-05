@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.jtools</groupId>
+    <artifactId>doccomparator-parent</artifactId>
+    <version>${revision}</version>
+  </parent>
+
+  <artifactId>doccomparator-core</artifactId>
+  <name>DocComparator core</name>
+  <description>Compares two documents — Word, Excel, PDF, text — with no window: the readers of the files (one more added as a service), the model they read into, the comparison paragraph by paragraph and table by table, and what it says in words. Needs nothing but the JDK; never reaches the network.</description>
+
+  <build>
+    <finalName>doccomparator-core</finalName>
+    <plugins>
+      <plugin>
+        <!-- its tests' helpers, for the other modules' tests, in a package of their own (testing): tests compiled
+             in a module see no class of the module's packages but its own -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+            <configuration>
+              <includes>
+                <include>org/jtools/doccomparator/testing/**</include>
+                <include>META-INF/services/**</include>
+                <include>junit-platform.properties</include>
+              </includes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

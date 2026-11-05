@@ -30,7 +30,7 @@ if not exist "%JAR%" set "NEED_BUILD=1"
 if "%NEED_BUILD%"=="0" (
   powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "$jar = (Get-Item '%JAR%').LastWriteTimeUtc;" ^
-    "$src = @(Get-Item pom.xml) + @(Get-ChildItem src -Recurse -File);" ^
+    "$src = @(Get-Item pom.xml, doccomparator-*\pom.xml) + @(Get-ChildItem doccomparator-*\src -Recurse -File);" ^
     "if ($src | Where-Object { $_.LastWriteTimeUtc -gt $jar }) { exit 1 } else { exit 0 }"
   if errorlevel 1 set "NEED_BUILD=1"
 )

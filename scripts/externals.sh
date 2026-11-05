@@ -35,7 +35,7 @@ fi
 
 export JAVA_HOME="$ext/jdk"
 export PATH="$ext/jdk/bin:$ext/maven/bin:$PATH"
-jar=target/doccomparator.jar
+jar=doccomparator-app/target/doccomparator.jar
 
 # Refuses to go on while DocComparator runs from the jar a build is about to replace: Maven would otherwise fail
 # deleting it, with an error saying nothing of the cause. $1 is what the caller is about to do.

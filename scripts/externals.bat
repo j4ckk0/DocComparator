@@ -23,7 +23,7 @@ if defined MISSING (
 )
 set "JAVA_HOME=%EXT%\jdk"
 set "PATH=%EXT%\jdk\bin;%EXT%\maven\bin;%PATH%"
-set "JAR=target\doccomparator.jar"
+set "JAR=doccomparator-app\target\doccomparator.jar"
 exit /b 0
 
 rem ---- what setup deploys and is not there, in MISSING (undefined when all is there)

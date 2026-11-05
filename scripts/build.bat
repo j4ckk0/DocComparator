@@ -1,6 +1,6 @@
 @echo off
 rem
-rem Build target\doccomparator.jar (compile + tests).
+rem Build the three modules and doccomparator-app\target\doccomparator.jar, the program (compile + tests).
 rem
 rem   scripts\build.bat
 rem   scripts\build.bat -DskipTests        extra arguments are passed to mvn
