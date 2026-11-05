@@ -109,6 +109,25 @@
   </build>
 
   <profiles>
+    <profile>
+      <!-- Published (the parent's profile publish): the program's jar on Maven Central holds its own classes, the
+           two other modules and FlatLaf named by its pom, not held twice -->
+      <id>publish</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>default</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
     <!--
       mvn package -Pdist
       Builds the self-contained distribution of the system it runs on, into releases/ (not tracked, kept by

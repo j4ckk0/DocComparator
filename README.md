@@ -483,10 +483,12 @@ Previous versions' archives are removed from `releases/` once the new one is bui
 
 ## Publishing
 
-The licence, how the program reaches Maven Central (`org.jtools:doccomparator`), and how a version becomes a release on GitHub (a pushed tag `vX.Y`): [PUBLISHING.md](PUBLISHING.md); what each version brought: [CHANGELOG.md](CHANGELOG.md).
-In short, `mvn -Ppublish deploy` uploads the
-program's own jar (FlatLaf a dependency of it), its sources and javadoc, signed, to the Central Portal, where it waits
-to be published; the distributions, with their runtimes, are never uploaded there.
+The licence, how the three jars reach Maven Central (`org.jtools:doccomparator-core`, `doccomparator-ui`,
+`doccomparator`, and their parent), and how a version becomes a release on GitHub (a pushed tag `vX.Y`):
+[PUBLISHING.md](PUBLISHING.md); what each version brought: [CHANGELOG.md](CHANGELOG.md). In short,
+`mvn -Ppublish deploy` uploads each jar — its own classes, the others and FlatLaf named by its pom —, its sources and
+javadoc, signed, to the Central Portal, where they wait to be published; the distributions, with their runtimes, are
+never uploaded there.
 
 ## Layout
 

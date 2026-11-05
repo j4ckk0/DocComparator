@@ -1,8 +1,8 @@
 # Publishing DocComparator: its licence, Maven Central, GitHub's releases
 
-The licence the program is published under, and how it reaches Maven Central as `org.jtools:doccomparator`, the
-same way as the other jtools projects (XsdViewer). Checked against the tree at version 1.5 (4 November 2026).
-**Not published yet.**
+The licence the program is published under, and how it reaches Maven Central — the parent and three jars under
+`org.jtools` —, the same way as the other jtools projects (XsdViewer). Checked against the tree at version 2.0
+(5 November 2026). **Not published yet.**
 
 ## 1. The licence
 
@@ -20,11 +20,21 @@ Apache License 2.0, like the other jtools projects, copyright jtools.org:
 
 ## 2. Maven Central
 
-`org.jtools:doccomparator` is the program's own jar: its classes, FlatLaf a dependency of it (the distributions'
-`doccomparator.jar` holds FlatLaf's classes; this one does not), with its sources, its javadoc, and its pom, the
-version written out (`flatten-maven-plugin`: the pom's `${revision}` never reaches Central). The distributions, with
-their runtimes, are never uploaded: they are not attached to the build. **This is not part of a release**: a version
-reaches Central only when it is asked for on its own — what Central publishes can never be replaced or withdrawn.
+What reaches Central, every one with its pom, the version written out (`flatten-maven-plugin`: the poms'
+`${revision}` never reaches Central):
+
+| Artifact | What it is | Files |
+|---|---|---|
+| `org.jtools:doccomparator-parent` | the parent pom: the version, the shared build, the coordinates | the pom |
+| `org.jtools:doccomparator-core` | the comparison, no window: readers, comparison, its words, languages | jar, sources, javadoc; `-tests` jar: `TextsCheck`, a check of a jar's texts, and the English-in-tests extension |
+| `org.jtools:doccomparator-ui` | the comparison view, a Swing component (`ComparatorPanel`) | jar, sources, javadoc |
+| `org.jtools:doccomparator` | the program: its window, its looks (FlatLaf) | jar, sources, javadoc |
+
+Each jar holds its own classes only, the jars below it and FlatLaf named by its pom: the distributions'
+`doccomparator.jar`, which holds them all, is not this one (the profile `publish` turns its shading off). The
+distributions, with their runtimes, are never uploaded: they are not attached to the build. **This is not part of a
+release**: a version reaches Central only when it is asked for on its own — what Central publishes can never be
+replaced or withdrawn.
 
 What it takes, once — all already done for XsdViewer, and shared by every `org.jtools` artifact:
 
@@ -41,11 +51,11 @@ What it takes, once — all already done for XsdViewer, and shared by every `org
 3. **A GPG key**, its public part on a key server the portal reads — there already. `maven-gpg-plugin` signs with
    the default key, or `-Dgpg.keyname=<id>`. Central refuses an unsigned bundle.
 
-Then, for a version: `mvn -Ppublish clean deploy` runs the tests, builds the jar, its sources and its javadoc, signs
-them and uploads the bundle to the portal, where it is validated. Nothing is released until **Publish** is pressed
-there (`autoPublish` is off), so a mistake costs nothing. The version must not be a SNAPSHOT.
-`mvn -Ppublish verify -Dgpg.skip` builds the same without signing nor uploading, to see in `target/` what would be
-published.
+Then, for a version, from the root: `mvn -Ppublish clean deploy` runs every module's tests, builds the jars, their
+sources and their javadoc, signs them and uploads one bundle — the four artifacts — to the portal, where it is
+validated. Nothing is released until **Publish** is pressed there (`autoPublish` is off), so a mistake costs nothing.
+The version must not be a SNAPSHOT. `mvn -Ppublish verify -Dgpg.skip` builds the same without signing nor uploading,
+to see in each module's `target/` what would be published (checked for 2.0: it builds, javadoc included).
 
 Learnt with XsdViewer (5 September 2026), true here too:
 
@@ -70,13 +80,13 @@ What a user downloads: the two self-contained distributions, each with its Java 
 the repository's Releases page, with the version's notes from `CHANGELOG.md` and the archives' SHA-256. A release is
 public as soon as it is made: it is made when asked for, never as a side effect of a push.
 
-1. Bump the version in `pom.xml`: `<revision>` (`1.6`) and `<windowsVersion>` (`1.6.0.0`, the four parts launch4j
-   wants).
-2. Give `CHANGELOG.md` its section, `## 1.6 — <date>`: what the version brings, a bullet list, for a user.
+1. Bump the version in the parent `pom.xml`: `<revision>` (`2.1`) and `<windowsVersion>` (`2.1.0.0`, the four parts
+   launch4j wants).
+2. Give `CHANGELOG.md` its section, `## 2.1 — <date>`: what the version brings, a bullet list, for a user.
 3. Commit, tag and push the tag:
 
-       git tag -a v1.6 -m "1.6"
-       git push origin main v1.6
+       git tag -a v2.1 -m "2.1"
+       git push origin main v2.1
 
 The tag starts `.github/workflows/release.yml` on GitHub: it checks that the tag, the pom and the changelog agree,
 then on Linux and on Windows deploys the externals (`scripts/setup.sh`, `scripts\setup.bat`), builds and tests the
@@ -89,7 +99,7 @@ the two distributions of the version `pom.xml` names, built and checked on Linux
 run's artefacts, to download and try; nothing is published, and neither the tag nor the changelog is checked.
 
 By hand, should the workflow be unavailable: `scripts/package.sh` on Linux and `scripts\package.bat` on Windows, the
-Windows archive copied into `releases/` beside the Linux one, then `scripts/release.sh 1.6`, which creates the
+Windows archive copied into `releases/` beside the Linux one, then `scripts/release.sh 2.1`, which creates the
 release from the pushed tag and uploads the archives — with a fine-grained token for this repository only (*Contents:
 read and write*), in `$GITHUB_TOKEN` or `~/.config/github/doccomparator-release-token`. `scripts/release.sh --dry-run
-1.6` prints the notes and calls nothing.
+2.1` prints the notes and calls nothing.

@@ -284,18 +284,6 @@
       <build>
         <plugins>
           <plugin>
-            <!-- the program's jar on Maven Central: its own classes, the two other modules and FlatLaf named by its
-                 pom, not held twice -->
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-shade-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>default</id>
-                <phase>none</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
             <!-- ${revision} written out in the pom deployed: Maven resolves it in this build only -->
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>flatten-maven-plugin</artifactId>
