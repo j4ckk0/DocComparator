@@ -71,6 +71,19 @@ class NumberFormatsTest {
         assertEquals("1,234.50", shown(1234.5, "[Red]#,##0.00"), "a colour is not shown");
     }
 
+    /** What the subset does not render shows the value as General, never half rendered ("13 /"). */
+    @Test
+    void fractionsAndConditionsShowTheValueAsGeneral() {
+        assertEquals("12.5", shown(12.5, "# ?/?"));
+        assertEquals("12.5", shown(12.5, "# ??/??"));
+        assertEquals("12.5", shown(12.5, "0/100"));
+        assertEquals("12.5", shown(12.5, "[>100]0.00;0"), "a condition picks by value, not by sign");
+        assertEquals("12.5", shown(12.5, "[Red][<=-1]0;0.00"));
+        assertEquals("05/11/2026", shown(46_331, "dd/mm/yyyy"), "a date's slash is a date's");
+        assertEquals("12.50 km/h", shown(12.5, "0.00\" km/h\""), "a slash in quotes is text");
+        assertEquals("€ 12.50", shown(12.5, "[$€-40C] 0.00"), "a currency is no condition");
+    }
+
     @Test
     void datesAndTimesFromTheSerialNumber() {
         assertEquals(LocalDateTime.of(1900, 2, 28, 0, 0), NumberFormats.dateTime(59, false));

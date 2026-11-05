@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.jtools.doccomparator.document.Block;
+import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.ListItem;
 import org.jtools.doccomparator.document.Paragraph;
@@ -44,8 +45,7 @@ import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.Template;
 import org.jtools.doccomparator.document.TextBox;
-import org.jtools.doccomparator.document.WordDocument;
-import org.jtools.doccomparator.ooxml.OoxmlException;
+import org.jtools.doccomparator.reader.DocumentReadException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -58,7 +58,7 @@ class DocxReaderTest {
 
     @Test
     void theTextIsWhatWordShows() throws IOException {
-        WordDocument document = read(TestDocx.body("""
+        Document document = read(TestDocx.body("""
                 <w:p w14:paraId="1A2B3C4D">
                   <w:r><w:t xml:space="preserve">The text </w:t></w:r>
                   <w:proofErr w:type="spellStart"/>
@@ -79,7 +79,7 @@ class DocxReaderTest {
 
     @Test
     void breaksHyphensAndSymbols() throws IOException {
-        WordDocument document = read(TestDocx.body("""
+        Document document = read(TestDocx.body("""
                 <w:p><w:r>
                   <w:t>non</w:t><w:noBreakHyphen/><w:t>breaking</w:t><w:softHyphen/><w:t>soft</w:t>
                   <w:br w:type="page"/><w:cr/><w:sym w:font="Symbol" w:char="F0E0"/>
@@ -91,7 +91,7 @@ class DocxReaderTest {
 
     @Test
     void trackedChangesAreReadAsAccepted() throws IOException {
-        WordDocument document = read(TestDocx.body("""
+        Document document = read(TestDocx.body("""
                 <w:p>
                   <w:r><w:t xml:space="preserve">kept </w:t></w:r>
                   <w:ins w:id="1" w:author="A" w:date="2026-11-04T10:00:00Z"><w:r><w:t>inserted</w:t></w:r></w:ins>
@@ -105,7 +105,7 @@ class DocxReaderTest {
 
     @Test
     void aFieldShowsItsResultNotItsCode() throws IOException {
-        WordDocument document = read(TestDocx.body("""
+        Document document = read(TestDocx.body("""
                 <w:p>
                   <w:r><w:t xml:space="preserve">Page </w:t></w:r>
                   <w:r><w:fldChar w:fldCharType="begin"/></w:r>
@@ -123,7 +123,7 @@ class DocxReaderTest {
 
     @Test
     void linksControlsAndTagsKeepTheirText() throws IOException {
-        WordDocument document = read(TestDocx.body("""
+        Document document = read(TestDocx.body("""
                 <w:p>
                   <w:hyperlink r:id="rId9" w:history="1"><w:r><w:t>a link</w:t></w:r></w:hyperlink>
                   <w:sdt><w:sdtPr><w:alias w:val="Client"/></w:sdtPr>
@@ -138,7 +138,7 @@ class DocxReaderTest {
 
     @Test
     void anEquationKeepsItsText() throws IOException {
-        WordDocument document = read(TestDocx.body("""
+        Document document = read(TestDocx.body("""
                 <w:p>
                   <w:r><w:t xml:space="preserve">where </w:t></w:r>
                   <m:oMath><m:r><m:t>a</m:t></m:r><m:r><m:t>+b</m:t></m:r></m:oMath>
@@ -154,7 +154,7 @@ class DocxReaderTest {
 
     @Test
     void tablesHoldTheirCellsBlocksTablesWithin() throws IOException {
-        WordDocument document = read(TestDocx.body("""
+        Document document = read(TestDocx.body("""
                 <w:tbl>
                   <w:tblPr><w:tblStyle w:val="TableGrid"/><w:tblW w:w="0" w:type="auto"/></w:tblPr>
                   <w:tblGrid><w:gridCol w:w="4536"/><w:gridCol w:w="4536"/></w:tblGrid>
@@ -197,7 +197,7 @@ class DocxReaderTest {
     /** A picture: a run of its own, its character in the text, its size, description, image and digest kept. */
     @Test
     void aPictureIsReadWithItsSizeAndImage() throws IOException {
-        WordDocument document = read(TestDocx.body("<w:p><w:r><w:t xml:space=\"preserve\">See </w:t></w:r>"
+        Document document = read(TestDocx.body("<w:p><w:r><w:t xml:space=\"preserve\">See </w:t></w:r>"
                 + drawing("rIdPicture", "The pump") + "<w:r><w:t>here.</w:t></w:r></w:p>")
                 .binary("word/media/image1.png", PNG)
                 .link("word/document.xml", "rIdPicture", "image", "media/image1.png", false));
@@ -216,7 +216,7 @@ class DocxReaderTest {
     /** An image used twice — an icon in two steps — is read once, its bytes shared. */
     @Test
     void anImageUsedAgainIsReadOnce() throws IOException {
-        WordDocument document = read(TestDocx.body("<w:p>" + drawing("rIdIcon", "icon") + "</w:p><w:p>"
+        Document document = read(TestDocx.body("<w:p>" + drawing("rIdIcon", "icon") + "</w:p><w:p>"
                 + drawing("rIdIcon", "icon") + "</w:p>")
                 .binary("word/media/icon.png", PNG)
                 .link("word/document.xml", "rIdIcon", "image", "media/icon.png", false));
@@ -228,7 +228,7 @@ class DocxReaderTest {
     /** Word writes a picture twice for older versions of itself, as it does a text box: read once. */
     @Test
     void aPictureForOlderWordsIsReadOnce() throws IOException {
-        WordDocument document = read(TestDocx.body("<w:p><w:r><mc:AlternateContent><mc:Choice Requires=\"wps\">"
+        Document document = read(TestDocx.body("<w:p><w:r><mc:AlternateContent><mc:Choice Requires=\"wps\">"
                 + drawing("rIdPicture", "new").replace("<w:r>", "").replace("</w:r>", "")
                 + "</mc:Choice><mc:Fallback><w:pict><v:shape style=\"width:180pt;height:100pt\">"
                 + "<v:imagedata r:id=\"rIdPicture\"/></v:shape></w:pict></mc:Fallback></mc:AlternateContent>"
@@ -243,7 +243,7 @@ class DocxReaderTest {
     /** A picture outside the document — embedded by its word, or linked — is never fetched. */
     @Test
     void aPictureOutsideTheDocumentIsNeverFetched() throws IOException {
-        WordDocument document = read(TestDocx.body("<w:p>" + drawing("rIdOutside", "on a share") + "</w:p>")
+        Document document = read(TestDocx.body("<w:p>" + drawing("rIdOutside", "on a share") + "</w:p>")
                 .link("word/document.xml", "rIdOutside", "image", "file:///\\\\fileserver\\pictures\\pump.png", true));
         Picture picture = paragraphs(document.body()).getFirst().runs().getFirst().picture();
         assertEquals(Picture.Kind.LINKED, picture.kind());
@@ -254,7 +254,7 @@ class DocxReaderTest {
     /** A header's picture is found through the header's own relationships, not the body's. */
     @Test
     void aHeadersPictureIsTheHeadersOwn() throws IOException {
-        WordDocument document = read(TestDocx.body("<w:p/><w:sectPr><w:headerReference w:type=\"default\" "
+        Document document = read(TestDocx.body("<w:p/><w:sectPr><w:headerReference w:type=\"default\" "
                 + "r:id=\"rIdHeader\"/></w:sectPr>")
                 .wordPart("rIdHeader", "header", "header1.xml", "w:hdr",
                         "<w:p>" + drawing("rIdLogo", "logo") + "</w:p>")
@@ -268,7 +268,7 @@ class DocxReaderTest {
     /** A chart cannot be shown: a picture saying so stands in its place. */
     @Test
     void aChartIsAPictureSayingSo() throws IOException {
-        WordDocument document = read(TestDocx.body("<w:p><w:r><w:drawing><wp:inline><wp:extent cx=\"1270000\" "
+        Document document = read(TestDocx.body("<w:p><w:r><w:drawing><wp:inline><wp:extent cx=\"1270000\" "
                 + "cy=\"1270000\"/><wp:docPr id=\"2\" name=\"Chart 2\"/><a:graphic><a:graphicData "
                 + "uri=\"http://schemas.openxmlformats.org/drawingml/2006/chart\"><c:chart "
                 + "xmlns:c=\"http://schemas.openxmlformats.org/drawingml/2006/chart\" r:id=\"rIdChart\"/>"
@@ -282,7 +282,7 @@ class DocxReaderTest {
     /** Where Word's pages began at its last layout: kept, as offsets in the text; after a page break, once. */
     @Test
     void wordsOwnPagesAreKeptWhereTheyBegan() throws IOException {
-        WordDocument document = read(TestDocx.body("""
+        Document document = read(TestDocx.body("""
                 <w:p><w:r><w:t xml:space="preserve">The end of a page </w:t></w:r>
                   <w:r><w:lastRenderedPageBreak/><w:t>and the next.</w:t></w:r></w:p>
                 <w:p><w:r><w:t>Before a break.</w:t><w:br w:type="page"/></w:r></w:p>
@@ -297,7 +297,7 @@ class DocxReaderTest {
 
     @Test
     void rowsAndCellsChangedWithTrackChangesAreReadAsAccepted() throws IOException {
-        WordDocument document = read(TestDocx.body("""
+        Document document = read(TestDocx.body("""
                 <w:tbl>
                   <w:tr><w:trPr><w:trHeight w:val="400"/><w:tblHeader/></w:trPr>
                     <w:tc><w:p><w:r><w:t>kept</w:t></w:r></w:p></w:tc></w:tr>
@@ -327,7 +327,7 @@ class DocxReaderTest {
     /** Word writes a text box twice — for itself, and in VML for older versions — and it is read once. */
     @Test
     void aTextBoxFollowsItsParagraphOnce() throws IOException {
-        WordDocument document = read(TestDocx.body("""
+        Document document = read(TestDocx.body("""
                 <w:p>
                   <w:r><w:t>anchor</w:t></w:r>
                   <w:r><mc:AlternateContent>
@@ -352,7 +352,7 @@ class DocxReaderTest {
 
     @Test
     void headingsAndListsComeFromTheParagraphOrItsStyles() throws IOException {
-        WordDocument document = read(TestDocx.body("""
+        Document document = read(TestDocx.body("""
                 <w:p><w:pPr><w:pStyle w:val="MyTitle"/></w:pPr><w:r><w:t>heading 1, from the style it is based on</w:t></w:r></w:p>
                 <w:p><w:pPr><w:pStyle w:val="Titre2"/></w:pPr><w:r><w:t>heading 2, by its style's name</w:t></w:r></w:p>
                 <w:p><w:pPr><w:pStyle w:val="Heading1"/><w:outlineLvl w:val="9"/></w:pPr><w:r><w:t>body text, whatever its style</w:t></w:r></w:p>
@@ -383,7 +383,7 @@ class DocxReaderTest {
 
     @Test
     void stylesAndTheirDefaults() throws IOException {
-        WordDocument document = read(TestDocx.body("<w:p/>")
+        Document document = read(TestDocx.body("<w:p/>")
                 .wordPart("rIdStyles", "styles", "styles.xml", "w:styles", STYLES));
 
         assertEquals("22", document.styles().defaultRun().get("sz"));
@@ -400,7 +400,7 @@ class DocxReaderTest {
     void formattingIsEveryPropertyUnderWordsName() throws IOException {
         String red = """
                 <w:rPr><w:b/><w:i w:val="0"/><w:color w:val="FF0000"/><w:u w:val="single" w:color="00FF00"/></w:rPr>""";
-        WordDocument document = read(TestDocx.body("""
+        Document document = read(TestDocx.body("""
                 <w:p>
                   <w:pPr><w:jc w:val="center"/><w:pBdr><w:top w:val="single" w:sz="4"/></w:pBdr></w:pPr>
                   <w:r>%s<w:t>red</w:t></w:r>
@@ -422,7 +422,7 @@ class DocxReaderTest {
 
     @Test
     void headersAndFootersByTheSectionsThatReferToThem() throws IOException {
-        WordDocument document = read(TestDocx.body("""
+        Document document = read(TestDocx.body("""
                 <w:p><w:pPr><w:sectPr><w:headerReference w:type="default" r:id="rIdH1"/></w:sectPr></w:pPr><w:r><w:t>one</w:t></w:r></w:p>
                 <w:p><w:r><w:t>two</w:t></w:r></w:p>
                 <w:sectPr>
@@ -448,7 +448,7 @@ class DocxReaderTest {
 
     @Test
     void footnotesWithoutTheirSeparators() throws IOException {
-        WordDocument document = read(TestDocx.body("""
+        Document document = read(TestDocx.body("""
                 <w:p><w:r><w:t>noted</w:t></w:r><w:r><w:rPr><w:rStyle w:val="FootnoteReference"/></w:rPr><w:footnoteReference w:id="1"/></w:r></w:p>
                 """)
                 .wordPart("rIdNotes", "footnotes", "footnotes.xml", "w:footnotes", """
@@ -468,7 +468,7 @@ class DocxReaderTest {
     @Test
     void theTemplateAsTheDocumentNamesIt() throws IOException {
         String share = "file:///\\\\server\\templates\\Corporate.dotm";
-        WordDocument document = read(TestDocx.body("<w:p/>")
+        Document document = read(TestDocx.body("<w:p/>")
                 .wordPart("rIdSettings", "settings", "settings.xml", "w:settings",
                         "<w:zoom w:percent=\"100\"/><w:attachedTemplate r:id=\"rIdTemplate\"/>")
                 .link("word/settings.xml", "rIdTemplate", "attachedTemplate", share, true)
@@ -482,7 +482,7 @@ class DocxReaderTest {
 
     @Test
     void aDocumentWithoutTemplateStylesOrNotes() throws IOException {
-        WordDocument document = read(TestDocx.body("<w:p><w:r><w:t>bare</w:t></w:r></w:p>"));
+        Document document = read(TestDocx.body("<w:p><w:r><w:t>bare</w:t></w:r></w:p>"));
 
         assertEquals(Template.NONE, document.template());
         assertTrue(document.styles().styles().isEmpty());
@@ -492,7 +492,7 @@ class DocxReaderTest {
 
     @Test
     void anEmptyTemplateNameIsNone() throws IOException {
-        WordDocument document = read(TestDocx.body("<w:p/>")
+        Document document = read(TestDocx.body("<w:p/>")
                 .raw("docProps/app.xml", """
                         <?xml version="1.0" encoding="UTF-8"?>
                         <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Template></Template></Properties>""")
@@ -504,7 +504,7 @@ class DocxReaderTest {
     @Test
     void isoStrictDocuments() throws IOException {
         String strict = "xmlns:w=\"http://purl.oclc.org/ooxml/wordprocessingml/main\"";
-        WordDocument document = read(TestDocx.body("")
+        Document document = read(TestDocx.body("")
                 .withoutLinks("")
                 .raw("word/document.xml", "<w:document " + strict + "><w:body><w:p><w:r><w:t>strict</w:t></w:r></w:p></w:body></w:document>")
                 .link("", "rId1", "http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument", "word/document.xml", false));
@@ -524,7 +524,7 @@ class DocxReaderTest {
                 <w:document %s><w:body><w:p><w:r><w:t>&secret;</w:t></w:r></w:p></w:body></w:document>
                 """.formatted(secret.toUri(), TestDocx.NAMESPACES);
 
-        OoxmlException refused = assertThrows(OoxmlException.class,
+        DocumentReadException refused = assertThrows(DocumentReadException.class,
                 () -> read(TestDocx.body("").raw("word/document.xml", document)));
         assertTrue(refused.getMessage().contains("DOCTYPE"), refused.getMessage());
         assertFalse(refused.getMessage().contains("SECRET-CONTENT"));
@@ -540,7 +540,7 @@ class DocxReaderTest {
                 <w:document %s><w:body><w:p><w:r><w:t>&secret;</w:t></w:r></w:p></w:body></w:document>
                 """.formatted(dtd.toUri(), TestDocx.NAMESPACES);
 
-        OoxmlException refused = assertThrows(OoxmlException.class,
+        DocumentReadException refused = assertThrows(DocumentReadException.class,
                 () -> read(TestDocx.body("").raw("word/document.xml", document)));
         assertFalse(refused.getMessage().contains("SECRET-CONTENT"));
     }
@@ -549,8 +549,8 @@ class DocxReaderTest {
     void aFileThatIsNoZip() throws IOException {
         Path file = Files.writeString(directory.resolve("notes.docx"), "plain text");
 
-        OoxmlException refused = assertThrows(OoxmlException.class, () -> new DocxReader().read(file));
-        assertEquals("notes.docx is neither a Word document nor an Excel workbook: it is not a zip archive", refused.getMessage());
+        DocumentReadException refused = assertThrows(DocumentReadException.class, () -> new DocxReader().read(file));
+        assertEquals("notes.docx: neither a Word document nor an Excel workbook: it is not a zip archive", refused.getMessage());
     }
 
     @Test
@@ -558,7 +558,7 @@ class DocxReaderTest {
         Path file = TestDocx.body("").withoutLinks("").raw("word/document.xml", "<other/>")
                 .raw("content.xml", "<x/>").write(directory);
 
-        OoxmlException refused = assertThrows(OoxmlException.class, () -> new DocxReader().read(file));
+        DocumentReadException refused = assertThrows(DocumentReadException.class, () -> new DocxReader().read(file));
         assertTrue(refused.getMessage().contains("<other> where <document> was expected"), refused.getMessage());
     }
 
@@ -580,7 +580,7 @@ class DocxReaderTest {
               <w:pPr><w:numPr><w:numId w:val="1"/></w:numPr></w:pPr></w:style>
             """;
 
-    private WordDocument read(TestDocx docx) throws IOException {
+    private Document read(TestDocx docx) throws IOException {
         return new DocxReader().read(docx.write(directory));
     }
 

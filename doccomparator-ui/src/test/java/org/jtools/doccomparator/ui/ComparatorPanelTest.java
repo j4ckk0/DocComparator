@@ -60,7 +60,7 @@ import java.util.concurrent.TimeUnit;
 import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.Comparison;
 import org.jtools.doccomparator.compare.DocumentComparer;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.docx.DocxReader;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.i18n.I18nLanguage;
@@ -88,7 +88,7 @@ class ComparatorPanelTest {
     void aSourceOfAHostsOwnIsComparedAndTheComparisonTold() throws Exception {
         record Memory(String name, String text) implements DocumentSource {
             @Override
-            public WordDocument read() {
+            public Document read() {
                 return TextReader.read(name, text);
             }
 

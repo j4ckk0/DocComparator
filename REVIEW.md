@@ -35,6 +35,7 @@ and it is about to be published as an API.
 ## Findings
 
 ### 1. `WordDocument` names one format; it holds all four
+**Status:** Done: `Document`.
 **Where:** `doccomparator-core/…/document/WordDocument.java`; 55 references in main sources, more in tests; the
 `DocumentReader.read` contract; README.
 **Why it costs:** a developer reading `PdfReader.read(...)` returns a `WordDocument` guesses wrong — a conversion to
@@ -47,6 +48,7 @@ doc that every format is read into it, in Word's terms.
 publishing. To do before step 3.
 
 ### 2. A file that cannot be read has three exception types, one of them hidden
+**Status:** Done: `reader.DocumentReadException`, the file named once by `AbstractDocumentReader.read`; `PdfException` and `OoxmlException` say why only, inside their packages.
 **Where:** `ooxml/OoxmlException` (in a package core does not export, yet thrown by the public `DocxReader` and
 `XlsxReader`), `pdf/PdfException` (exported), `TextReader` (plain `IOException`); the "file: why" message composed in
 three places (`OoxmlException`, `PdfFile.error`, `DocumentSource.File.read`).
@@ -86,6 +88,7 @@ the operators and the text state.
 **Effort / risk:** small.
 
 ### 6. "A file of no known extension is a Word document" is decided in the UI
+**Status:** Done: `DocumentReaders.forFile`.
 **Where:** `doccomparator-ui/…/DocumentSource.java:57` (`OTHERWISE = new DocxReader()`), the only reason ui imports
 `docx`.
 **Why it costs:** a program using core alone gets `DocumentReaders.of(path)` empty for a Word file named `.tmp`,

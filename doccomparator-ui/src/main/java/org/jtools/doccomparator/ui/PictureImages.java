@@ -43,7 +43,7 @@ import org.jtools.doccomparator.document.Run;
 import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.TextBox;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 
 /**
  * The pictures of the documents as images to draw, decoded once each, by digest, with the JDK alone (PNG, JPEG, GIF,
@@ -88,9 +88,9 @@ final class PictureImages {
      * Decodes every picture of these documents, away from the window's thread: drawing them then takes no time. Those
      * of documents no longer shown are let go.
      */
-    static void prepare(WordDocument... documents) {
+    static void prepare(Document... documents) {
         Set<String> shown = new HashSet<>();
-        for (WordDocument document : documents) {
+        for (Document document : documents) {
             List<Story> stories = new ArrayList<>(List.of(document.body()));
             stories.addAll(document.headersAndFooters());
             stories.addAll(document.notes());

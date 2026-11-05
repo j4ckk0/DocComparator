@@ -400,7 +400,7 @@ final class ContentReader {
                 String color = state.render == 1 || state.render == 5 ? state.stroke : state.fill;
                 String characters = code.characters() == null ? Encodings.UNKNOWN : code.characters();
                 if (--glyphsLeft[0] < 0) {
-                    throw new PdfException(file.error(I18n.text("error.pdfTooLarge", PdfReader.LARGEST_TEXT)));
+                    throw new PdfException(I18n.text("error.pdfTooLarge", PdfReader.LARGEST_TEXT));
                 }
                 glyphs.add(new Glyph(characters, x, y, endX, endY, dx, dy, points, font,
                         "000000".equals(color) ? null : color, state.render == 2 || state.render == 6, slanted,

@@ -74,7 +74,7 @@ final class PdfFile {
     static PdfFile open(Path path) throws IOException {
         String name = String.valueOf(path.getFileName());
         if (Files.size(path) > LARGEST_FILE) {
-            throw new PdfException(I18n.text("error.in", name, I18n.text("error.fileTooLarge", LARGEST_FILE >> 20)));
+            throw new PdfException(I18n.text("error.fileTooLarge", LARGEST_FILE >> 20));
         }
         PdfFile file = new PdfFile(name, Files.readAllBytes(path));
         file.start();
@@ -90,7 +90,7 @@ final class PdfFile {
 
     private void start() throws PdfException {
         if (indexOf(data, "%PDF-", 0, Math.min(data.length, 1024)) < 0) {
-            throw new PdfException(I18n.text("error.notPdf", fileName));
+            throw new PdfException(I18n.text("error.notPdf"));
         }
         try {
             readCrossReferences();
@@ -101,7 +101,7 @@ final class PdfFile {
             rebuild();
         }
         if (!(resolve(trailer.get("Root")) instanceof Map<?, ?>)) {
-            throw new PdfException(I18n.text("error.in", fileName, I18n.text("error.pdfDamaged")));
+            throw new PdfException(I18n.text("error.pdfDamaged"));
         }
         Object encrypt = trailer.get("Encrypt");
         if (encrypt != null) {
@@ -118,9 +118,6 @@ final class PdfFile {
         }
     }
 
-    String error(String message) {
-        return I18n.text("error.in", fileName, message);
-    }
 
     Map<String, Object> catalog() {
         return PdfObjects.dictionary(resolve(trailer.get("Root")));

@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jtools.doccomparator.docx.DocxReader;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.pdf.PdfReader;
 import org.jtools.doccomparator.text.TextReader;
 import org.jtools.doccomparator.xlsx.XlsxReader;
@@ -100,9 +100,24 @@ class DocumentReadersTest {
         }
 
         @Override
-        public WordDocument read(Path file) {
-            throw new UnsupportedOperationException("only its extensions are tried here");
+        protected Document readFile(Path file) throws IOException {
+            throw new IOException("its drawings hold no text");
         }
+    }
+
+    @Test
+    void whatAReaderCannotReadIsOneExceptionNamingTheFileOnce() {
+        DocumentReadException refused = assertThrows(DocumentReadException.class, () -> new Svg().read(Path.of("dir",
+                "plan.svg")));
+        assertEquals("plan.svg: its drawings hold no text", refused.getMessage());
+        assertEquals("plan.svg", refused.fileName());
+        assertEquals("its drawings hold no text", refused.reason());
+    }
+
+    @Test
+    void aFileOfNoReadersExtensionIsReadAsAWordDocument() {
+        assertEquals(DocxReader.class, DocumentReaders.forFile(Path.of("draft.tmp")).getClass());
+        assertEquals(PdfReader.class, DocumentReaders.forFile(Path.of("report.pdf")).getClass());
     }
 
     @Test
@@ -120,7 +135,7 @@ class DocumentReadersTest {
             }
 
             @Override
-            public WordDocument read(Path file) {
+            protected Document readFile(Path file) {
                 return null;
             }
         });

@@ -22,10 +22,10 @@ package org.jtools.doccomparator.pdf;
 
 import java.io.IOException;
 
-/** A file that cannot be read as a PDF, and why, in words for the person who chose it. */
-public final class PdfException extends IOException {
+/** Why a file cannot be read as a PDF, the file not named: PdfReader's read() names it (DocumentReadException). */
+final class PdfException extends IOException {
 
-    public PdfException(String message) {
+    PdfException(String message) {
         super(message);
     }
 }

@@ -32,7 +32,7 @@ import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.Style;
 import org.jtools.doccomparator.document.StyleSheet;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 
 /**
  * Compares two Word documents: their paragraphs and tables paired (Pairer), the pairs compared (ParagraphComparer,
@@ -41,14 +41,14 @@ import org.jtools.doccomparator.document.WordDocument;
  */
 public final class DocumentComparer {
 
-    private final WordDocument left;
-    private final WordDocument right;
+    private final Document left;
+    private final Document right;
     private final CompareOptions options;
     private final Vocabulary vocabulary = new Vocabulary();
     private final ParagraphComparer paragraphs;
     private final TableComparer tables;
 
-    private DocumentComparer(WordDocument left, WordDocument right, CompareOptions options) {
+    private DocumentComparer(Document left, Document right, CompareOptions options) {
         this.left = left;
         this.right = right;
         this.options = options;
@@ -56,7 +56,7 @@ public final class DocumentComparer {
         this.tables = new TableComparer(options, paragraphs, left.styles(), right.styles());
     }
 
-    public static Comparison compare(WordDocument left, WordDocument right, CompareOptions options) {
+    public static Comparison compare(Document left, Document right, CompareOptions options) {
         return new DocumentComparer(left, right, options).compare();
     }
 
@@ -165,7 +165,7 @@ public final class DocumentComparer {
     }
 
     /** The sections of a body: one, and one more after each paragraph that ends one. */
-    private static int sections(WordDocument document) {
+    private static int sections(Document document) {
         int sections = 1;
         for (Block block : document.body().blocks()) {
             if (block instanceof Paragraph paragraph && paragraph.endsSection()) {

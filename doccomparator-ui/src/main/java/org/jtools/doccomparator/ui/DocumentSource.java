@@ -22,10 +22,9 @@ package org.jtools.doccomparator.ui;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import org.jtools.doccomparator.document.WordDocument;
-import org.jtools.doccomparator.docx.DocxReader;
+import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.i18n.I18n;
-import org.jtools.doccomparator.reader.DocumentReader;
+import org.jtools.doccomparator.reader.DocumentReadException;
 import org.jtools.doccomparator.reader.DocumentReaders;
 import org.jtools.doccomparator.text.TextReader;
 
@@ -43,22 +42,15 @@ public interface DocumentSource {
      *
      * @throws IOException when it cannot be read, its message saying why, in words for the person who chose it
      */
-    WordDocument read() throws IOException;
+    Document read() throws IOException;
 
     /** What its side's head says of how it is read ("PDF: its paragraphs rebuilt…"); null for nothing. */
     default String readingNote() {
         return null;
     }
 
-    /** A file, read by the reader of its extension (DocumentReaders); one of no reader's, as a Word document. */
+    /** A file, read by the reader of its extension; one of no reader's, as a Word document (DocumentReaders). */
     record File(Path path) implements DocumentSource {
-
-        /** What a file of an extension no reader has is read as: Word's own, whatever it is named. */
-        private static final DocumentReader OTHERWISE = new DocxReader();
-
-        private DocumentReader reader() {
-            return DocumentReaders.of(path).orElse(OTHERWISE);
-        }
 
         @Override
         public String name() {
@@ -66,17 +58,13 @@ public interface DocumentSource {
         }
 
         @Override
-        public WordDocument read() throws IOException {
-            try {
-                return reader().read(path);
-            } catch (IOException e) {
-                throw new IOException(I18n.text("error.in", name(), e.getMessage()), e);
-            }
+        public Document read() throws DocumentReadException {
+            return DocumentReaders.forFile(path).read(path);
         }
 
         @Override
         public String readingNote() {
-            return reader().readingNote();
+            return DocumentReaders.forFile(path).readingNote();
         }
     }
 
@@ -89,7 +77,7 @@ public interface DocumentSource {
         }
 
         @Override
-        public WordDocument read() {
+        public Document read() {
             return TextReader.read(name(), text);
         }
 

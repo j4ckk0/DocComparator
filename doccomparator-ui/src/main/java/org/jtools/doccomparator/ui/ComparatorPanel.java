@@ -51,7 +51,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.Comparison;
 import org.jtools.doccomparator.compare.DocumentComparer;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.reader.DocumentReader;
 import org.jtools.doccomparator.reader.DocumentReaders;
@@ -353,8 +353,8 @@ public final class ComparatorPanel extends JPanel {
         }
         CompareOptions options = controls.options();
         work.start("status.comparing", () -> {
-            WordDocument a = left.document();
-            WordDocument b = right.document();
+            Document a = left.document();
+            Document b = right.document();
             PictureImages.prepare(a, b);   // decoded here, away from the window's thread
             return DocumentComparer.compare(a, b, options);
         }, result -> {
@@ -373,7 +373,7 @@ public final class ComparatorPanel extends JPanel {
         comparison = null;
         SideState state = sides.get(side);
         work.start("status.reading", () -> {
-            WordDocument document = state.document();
+            Document document = state.document();
             PictureImages.prepare(document);
             return document;
         }, document -> {

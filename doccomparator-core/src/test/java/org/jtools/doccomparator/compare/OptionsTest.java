@@ -30,15 +30,15 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.jtools.doccomparator.compare.CompareOptions.Aspect;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.docx.DocxReader;
 import org.junit.jupiter.api.Test;
 
 /** Each kind of difference on the samples: shown with its switch on, gone with it off. */
 class OptionsTest {
 
-    private static final WordDocument REVISION_A = read("procedure-revA.docx");
-    private static final WordDocument REVISION_B = read("procedure-revB.docx");
+    private static final Document REVISION_A = read("procedure-revA.docx");
+    private static final Document REVISION_B = read("procedure-revB.docx");
 
     @Test
     void byDefaultTheTextAloneCounts() {
@@ -118,8 +118,8 @@ class OptionsTest {
     void withoutTheTableLayoutRowsMovedDoNotCount() {
         String[][] parts = {{"Part", "Reference"}, {"Filter", "KP-F-110"}, {"Seal", "KP-J-031"}};
         String[][] moved = {{"Part", "Reference"}, {"Seal", "KP-J-031"}, {"Filter", "KP-F-110"}};
-        WordDocument a = document(TableComparerTest.table(parts));
-        WordDocument b = document(TableComparerTest.table(moved));
+        Document a = document(TableComparerTest.table(parts));
+        Document b = document(TableComparerTest.table(moved));
         assertEquals(Pairing.Status.OTHERWISE, DocumentComparer.compare(a, b, CompareOptions.ALL).stories().getFirst()
                 .pairings().getFirst().status());
         assertEquals(Pairing.Status.SAME, DocumentComparer.compare(a, b, CompareOptions.TEXT_ONLY).stories().getFirst()
@@ -166,14 +166,14 @@ class OptionsTest {
                 .orElseThrow(() -> new AssertionError("no pairing on the right starts with " + start));
     }
 
-    private static WordDocument document(org.jtools.doccomparator.document.Table table) {
-        return new WordDocument("test.docx", new org.jtools.doccomparator.document.Story(
+    private static Document document(org.jtools.doccomparator.document.Table table) {
+        return new Document("test.docx", new org.jtools.doccomparator.document.Story(
                 org.jtools.doccomparator.document.Story.Name.BODY, List.of(table)), List.of(), List.of(),
                 org.jtools.doccomparator.document.StyleSheet.NONE, org.jtools.doccomparator.document.Template.NONE,
                 false);
     }
 
-    private static WordDocument read(String name) {
+    private static Document read(String name) {
         try {
             return new DocxReader().read(Path.of("..", "samples", name));
         } catch (IOException e) {

@@ -34,7 +34,7 @@ import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.Template;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.ooxml.OoxmlPackage;
 import org.jtools.doccomparator.ooxml.Relationship;
@@ -42,7 +42,7 @@ import org.jtools.doccomparator.ooxml.XmlCursor;
 import org.jtools.doccomparator.reader.AbstractDocumentReader;
 
 /**
- * Reads an Excel workbook (.xlsx) into a WordDocument, so that it compares as a document does: each sheet, in the
+ * Reads an Excel workbook (.xlsx) into a Document, so that it compares as a document does: each sheet, in the
  * workbook's order, a heading with its name and the table of its cells (SheetReader). Charts, pictures, comments,
  * conditional formatting and data validation are not read.
  */
@@ -66,7 +66,7 @@ public final class XlsxReader extends AbstractDocumentReader {
 
 
     @Override
-    public WordDocument read(Path file) throws IOException {
+    protected Document readFile(Path file) throws IOException {
         try (OoxmlPackage xlsx = OoxmlPackage.open(file)) {
             String workbook = xlsx.mainPart("xl/workbook.xml");
             List<Relationship> relationships = xlsx.relationships(workbook);
@@ -130,7 +130,7 @@ public final class XlsxReader extends AbstractDocumentReader {
                     }
                 }
             }
-            return new WordDocument(String.valueOf(file.getFileName()), new Story(Story.Name.BODY, blocks),
+            return new Document(String.valueOf(file.getFileName()), new Story(Story.Name.BODY, blocks),
                     List.of(), List.of(), StyleSheet.NONE, Template.NONE, false);
         }
     }

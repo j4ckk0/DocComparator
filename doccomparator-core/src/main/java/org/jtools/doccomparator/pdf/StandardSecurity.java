@@ -61,7 +61,7 @@ final class StandardSecurity {
 
     static StandardSecurity of(Map<String, Object> encrypt, byte[] id, PdfFile file) throws PdfException {
         if (!"Standard".equals(PdfObjects.name(file.resolve(encrypt.get("Filter"))))) {
-            throw new PdfException(file.error(I18n.text("error.pdfEncryption")));
+            throw new PdfException(I18n.text("error.pdfEncryption"));
         }
         int version = PdfObjects.integer(file.resolve(encrypt.get("V")), 0);
         int revision = PdfObjects.integer(file.resolve(encrypt.get("R")), 0);
@@ -77,22 +77,22 @@ final class StandardSecurity {
             streams = method(filters, PdfObjects.name(file.resolve(encrypt.get("StmF"))), file);
         }
         if (owner == null || user == null || revision < 2 || revision > 6) {
-            throw new PdfException(file.error(I18n.text("error.pdfEncryption")));
+            throw new PdfException(I18n.text("error.pdfEncryption"));
         }
         byte[] key;
         if (revision >= 5) {
             if (user.length < 48) {
-                throw new PdfException(file.error(I18n.text("error.pdfEncryption")));
+                throw new PdfException(I18n.text("error.pdfEncryption"));
             }
             byte[] none = new byte[0];
             byte[] check = hash(none, Arrays.copyOfRange(user, 32, 40), none, revision);
             if (!Arrays.equals(check, 0, 32, user, 0, 32)) {
-                throw new PdfException(file.error(I18n.text("error.pdfPassword")));
+                throw new PdfException(I18n.text("error.pdfPassword"));
             }
             byte[] intermediate = hash(none, Arrays.copyOfRange(user, 40, 48), none, revision);
             byte[] userKey = bytes(file.resolve(encrypt.get("UE")));
             if (userKey == null || userKey.length < 32) {
-                throw new PdfException(file.error(I18n.text("error.pdfEncryption")));
+                throw new PdfException(I18n.text("error.pdfEncryption"));
             }
             key = aes(Cipher.DECRYPT_MODE, intermediate, new byte[16], Arrays.copyOf(userKey, 32));
         } else {
@@ -133,7 +133,7 @@ final class StandardSecurity {
                 compared = 16;
             }
             if (user.length < compared || !Arrays.equals(expected, 0, compared, user, 0, compared)) {
-                throw new PdfException(file.error(I18n.text("error.pdfPassword")));
+                throw new PdfException(I18n.text("error.pdfPassword"));
             }
         }
         return new StandardSecurity(key, strings, streams);
@@ -150,7 +150,7 @@ final class StandardSecurity {
             case "AESV2" -> Method.AES128;
             case "AESV3" -> Method.AES256;
             case "None" -> Method.NONE;
-            default -> throw new PdfException(file.error(I18n.text("error.pdfEncryption")));
+            default -> throw new PdfException(I18n.text("error.pdfEncryption"));
         };
     }
 

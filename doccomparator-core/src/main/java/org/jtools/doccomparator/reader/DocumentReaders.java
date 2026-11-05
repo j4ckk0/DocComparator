@@ -62,6 +62,15 @@ public final class DocumentReaders {
         return all().stream().filter(reader -> reader.reads(file)).findFirst();
     }
 
+    /**
+     * The reader of this file: the reader of its extension; for an extension no reader has, Word's — a Word
+     * document may be named anything (a .tmp, a .bak). Fails only when no reader reads .docx.
+     */
+    public static DocumentReader forFile(Path file) {
+        return of(file).or(() -> of(Path.of("document.docx")))
+                .orElseThrow(() -> new IllegalStateException("no reader reads Word documents"));
+    }
+
     /** The extensions of every reader, in their order, each once. */
     public static List<String> extensions() {
         return all().stream().flatMap(reader -> reader.extensions().stream()).distinct().toList();

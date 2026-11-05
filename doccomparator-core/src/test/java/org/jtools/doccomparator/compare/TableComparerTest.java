@@ -36,7 +36,7 @@ import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.Template;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 import org.junit.jupiter.api.Test;
 
 class TableComparerTest {
@@ -165,8 +165,8 @@ class TableComparerTest {
         return pairings.getFirst();
     }
 
-    private static WordDocument document(Block... blocks) {
-        return new WordDocument("test.docx", new Story(Story.Name.BODY, List.of(blocks)), List.of(), List.of(),
+    private static Document document(Block... blocks) {
+        return new Document("test.docx", new Story(Story.Name.BODY, List.of(blocks)), List.of(), List.of(),
                 StyleSheet.NONE, Template.NONE, false);
     }
 

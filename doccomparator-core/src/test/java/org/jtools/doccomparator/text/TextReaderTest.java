@@ -35,7 +35,7 @@ import org.jtools.doccomparator.compare.Comparison;
 import org.jtools.doccomparator.compare.DocumentComparer;
 import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.Paragraph;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.document.Story;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -76,7 +76,7 @@ class TextReaderTest {
     void aTextFileIsNamedByItsFile(@TempDir Path folder) throws IOException {
         Path file = folder.resolve("notes.md");
         Files.writeString(file, "# Title\r\n\r\nSome *text*.\r\n");
-        WordDocument document = new TextReader().read(file);
+        Document document = new TextReader().read(file);
         assertEquals("notes.md", document.fileName());
         assertEquals(List.of("# Title", "", "Some *text*."), texts(document), "Markdown as the text it is");
     }
@@ -102,14 +102,14 @@ class TextReaderTest {
 
     @Test
     void anEmptyLineIsAnEmptyParagraphTabsKept() {
-        WordDocument document = TextReader.read("pasted", "a\tb\n\nc");
+        Document document = TextReader.read("pasted", "a\tb\n\nc");
         assertEquals(List.of("a\tb", "", "c"), texts(document));
         assertTrue(((Paragraph) document.body().blocks().get(1)).runs().isEmpty(), "no run, as Word's empty one");
     }
 
     @Test
     void noStyleNoFormattingNothingButTheBody() {
-        WordDocument document = TextReader.read("pasted", "one");
+        Document document = TextReader.read("pasted", "one");
         Paragraph paragraph = (Paragraph) document.body().blocks().getFirst();
         assertEquals(null, paragraph.styleId());
         assertTrue(paragraph.formatting().isEmpty());
@@ -135,7 +135,7 @@ class TextReaderTest {
         return texts(TextReader.read("pasted", text));
     }
 
-    private static List<String> texts(WordDocument document) {
+    private static List<String> texts(Document document) {
         return document.body().blocks().stream().map(Block.class::cast).map(b -> ((Paragraph) b).text()).toList();
     }
 }

@@ -45,7 +45,7 @@ import org.jtools.doccomparator.document.Picture;
 import org.jtools.doccomparator.document.Run;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.report.ComparisonWords;
 
@@ -111,7 +111,7 @@ final class Lines {
      * nothing compared — until the other document is there. Of what is shown, only the view counts: with nothing
      * compared, every line is shown.
      */
-    static List<Line> alone(WordDocument document, Side side, Shown shown, Fonts fonts, Palette palette) {
+    static List<Line> alone(Document document, Side side, Shown shown, Fonts fonts, Palette palette) {
         Comparison itself = DocumentComparer.compare(document, document,
                 CompareOptions.TEXT_ONLY.with(Aspect.HEADERS_AND_FOOTERS, true));
         List<Line> lines = new ArrayList<>();

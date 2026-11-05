@@ -33,17 +33,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.CompareOptions.Aspect;
+import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.Comparison;
 import org.jtools.doccomparator.compare.DocumentComparer;
 import org.jtools.doccomparator.compare.Pairing;
 import org.jtools.doccomparator.compare.PropertyDifference;
 import org.jtools.doccomparator.document.Block;
+import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Table;
-import org.jtools.doccomparator.document.WordDocument;
-import org.jtools.doccomparator.ooxml.OoxmlException;
+import org.jtools.doccomparator.reader.DocumentReadException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -69,11 +69,11 @@ class XlsxReaderTest {
         return cell(reference, " t=\"s\"", "<v>" + index + "</v>");
     }
 
-    private WordDocument read(TestXlsx workbook) throws IOException {
+    private Document read(TestXlsx workbook) throws IOException {
         return new XlsxReader().read(workbook.write(folder, "book" + System.nanoTime() + ".xlsx"));
     }
 
-    private static Table table(WordDocument document, int sheet) {
+    private static Table table(Document document, int sheet) {
         int tables = 0;
         for (Block block : document.body().blocks()) {
             if (block instanceof Table table && tables++ == sheet) {
@@ -105,7 +105,7 @@ class XlsxReaderTest {
 
     @Test
     void eachSheetAHeadingThenItsTableEveryKindOfValue() throws IOException {
-        WordDocument document = read(new TestXlsx()
+        Document document = read(new TestXlsx()
                 .strings("Name", "Total")
                 .sheet("Data", "<sheetData>"
                         + row(1, shared("A1", 0), number("B1", "3.5"))
@@ -129,7 +129,7 @@ class XlsxReaderTest {
 
     @Test
     void theTableIsTheRectangleOfWhatCellsHold() throws IOException {
-        WordDocument document = read(new TestXlsx().sheet("S", "<sheetData>"
+        Document document = read(new TestXlsx().sheet("S", "<sheetData>"
                 + row(3, number("C3", "1"), number("D3", "2"))
                 + row(5, number("D5", "3"))
                 + row(40, cell("H40", " s=\"0\"", ""))   // formatted, empty: no part of it
@@ -140,7 +140,7 @@ class XlsxReaderTest {
 
     @Test
     void sharedFormulasAreShiftedFromTheirFirstCell() throws IOException {
-        WordDocument document = read(new TestXlsx().sheet("S", "<sheetData>"
+        Document document = read(new TestXlsx().sheet("S", "<sheetData>"
                 + row(1, number("A1", "10"), cell("B1", "", "<f t=\"shared\" si=\"0\" ref=\"B1:B3\">A1*2+$A$1</f>"
                         + "<v>30</v>"))
                 + row(2, number("A2", "20"), cell("B2", "", "<f t=\"shared\" si=\"0\"/><v>50</v>"))
@@ -156,7 +156,7 @@ class XlsxReaderTest {
 
     @Test
     void mergedCellsSpanAsWordsDo() throws IOException {
-        WordDocument document = read(new TestXlsx().sheet("S", "<sheetData>"
+        Document document = read(new TestXlsx().sheet("S", "<sheetData>"
                 + row(1, number("A1", "1"), number("D1", "4"))
                 + row(2, number("A2", "5"), number("B2", "6"), number("D2", "8"))
                 + row(3, number("B3", "9"), number("D3", "11"))
@@ -193,7 +193,7 @@ class XlsxReaderTest {
 
     @Test
     void aCellsLookAsWordsProperties() throws IOException {
-        WordDocument document = read(new TestXlsx().styles(STYLES).theme(THEME).sheet("S",
+        Document document = read(new TestXlsx().styles(STYLES).theme(THEME).sheet("S",
                 "<cols><col min=\"1\" max=\"2\" width=\"10\" customWidth=\"1\"/></cols><sheetData>"
                         + "<row r=\"1\" ht=\"30\" customHeight=\"1\">" + cell("A1", " s=\"1\"", "<v>0.125</v>")
                         + cell("B1", " s=\"2\"", "<v>46331</v>") + "</row>"
@@ -232,7 +232,7 @@ class XlsxReaderTest {
 
     @Test
     void aRichStringKeepsItsRunsFonts() throws IOException {
-        WordDocument document = read(new TestXlsx()
+        Document document = read(new TestXlsx()
                 .richString("<r><t>plain </t></r><r><rPr><b/><rFont val=\"Arial\"/></rPr><t>bold</t></r>"
                         + "<rPh sb=\"0\" eb=\"1\"><t>yomi</t></rPh>")
                 .sheet("S", "<sheetData>" + row(1, shared("A1", 0)) + "</sheetData>"));
@@ -244,18 +244,18 @@ class XlsxReaderTest {
 
     @Test
     void datesFrom1904WhenTheWorkbookSaysSo() throws IOException {
-        WordDocument document = read(new TestXlsx().date1904().styles(STYLES)
+        Document document = read(new TestXlsx().date1904().styles(STYLES)
                 .sheet("S", "<sheetData>" + row(1, cell("A1", " s=\"2\"", "<v>0</v>")) + "</sheetData>"));
         assertEquals("1904-01-01", ((Paragraph) at(table(document, 0), 0, 0).blocks().getFirst()).text());
     }
 
     @Test
     void aFormulaChangedIsACellsDifferenceItsValueATextOne() throws IOException {
-        WordDocument before = read(new TestXlsx().sheet("S", "<sheetData>"
+        Document before = read(new TestXlsx().sheet("S", "<sheetData>"
                 + row(1, number("A1", "2"), cell("B1", "", "<f>A1*2</f><v>4</v>"), number("C1", "7"))
                 + row(2, number("A2", "3"), number("B2", "5"), number("C2", "9"))
                 + "</sheetData>"));
-        WordDocument after = read(new TestXlsx().sheet("S", "<sheetData>"
+        Document after = read(new TestXlsx().sheet("S", "<sheetData>"
                 + row(1, number("A1", "2"), cell("B1", "", "<f>A1+A1</f><v>4</v>"), number("C1", "8"))
                 + row(2, number("A2", "3"), number("B2", "5"), number("C2", "9"))
                 + "</sheetData>"));
@@ -276,7 +276,7 @@ class XlsxReaderTest {
     void aSheetTooLargeIsRefusedNamed() throws IOException {
         Path file = new TestXlsx().sheet("Huge", "<sheetData>" + row(1, number("A1", "1"))
                 + row(1_000_000, number("C1000000", "2")) + "</sheetData>").write(folder, "huge.xlsx");
-        OoxmlException refused = assertThrows(OoxmlException.class, () -> new XlsxReader().read(file));
+        DocumentReadException refused = assertThrows(DocumentReadException.class, () -> new XlsxReader().read(file));
         assertTrue(refused.getMessage().contains("too many cells to compare: sheet Huge takes the workbook beyond "
                 + "250000"), refused.getMessage());
     }
@@ -289,15 +289,15 @@ class XlsxReaderTest {
         assertEquals(4, new XlsxReader().read(two).body().blocks().size(), "200,000 cells: read");
         Path three = new TestXlsx().sheet("One", corners).sheet("Two", corners).sheet("Three", corners)
                 .write(folder, "three.xlsx");
-        OoxmlException refused = assertThrows(OoxmlException.class, () -> new XlsxReader().read(three));
+        DocumentReadException refused = assertThrows(DocumentReadException.class, () -> new XlsxReader().read(three));
         assertTrue(refused.getMessage().contains("sheet Three takes the workbook beyond 250000"), refused.getMessage());
     }
 
     @Test
     void notAZipIsRefusedSaidAsSuch() throws IOException {
         Path file = Files.writeString(folder.resolve("notes.xlsx"), "not a workbook");
-        OoxmlException refused = assertThrows(OoxmlException.class, () -> new XlsxReader().read(file));
-        assertEquals("notes.xlsx is neither a Word document nor an Excel workbook: it is not a zip archive",
+        DocumentReadException refused = assertThrows(DocumentReadException.class, () -> new XlsxReader().read(file));
+        assertEquals("notes.xlsx: neither a Word document nor an Excel workbook: it is not a zip archive",
                 refused.getMessage());
     }
 }

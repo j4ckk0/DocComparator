@@ -24,7 +24,8 @@ import java.io.IOException;
 import org.jtools.doccomparator.i18n.I18n;
 
 /**
- * A file that cannot be read as a Word document or an Excel workbook, and why, in words for the person who chose it.
+ * Why a file cannot be read as a Word document or an Excel workbook, the file not named: its reader names it
+ * (DocumentReadException); a part of the file, when the fault is in one, is named first.
  */
 public final class OoxmlException extends IOException {
 

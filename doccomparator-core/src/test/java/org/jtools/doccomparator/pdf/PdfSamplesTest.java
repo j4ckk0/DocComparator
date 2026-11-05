@@ -39,18 +39,18 @@ import org.jtools.doccomparator.compare.StoryComparison;
 import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Story;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 import org.junit.jupiter.api.Test;
 
 /** The sample PDFs (samples/make_pdfs.py), as LibreOffice writes them, their words and their differences. */
 class PdfSamplesTest {
 
-    private static WordDocument sample(String name) throws IOException {
+    private static Document sample(String name) throws IOException {
         return new PdfReader().read(Path.of("..", "samples", name));
     }
 
     /** Every pairing that differs, as "status: left | right", in each story. */
-    private static List<String> differences(WordDocument left, WordDocument right, CompareOptions options) {
+    private static List<String> differences(Document left, Document right, CompareOptions options) {
         List<String> said = new ArrayList<>();
         for (StoryComparison story : DocumentComparer.compare(left, right, options).stories()) {
             for (Pairing pairing : story.pairings()) {
@@ -63,7 +63,7 @@ class PdfSamplesTest {
         return said;
     }
 
-    private static Set<String> words(WordDocument document) {
+    private static Set<String> words(Document document) {
         Set<String> words = new TreeSet<>();
         List<Story> stories = new ArrayList<>(document.headersAndFooters());
         stories.add(document.body());
@@ -97,7 +97,7 @@ class PdfSamplesTest {
 
     @Test
     void aPdfComparedWithItselfIsTheSame() throws IOException {
-        WordDocument procedure = sample("procedure-revA.pdf");
+        Document procedure = sample("procedure-revA.pdf");
         assertEquals(List.of(), differences(procedure, procedure, CompareOptions.ALL));
     }
 

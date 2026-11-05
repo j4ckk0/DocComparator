@@ -62,7 +62,7 @@ jre_version=$(sed -n 's/^JDK_LINUX=.*_\([0-9][0-9.]*\)_[0-9]*\.tar\.gz$/\1/p' ex
 [ -n "$jre_version" ] || jre_version=25
 
 body=$(
-  echo "DocComparator $version — compare two Word documents (\`.docx\`) side by side: paragraphs paired even when moved, their differences marked word by word, tables row by row and column by column, each kind of layout on its own switch. Self-contained, and it never reaches the network."
+  echo "DocComparator $version — compare two documents (Word, Excel, PDF or text) side by side: paragraphs paired even when moved, their differences marked word by word, tables row by row and column by column, each kind of layout on its own switch. Self-contained, and it never reaches the network."
   echo
   cat "$notes"
   echo

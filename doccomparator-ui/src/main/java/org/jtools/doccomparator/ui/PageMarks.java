@@ -29,7 +29,7 @@ import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.ui.DocumentLook.PageMark;
 import org.jtools.doccomparator.i18n.I18n;
 
@@ -61,7 +61,7 @@ final class PageMarks {
     /**
      * The marks of a document's body, by paragraph; with the blanks compared or not (empty paragraphs shown or not).
      */
-    static Map<Paragraph, List<PageMark>> of(WordDocument document, boolean blanks) {
+    static Map<Paragraph, List<PageMark>> of(Document document, boolean blanks) {
         PageMarks pages = new PageMarks(document.styles(), blanks);
         pages.walk(document.body().blocks(), true);
         return pages.marks;

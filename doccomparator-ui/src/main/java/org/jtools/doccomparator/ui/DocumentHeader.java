@@ -37,7 +37,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.i18n.I18n;
 
 /**
@@ -133,7 +133,7 @@ final class DocumentHeader extends JPanel {
      * Shows what the side compares: a document's path, and what is worth saying of it once read (read null until
      * then); or that it is text pasted, the path left empty to be typed.
      */
-    void show(DocumentSource source, WordDocument read) {
+    void show(DocumentSource source, Document read) {
         path.setText(source instanceof DocumentSource.File file ? file.path().toAbsolutePath().toString() : "");
         if (source == null) {
             about.setText(" ");

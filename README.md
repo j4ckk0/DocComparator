@@ -141,7 +141,7 @@ downloads its plugins into `~/.m2`. After that, `mvn -o` builds offline.
 
 ## What is read
 
-`DocxReader` reads a `.docx` (and `.docm`, `.dotx`, `.dotm`, built alike) into a `WordDocument`, with the JDK alone:
+`DocxReader` reads a `.docx` (and `.docm`, `.dotx`, `.dotm`, built alike) into a `Document`, with the JDK alone:
 
 - **The stories:** the body, each header and footer the sections refer to ("Header (first page), section 2"), each
   footnote and endnote. Each is a list of blocks — paragraphs, tables whose cells hold blocks of their own, text boxes
@@ -165,7 +165,7 @@ Not read yet: comments, what an abstract list borrows from a numbering style.
 
 ### Excel workbooks
 
-`XlsxReader` reads a `.xlsx` (and `.xlsm`, `.xltx`, `.xltm`, built alike; not Excel 97's `.xls`) into a `WordDocument`
+`XlsxReader` reads a `.xlsx` (and `.xlsm`, `.xltx`, `.xltm`, built alike; not Excel 97's `.xls`) into a `Document`
 too, so that it compares as a document does: each sheet, in the workbook's order, a heading with its name, then the
 table of its cells. Rows and columns are then compared as a Word table's are: added, removed, moved, each cell's text
 word by word.
@@ -193,7 +193,7 @@ Not read: charts, pictures, comments, conditional formatting, data validation, h
 
 ### PDFs
 
-`PdfReader` reads a `.pdf` into a `WordDocument` too, with the JDK alone: no PDF library. A PDF holds no words,
+`PdfReader` reads a `.pdf` into a `Document` too, with the JDK alone: no PDF library. A PDF holds no words,
 lines or paragraphs, only characters placed on pages. The reader rebuilds them, so that a PDF compares as a document
 does.
 
@@ -330,7 +330,7 @@ goes in core's (`language.<code>`).
 
 ## How it compares
 
-`DocumentComparer` compares two `WordDocument`s, with the JDK alone, in two steps, then lays out the rows of a
+`DocumentComparer` compares two `Document`s, with the JDK alone, in two steps, then lays out the rows of a
 side-by-side view (`Comparison`): the body, the headers and footers, the footnotes and endnotes, each on its own. Text
 boxes are opened into their paragraphs and tables; a table is compared as a whole (see "Tables").
 
@@ -505,13 +505,13 @@ module's texts.
 
 | Path | What it holds |
 |---|---|
-| `doccomparator-core/…/document/` | what a document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
-| `doccomparator-core/…/reader/` | what reads a file into a `WordDocument`: `DocumentReader` (a format's reader; another format's is added as a service), `AbstractDocumentReader` (its extensions and order), `DocumentReaders` (the readers there are, in their order) |
-| `doccomparator-core/…/text/` | `TextReader` (text pasted, or a text file, into a `WordDocument`, a paragraph a line) |
+| `doccomparator-core/…/document/` | what a document is to the comparison: `Document`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
+| `doccomparator-core/…/reader/` | what reads a file into a `Document`: `DocumentReader` (a format's reader; another format's is added as a service), `AbstractDocumentReader` (its extensions and order; its errors naming the file once), `DocumentReadException` (a file not read, and why), `DocumentReaders` (the readers there are, in their order; `forFile`, a file of no known extension read as Word's) |
+| `doccomparator-core/…/text/` | `TextReader` (text pasted, or a text file, into a `Document`, a paragraph a line) |
 | `doccomparator-core/…/ooxml/` | what Word's and Excel's files share: `OoxmlPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `Relationship`, `OoxmlException` (a file that cannot be read, and why) |
-| `doccomparator-core/…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `StoryReader`, `DrawingReader` (a drawing's pictures and text boxes), `StylesReader`, `Numbering`, `FormattingReader`, `Pictures` (a part's pictures, through its relationships, nothing outside fetched) |
-| `doccomparator-core/…/pdf/` | `PdfReader` (a .pdf into a `WordDocument`), `PdfFile` (its objects, through its cross-references and object streams, rebuilt when damaged), `StandardSecurity` (decryption, the empty password), `Lexer` (PDF's syntax), `Filters` (streams decoded, bounded), `ContentReader` (a page's glyphs, where they are drawn), `PdfFont`, `CMap`, `Encodings` and `StandardWidths` (what a code is, and its width), `TextLayout` (glyphs into lines, paragraphs, lists, running header and footer), `PdfException` |
-| `doccomparator-core/…/xlsx/` | `XlsxReader` (a .xlsx into a `WordDocument`, a sheet a heading and a table), `SheetReader` (a worksheet's cells, merges, widths and heights), `Styles` (Excel's look as Word's properties), `NumberFormats` (a value as Excel shows it), `Formulas` (references, shared formulas shifted), `Colors` (theme, tint, palette) |
+| `doccomparator-core/…/docx/` | `DocxReader` (a .docx into a `Document`), `StoryReader`, `DrawingReader` (a drawing's pictures and text boxes), `StylesReader`, `Numbering`, `FormattingReader`, `Pictures` (a part's pictures, through its relationships, nothing outside fetched) |
+| `doccomparator-core/…/pdf/` | `PdfReader` (a .pdf into a `Document`), `PdfFile` (its objects, through its cross-references and object streams, rebuilt when damaged), `StandardSecurity` (decryption, the empty password), `Lexer` (PDF's syntax), `Filters` (streams decoded, bounded), `ContentReader` (a page's glyphs, where they are drawn), `PdfFont`, `CMap`, `Encodings` and `StandardWidths` (what a code is, and its width), `TextLayout` (glyphs into lines, paragraphs, lists, running header and footer), `PdfException` |
+| `doccomparator-core/…/xlsx/` | `XlsxReader` (a .xlsx into a `Document`, a sheet a heading and a table), `SheetReader` (a worksheet's cells, merges, widths and heights), `Styles` (Excel's look as Word's properties), `NumberFormats` (a value as Excel shows it), `Formulas` (references, shared formulas shifted), `Colors` (theme, tint, palette) |
 | `doccomparator-core/…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Pairing`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `Phrase` (what a difference says, kept as data: `report` puts it into words) |
 | `doccomparator-core/…/report/` | what a comparison says, in the language in use: `ComparisonWords` (a story's name, where a paragraph is, a difference, any `Phrase`), `PropertyNames` (Word's property names as a reader says them) |
 | `doccomparator-core/…/i18n/` | the languages (see "Languages"): `I18nLanguage`, `I18n`, `I18nTexts` (a jar's texts, as a service); `texts/`, core's own |

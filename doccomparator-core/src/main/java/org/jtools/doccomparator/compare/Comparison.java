@@ -21,13 +21,13 @@ package org.jtools.doccomparator.compare;
  */
 
 import java.util.List;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 
 /**
  * Two documents compared: each kind of story, pairing by pairing, and what differs of the documents themselves —
  * template, style definitions, sections — as the options compare them.
  */
-public record Comparison(WordDocument left, WordDocument right, CompareOptions options, List<StoryComparison> stories,
+public record Comparison(Document left, Document right, CompareOptions options, List<StoryComparison> stories,
                          List<PropertyDifference> documentDifferences) {
 
     public Comparison {

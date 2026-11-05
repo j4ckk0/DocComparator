@@ -20,13 +20,17 @@ package org.jtools.doccomparator.reader;
  * #L%
  */
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import org.jtools.doccomparator.document.Document;
 
 /**
- * A reader's extensions and order, given once to its constructor: a reader of a new format extends it and writes
- * formatName() and read(), and readingNote() when its format is read otherwise than as it is.
+ * A reader's extensions and order, given once to its constructor, and its errors named once: a reader of a new format
+ * extends it and writes formatName() and readFile(), and readingNote() when its format is read otherwise than as it
+ * is. Whatever readFile() throws becomes a DocumentReadException naming the file.
  */
 public abstract class AbstractDocumentReader implements DocumentReader {
 
@@ -48,6 +52,24 @@ public abstract class AbstractDocumentReader implements DocumentReader {
                 .map(extension -> extension.toLowerCase(Locale.ROOT).replaceFirst("^\\.", ""))
                 .toList();
     }
+
+    @Override
+    public final Document read(Path file) throws DocumentReadException {
+        try {
+            return readFile(file);
+        } catch (DocumentReadException e) {
+            throw e;
+        } catch (IOException e) {
+            throw new DocumentReadException(String.valueOf(file.getFileName()), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * The file as a document, named by its file name.
+     *
+     * @throws IOException when it cannot be read, its message saying why without naming the file (read() does)
+     */
+    protected abstract Document readFile(Path file) throws IOException;
 
     @Override
     public final List<String> extensions() {

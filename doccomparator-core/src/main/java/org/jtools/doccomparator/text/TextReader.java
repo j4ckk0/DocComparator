@@ -37,12 +37,12 @@ import org.jtools.doccomparator.document.Run;
 import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Template;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.reader.AbstractDocumentReader;
 
 /**
- * Reads plain text — pasted, dropped, or a text file — into a WordDocument, so it compares as a document does: a body
+ * Reads plain text — pasted, dropped, or a text file — into a Document, so it compares as a document does: a body
  * alone, a paragraph a line, without style nor formatting, an empty line an empty paragraph. Markdown is read as the
  * text it is, its marks compared as words.
  */
@@ -70,7 +70,7 @@ public final class TextReader extends AbstractDocumentReader {
 
     /** A text file, named by its file name. */
     @Override
-    public WordDocument read(Path path) throws IOException {
+    protected Document readFile(Path path) throws IOException {
         return read(String.valueOf(path.getFileName()), decode(Files.readAllBytes(path)));
     }
 
@@ -111,7 +111,7 @@ public final class TextReader extends AbstractDocumentReader {
     }
 
     /** The text as a document named so; its last line break ends its last paragraph, it does not start one. */
-    public static WordDocument read(String name, String text) {
+    public static Document read(String name, String text) {
         String[] lines = text.split("\r\n|\r|\n", -1);
         int count = lines.length > 1 && lines[lines.length - 1].isEmpty() ? lines.length - 1 : lines.length;
         List<Block> paragraphs = new ArrayList<>(count);
@@ -119,7 +119,7 @@ public final class TextReader extends AbstractDocumentReader {
             List<Run> runs = lines[i].isEmpty() ? List.of() : List.of(new Run(lines[i], null, Formatting.NONE));
             paragraphs.add(new Paragraph(null, Formatting.NONE, 0, null, false, runs));
         }
-        return new WordDocument(name, new Story(Story.Name.BODY, paragraphs), List.of(),
+        return new Document(name, new Story(Story.Name.BODY, paragraphs), List.of(),
                 List.of(), StyleSheet.NONE, Template.NONE, false);
     }
 }

@@ -35,7 +35,8 @@ import java.util.Map;
 /**
  * A number as Excel shows it through a number format ("0.00", "dd/mm/yyyy", "[$€-40C] #,##0.00"…), but in the same
  * conventions on every machine, so that a comparison does not depend on where it runs: a point for decimals, a comma
- * between thousands, English month and day names, format 14 as 2026-11-05. Fractions and conditions are not rendered.
+ * between thousands, English month and day names, format 14 as 2026-11-05. Fractions and conditions, which this
+ * subset does not render, show the value as General.
  */
 final class NumberFormats {
 
@@ -66,6 +67,9 @@ final class NumberFormats {
     static String format(double value, String code, boolean date1904) {
         if (Double.isNaN(value) || Double.isInfinite(value)) {
             return String.valueOf(value);
+        }
+        if (unrendered(code)) {
+            return general(value);
         }
         List<String> sections = sections(code);
         String section;
@@ -122,6 +126,36 @@ final class NumberFormats {
     private enum Kind { LITERAL, NUMBER, DATE, ELAPSED, AMPM }
 
     private record Token(Kind kind, String text) {
+    }
+
+    /**
+     * Whether a code asks for what this subset does not render, shown as General instead: a condition ("[>100]"),
+     * which picks a section by value rather than by sign, or a fraction ("# ?/?", "0/100"), outside quotes and
+     * escapes. A slash between date parts ("dd/mm/yy") is a date's.
+     */
+    static boolean unrendered(String code) {
+        StringBuilder bare = new StringBuilder();
+        for (int i = 0; i < code.length(); i++) {
+            char c = code.charAt(i);
+            if (c == '"') {
+                int end = code.indexOf('"', i + 1);
+                i = end < 0 ? code.length() : end;
+            } else if (c == '\\' || c == '_' || c == '*') {
+                i++;   // an escaped character, a space as wide as one, a fill: none is a format's
+            } else if (c == '[') {
+                int end = code.indexOf(']', i);
+                String inside = end < 0 ? "" : code.substring(i + 1, end);
+                if (inside.matches("[<>=].*")) {
+                    return true;
+                }
+                i = end < 0 ? code.length() : end;
+            } else {
+                bare.append(c);
+            }
+        }
+        String plain = bare.toString();
+        boolean date = plain.matches("(?i).*[dmyhs].*");
+        return plain.contains("?") || plain.contains("/") && !date;
     }
 
     /** The code's sections, split on the semicolons outside quotes, brackets and escapes. */

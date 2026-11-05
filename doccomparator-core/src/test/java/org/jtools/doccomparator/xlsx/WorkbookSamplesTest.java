@@ -31,18 +31,18 @@ import java.util.List;
 import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.DocumentComparer;
 import org.jtools.doccomparator.compare.Pairing;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 import org.junit.jupiter.api.Test;
 
 /** The sample workbooks (samples/make_workbooks.py), as LibreOffice writes them, and their differences. */
 class WorkbookSamplesTest {
 
-    private static WordDocument sample(String name) throws IOException {
+    private static Document sample(String name) throws IOException {
         return new XlsxReader().read(Path.of("..", "samples", name));
     }
 
     /** Every cell pairing of every table, as "status: left | right, its properties' differences". */
-    private static List<String> cells(WordDocument left, WordDocument right, CompareOptions options) {
+    private static List<String> cells(Document left, Document right, CompareOptions options) {
         List<String> said = new ArrayList<>();
         for (Pairing pairing : DocumentComparer.compare(left, right, options).stories().getFirst().pairings()) {
             if (pairing.table() == null) {
@@ -63,7 +63,7 @@ class WorkbookSamplesTest {
 
     @Test
     void aWorkbookComparedWithItselfIsTheSame() throws IOException {
-        WordDocument budget = sample("budget-revA.xlsx");
+        Document budget = sample("budget-revA.xlsx");
         assertEquals(List.of(), cells(budget, budget, CompareOptions.ALL));
     }
 

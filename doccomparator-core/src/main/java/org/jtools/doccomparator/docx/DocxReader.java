@@ -31,7 +31,7 @@ import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Template;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.ooxml.OoxmlException;
 import org.jtools.doccomparator.ooxml.OoxmlPackage;
@@ -40,7 +40,7 @@ import org.jtools.doccomparator.ooxml.XmlCursor;
 import org.jtools.doccomparator.reader.AbstractDocumentReader;
 
 /**
- * Reads a Word document (.docx, and .docm, .dotx, .dotm, which are built alike) into a WordDocument. Reads the file
+ * Reads a Word document (.docx, and .docm, .dotx, .dotm, which are built alike) into a Document. Reads the file
  * and nothing else: the links it holds — a template on a share, a linked picture — are kept as written, never
  * followed (README, "No network").
  */
@@ -58,7 +58,7 @@ public final class DocxReader extends AbstractDocumentReader {
     }
 
     @Override
-    public WordDocument read(Path file) throws IOException {
+    protected Document readFile(Path file) throws IOException {
         try (OoxmlPackage docx = OoxmlPackage.open(file)) {
             String main = docx.mainPart("word/document.xml");
             List<Relationship> relationships = docx.relationships(main);
@@ -82,7 +82,7 @@ public final class DocxReader extends AbstractDocumentReader {
             notes.addAll(readNotes(docx, relationships, "footnotes", Story.Kind.FOOTNOTE, stories));
             notes.addAll(readNotes(docx, relationships, "endnotes", Story.Kind.ENDNOTE, stories));
 
-            return new WordDocument(String.valueOf(file.getFileName()), new Story(Story.Name.BODY, body),
+            return new Document(String.valueOf(file.getFileName()), new Story(Story.Name.BODY, body),
                     headersAndFooters, notes, styles, readTemplate(docx, relationships), stories.trackedChanges());
         }
     }

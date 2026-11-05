@@ -33,13 +33,13 @@ import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Template;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.pdf.PdfObjects.Stream;
 import org.jtools.doccomparator.reader.AbstractDocumentReader;
 
 /**
- * Reads a PDF into a WordDocument, so that it compares as a document does: its text and its look, its paragraphs
+ * Reads a PDF into a Document, so that it compares as a document does: its text and its look, its paragraphs
  * rebuilt from the lines (TextLayout), its running header and footer apart. Pictures, annotations, form fields and
  * the text of scanned pages (images) are not read; tables are read as their lines.
  */
@@ -75,11 +75,11 @@ public final class PdfReader extends AbstractDocumentReader {
 
 
     @Override
-    public WordDocument read(Path path) throws IOException {
+    protected Document readFile(Path path) throws IOException {
         return read(PdfFile.open(path));
     }
 
-    static WordDocument read(PdfFile file) throws PdfException {
+    static Document read(PdfFile file) throws PdfException {
         List<TextLayout.Page> pages = new ArrayList<>();
         Map<Map<String, Object>, PdfFont> fonts = new IdentityHashMap<>();
         long[] glyphsLeft = {LARGEST_TEXT};
@@ -100,10 +100,10 @@ public final class PdfReader extends AbstractDocumentReader {
             pages.add(new TextLayout.Page(shown, page.box()));
         }
         if (unreadableFont != null && unreadable > MOST_UNREADABLE * glyphs) {
-            throw new PdfException(file.error(I18n.text("error.pdfFont", unreadableFont.name)));
+            throw new PdfException(I18n.text("error.pdfFont", unreadableFont.name));
         }
         if (glyphs == 0) {
-            throw new PdfException(file.error(I18n.text("error.pdfNoText")));
+            throw new PdfException(I18n.text("error.pdfNoText"));
         }
         TextLayout.Text text = TextLayout.of(pages);
         List<Story> running = new ArrayList<>();
@@ -114,7 +114,7 @@ public final class PdfReader extends AbstractDocumentReader {
             running.add(new Story(Story.Name.headerOrFooter(Story.Kind.FOOTER, "default", 0), text.footer()));
         }
         List<Block> body = text.body();
-        return new WordDocument(file.fileName(), new Story(Story.Name.BODY, body), running, List.of(),
+        return new Document(file.fileName(), new Story(Story.Name.BODY, body), running, List.of(),
                 StyleSheet.NONE, Template.NONE, false);
     }
 
@@ -128,7 +128,7 @@ public final class PdfReader extends AbstractDocumentReader {
         Set<Map<String, Object>> walked = Collections.newSetFromMap(new IdentityHashMap<>());
         Map<String, Object> root = PdfObjects.dictionary(file.resolve(catalog.get("Pages")));
         if (root == null) {
-            throw new PdfException(file.error(I18n.text("error.pdfDamaged")));
+            throw new PdfException(I18n.text("error.pdfDamaged"));
         }
         walk(file, root, null, new double[] {0, 0, 612, 792}, pages, walked);
         return pages;

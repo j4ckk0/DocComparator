@@ -69,7 +69,7 @@ public final class OoxmlPackage implements AutoCloseable {
         try {
             return new OoxmlPackage(fileName, new ZipFile(file.toFile()));
         } catch (ZipException _) {
-            throw new OoxmlException(I18n.text("error.notZip", fileName));
+            throw new OoxmlException(I18n.text("error.notZip"));
         }
     }
 
@@ -85,7 +85,7 @@ public final class OoxmlPackage implements AutoCloseable {
         if (has(usual)) {
             return usual;
         }
-        throw new OoxmlException(I18n.text("error.noMainDocument", fileName));
+        throw new OoxmlException(I18n.text("error.noMainDocument"));
     }
 
     /** The relationships of a part ("" for the package's own), none when it has no relationship part. */
@@ -129,12 +129,12 @@ public final class OoxmlPackage implements AutoCloseable {
     public XmlCursor open(String part) throws OoxmlException {
         ZipEntry entry = entries.get(part.toLowerCase(Locale.ROOT));
         if (entry == null) {
-            throw new OoxmlException(fileName, I18n.text("error.noPart", part));
+            throw new OoxmlException(I18n.text("error.noPart", part));
         }
         try {
             return XmlCursor.open(new LimitedInputStream(zip.getInputStream(entry), part), part);
         } catch (IOException e) {
-            throw new OoxmlException(fileName, I18n.text("error.unreadable", part, e.getMessage()));
+            throw new OoxmlException(I18n.text("error.unreadable", part, e.getMessage()));
         }
     }
 
@@ -156,7 +156,7 @@ public final class OoxmlPackage implements AutoCloseable {
         }
         ZipEntry entry = entries.get(part.toLowerCase(Locale.ROOT));
         if (entry == null) {
-            throw new OoxmlException(fileName, I18n.text("error.noPart", part));
+            throw new OoxmlException(I18n.text("error.noPart", part));
         }
         MessageDigest digest;
         try {
@@ -180,7 +180,7 @@ public final class OoxmlPackage implements AutoCloseable {
                 }
             }
         } catch (IOException e) {
-            throw new OoxmlException(fileName, I18n.text("error.unreadable", part, e.getMessage()));
+            throw new OoxmlException(I18n.text("error.unreadable", part, e.getMessage()));
         }
         Binary binary = new Binary(HexFormat.of().formatHex(digest.digest()), keeping ? kept.toByteArray() : null);
         binaries.put(part.toLowerCase(Locale.ROOT), binary);

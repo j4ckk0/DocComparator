@@ -27,7 +27,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.Deflater;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
+import org.jtools.doccomparator.reader.DocumentReadException;
 
 /**
  * Writes small PDFs for the tests: pages of content written as operators, fonts and other objects given as their
@@ -115,8 +116,13 @@ final class TestPdf {
         return this;
     }
 
-    WordDocument read() throws PdfException {
-        return PdfReader.read(PdfFile.of("test.pdf", bytes()));
+    /** The file read as PdfReader reads one, its errors naming it ("test.pdf: …"). */
+    Document read() throws DocumentReadException {
+        try {
+            return PdfReader.read(PdfFile.of("test.pdf", bytes()));
+        } catch (PdfException e) {
+            throw new DocumentReadException("test.pdf", e.getMessage(), e);
+        }
     }
 
     byte[] bytes() {

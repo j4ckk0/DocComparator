@@ -20,14 +20,13 @@ package org.jtools.doccomparator.reader;
  * #L%
  */
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 
 /**
- * Reads files of one format into a WordDocument, the model every comparison works on. This jar's readers — Word,
+ * Reads files of one format into a Document, the model every comparison works on. This jar's readers — Word,
  * Excel, PDF, text — are found as services (java.util.ServiceLoader, see DocumentReaders): another format is added by
  * a jar that provides one more, declared in its module ({@code provides ... with}) or in
  * META-INF/services/org.jtools.doccomparator.reader.DocumentReader. AbstractDocumentReader does the extensions' part.
@@ -69,7 +68,7 @@ public interface DocumentReader {
     /**
      * The file as a document, named by its file name.
      *
-     * @throws IOException when it cannot be read, its message saying why, in words for the person who chose it
+     * @throws DocumentReadException when it cannot be read, its message naming the file and saying why
      */
-    WordDocument read(Path file) throws IOException;
+    Document read(Path file) throws DocumentReadException;
 }

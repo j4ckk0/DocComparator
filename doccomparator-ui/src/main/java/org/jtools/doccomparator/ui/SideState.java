@@ -21,14 +21,14 @@ package org.jtools.doccomparator.ui;
  */
 
 import java.io.IOException;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 
 /**
  * What a side of the comparison has: what it compares (its source, null until one is opened) and its document once read
  * (null until then). A side changes by being given another state, never in place: a reading away from the window's
  * thread works on the state it was given, whatever the side has become since.
  */
-record SideState(DocumentSource source, WordDocument read) {
+record SideState(DocumentSource source, Document read) {
 
     /** A side with nothing opened. */
     static final SideState EMPTY = new SideState(null, null);
@@ -43,12 +43,12 @@ record SideState(DocumentSource source, WordDocument read) {
     }
 
     /** The same source, its document read. */
-    SideState withRead(WordDocument document) {
+    SideState withRead(Document document) {
         return new SideState(source, document);
     }
 
     /** Its document: the one read, else read now from its source — away from the window's thread. */
-    WordDocument document() throws IOException {
+    Document document() throws IOException {
         return read != null ? read : source.read();
     }
 }

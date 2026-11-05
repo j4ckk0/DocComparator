@@ -35,13 +35,14 @@ import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Run;
 import org.jtools.doccomparator.document.Story;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
+import org.jtools.doccomparator.reader.DocumentReadException;
 import org.junit.jupiter.api.Test;
 
 class PdfReaderTest {
 
     /** The body's paragraphs, as their text. */
-    private static List<String> paragraphs(WordDocument document) {
+    private static List<String> paragraphs(Document document) {
         return texts(document.body().blocks());
     }
 
@@ -49,11 +50,11 @@ class PdfReaderTest {
         return blocks.stream().map(block -> ((Paragraph) block).text()).toList();
     }
 
-    private static Paragraph first(WordDocument document) {
+    private static Paragraph first(Document document) {
         return (Paragraph) document.body().blocks().getFirst();
     }
 
-    private static WordDocument fixture(String name) throws IOException {
+    private static Document fixture(String name) throws IOException {
         try {
             return new PdfReader().read(Path.of(PdfReaderTest.class.getResource(name).toURI()));
         } catch (URISyntaxException e) {
@@ -63,7 +64,7 @@ class PdfReaderTest {
 
     @Test
     void linesOfOneParagraphAreJoinedAndAWiderGapStartsAnother() throws IOException {
-        WordDocument document = new TestPdf().page(text("F1", 12, 72, 700, "The first line of a")
+        Document document = new TestPdf().page(text("F1", 12, 72, 700, "The first line of a")
                 + text("F1", 12, 72, 686, "paragraph goes on here.")
                 + text("F1", 12, 72, 672, "And it ends on a third line.")
                 + text("F1", 12, 72, 640, "Another paragraph, after a gap.")).read();
@@ -74,7 +75,7 @@ class PdfReaderTest {
 
     @Test
     void aGapBetweenWordsIsASpaceAndKerningIsNot() throws IOException {
-        WordDocument document = new TestPdf()
+        Document document = new TestPdf()
                 .page("BT /F1 12 Tf 72 700 Td (Hello) Tj 36 0 Td (world) Tj ET\n"
                         + "BT /F1 12 Tf 72 650 Td [(Ke) 20 (rn) -20 (ing) -400 (apart)] TJ ET\n")
                 .read();
@@ -84,7 +85,7 @@ class PdfReaderTest {
 
     @Test
     void fontsSizesBoldItalicAndColourAreTheRunsFormatting() throws IOException {
-        WordDocument document = new TestPdf().page("BT /F1 12 Tf 72 700 Td (Plain ) Tj /F2 12 Tf (bold ) Tj "
+        Document document = new TestPdf().page("BT /F1 12 Tf 72 700 Td (Plain ) Tj /F2 12 Tf (bold ) Tj "
                 + "/F3 12 Tf (italic ) Tj /F1 12 Tf 1 0 0 rg (red) Tj ET\n").read();
 
         List<Run> runs = first(document).runs();
@@ -102,7 +103,7 @@ class PdfReaderTest {
     @Test
     void theSizeIsTheOneOnThePageWhateverTheMatricesMakeIt() throws IOException {
         // a font of 1 point scaled 18 times by the text matrix, the page halved by the CTM: 9 points shown
-        WordDocument document = new TestPdf()
+        Document document = new TestPdf()
                 .page("q 0.5 0 0 0.5 0 0 cm BT /F1 1 Tf 18 0 0 18 144 1400 Tm (Scaled) Tj ET Q\n").read();
 
         assertEquals("18", first(document).runs().getFirst().formatting().get("sz"));
@@ -110,7 +111,7 @@ class PdfReaderTest {
 
     @Test
     void aBiggerLineIsAParagraphOfItsOwnAndASuperscriptIsMarked() throws IOException {
-        WordDocument document = new TestPdf().page(text("F2", 20, 72, 720, "A title")
+        Document document = new TestPdf().page(text("F2", 20, 72, 720, "A title")
                 + text("F1", 12, 72, 696, "Body text, the first line")
                 + "BT /F1 7 Tf 222 701 Td (2) Tj ET\n"
                 + text("F1", 12, 72, 682, "and its second line.")).read();
@@ -136,7 +137,7 @@ class PdfReaderTest {
         pdf.font("F9", "<< /Type /Font /Subtype /Type0 /BaseFont /ABCDEF+Calibri-Bold /Encoding /Identity-H "
                 + "/DescendantFonts [" + descendant + " 0 R] /ToUnicode " + cmap + " 0 R >>");
         // each code 500 thousandths wide (DW): the second word starts 6 points after the first ends
-        WordDocument document = pdf.page("BT /F9 12 Tf 72 700 Td <000100020003> Tj 24 0 Td <00100011> Tj "
+        Document document = pdf.page("BT /F9 12 Tf 72 700 Td <000100020003> Tj 24 0 Td <00100011> Tj "
                 + "24 0 Td <0004> Tj ET\n").read();
 
         assertEquals(List.of("Çab vé ﬁ"), paragraphs(document));
@@ -149,7 +150,7 @@ class PdfReaderTest {
         TestPdf pdf = new TestPdf();
         pdf.font("F9", "<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman /Encoding << /BaseEncoding "
                 + "/WinAnsiEncoding /Differences [65 /eacute /uni20AC /f_i /Ccedilla] >> >>");
-        WordDocument document = pdf.page("BT /F9 12 Tf 72 700 Td (ABCD and caf\\351) Tj ET\n").read();
+        Document document = pdf.page("BT /F9 12 Tf 72 700 Td (ABCD and caf\\351) Tj ET\n").read();
 
         assertEquals(List.of("é€fiÇ and café"), paragraphs(document));
         assertEquals("Times", first(document).runs().getFirst().formatting().get("rFonts.ascii"));
@@ -160,7 +161,7 @@ class PdfReaderTest {
         // Helvetica's "i" is 222 thousandths wide: drawn one after the other, its letters are no words apart
         TestPdf pdf = new TestPdf();
         pdf.font("F9", "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
-        WordDocument document = pdf.page("BT /F9 12 Tf 72 700 Td (Mini) Tj 23.34 0 Td (mal) Tj ET\n").read();
+        Document document = pdf.page("BT /F9 12 Tf 72 700 Td (Mini) Tj 23.34 0 Td (mal) Tj ET\n").read();
 
         assertEquals(List.of("Minimal"), paragraphs(document));
     }
@@ -178,7 +179,7 @@ class PdfReaderTest {
 
     @Test
     void aFileWhoseCrossReferencesAreWrongIsReadByItsObjects() throws IOException {
-        WordDocument document = new TestPdf().page(text("F1", 12, 72, 700, "Found all the same."))
+        Document document = new TestPdf().page(text("F1", 12, 72, 700, "Found all the same."))
                 .withWrongOffsets().read();
 
         assertEquals(List.of("Found all the same."), paragraphs(document));
@@ -186,7 +187,7 @@ class PdfReaderTest {
 
     @Test
     void aParagraphGoesOnAcrossAPageBreakAndThePageStartIsKept() throws IOException {
-        WordDocument document = new TestPdf()
+        Document document = new TestPdf()
                 .page(text("F1", 12, 72, 700, "A sentence that does not end")
                         + text("F1", 12, 72, 686, "on its page but goes on"))
                 .page(text("F1", 12, 72, 700, "on the next one.")
@@ -210,7 +211,7 @@ class PdfReaderTest {
                     + text("F1", 12, 72, 600, bodies.get(page - 1))
                     + text("F1", 9, 72, 40, "Page " + page + " of 3"));
         }
-        WordDocument document = pdf.read();
+        Document document = pdf.read();
 
         assertEquals(bodies, paragraphs(document));
         List<Story> running = document.headersAndFooters();
@@ -222,7 +223,7 @@ class PdfReaderTest {
 
     @Test
     void aTaggedPdfsPaginationArtifactsAreItsHeaderAndFooter() throws IOException {
-        WordDocument document = new TestPdf().page("/Artifact << /Type /Pagination /Subtype /Header >> BDC "
+        Document document = new TestPdf().page("/Artifact << /Type /Pagination /Subtype /Header >> BDC "
                 + text("F1", 9, 72, 760, "Marked as a header") + "EMC\n"
                 + text("F1", 12, 72, 700, "The body.")).read();
 
@@ -232,7 +233,7 @@ class PdfReaderTest {
 
     @Test
     void bulletsAndNumbersAreListItemsTheirMarksApart() throws IOException {
-        WordDocument document = new TestPdf().page(text("F1", 12, 72, 700, "The steps:")
+        Document document = new TestPdf().page(text("F1", 12, 72, 700, "The steps:")
                 + text("F1", 12, 72, 686, "1. Stop the pump.")
                 + text("F1", 12, 72, 672, "2. Drain it.")
                 + text("F1", 12, 72, 658, "\u0095 A bullet,")
@@ -250,7 +251,7 @@ class PdfReaderTest {
 
     @Test
     void cellsSideBySideAreNotJoinedIntoOneParagraph() throws IOException {
-        WordDocument document = new TestPdf().page(text("F1", 12, 72, 700, "Part")
+        Document document = new TestPdf().page(text("F1", 12, 72, 700, "Part")
                 + text("F1", 12, 300, 700, "Quantity")
                 + text("F1", 12, 72, 686, "Filter")
                 + text("F1", 12, 300, 686, "1")).read();
@@ -263,7 +264,7 @@ class PdfReaderTest {
         TestPdf pdf = new TestPdf();
         int form = pdf.stream("<< /Type /XObject /Subtype /Form /BBox [0 0 600 100] /Matrix [1 0 0 1 0 600] >>",
                 text("F1", 12, 72, 50, "Drawn by a form."));
-        WordDocument document = pdf.resources("/XObject << /X1 " + form + " 0 R >>")
+        Document document = pdf.resources("/XObject << /X1 " + form + " 0 R >>")
                 .page("q /X1 Do Q\nBI /W 2 /H 1 /BPC 8 /CS /G ID \u0000ÿ EI\n"
                         + text("F1", 12, 72, 500, "After an inline image.")).read();
 
@@ -273,7 +274,7 @@ class PdfReaderTest {
     @Test
     void encryptedFilesOpenedWithoutAPasswordAreRead() throws IOException {
         for (String name : List.of("aes128.pdf", "aes256.pdf", "rc4-40.pdf", "rc4-128.pdf")) {
-            WordDocument document = fixture(name);
+            Document document = fixture(name);
             assertEquals(List.of("Encrypted text reads the same."), paragraphs(document), name);
         }
         assertEquals("Encrypted Family", first(fixture("aes256.pdf")).runs().getFirst().formatting()
@@ -284,7 +285,7 @@ class PdfReaderTest {
 
     @Test
     void aFileThatAsksAPasswordIsRefused() {
-        PdfException refused = assertThrows(PdfException.class, () -> fixture("password.pdf"));
+        DocumentReadException refused = assertThrows(DocumentReadException.class, () -> fixture("password.pdf"));
         assertEquals("password.pdf: it is protected by a password", refused.getMessage());
     }
 
@@ -292,9 +293,9 @@ class PdfReaderTest {
     void whatIsNoPdfOrHoldsNoTextIsRefusedSayingWhy() {
         PdfException notPdf = assertThrows(PdfException.class,
                 () -> PdfFile.of("notes.pdf", "plain text".getBytes(StandardCharsets.US_ASCII)));
-        assertEquals("notes.pdf is not a PDF: it does not start as one", notPdf.getMessage());
+        assertEquals("not a PDF: it does not start as one", notPdf.getMessage(), "named by the reader, not here");
 
-        PdfException scan = assertThrows(PdfException.class,
+        DocumentReadException scan = assertThrows(DocumentReadException.class,
                 () -> new TestPdf().page("q 100 0 0 100 0 0 cm 0 0 1 1 re f Q\n").read());
         assertTrue(scan.getMessage().contains("it holds no text"), scan.getMessage());
     }
@@ -306,7 +307,7 @@ class PdfReaderTest {
                 + "/CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> >>");
         pdf.font("F9", "<< /Type /Font /Subtype /Type0 /BaseFont /XYZABC+Mystery /Encoding /Identity-H "
                 + "/DescendantFonts [" + descendant + " 0 R] >>");
-        PdfException refused = assertThrows(PdfException.class,
+        DocumentReadException refused = assertThrows(DocumentReadException.class,
                 () -> pdf.page("BT /F9 12 Tf 72 700 Td <00010002> Tj ET\n").read());
 
         assertEquals("test.pdf: its text cannot be read: the font Mystery does not say which characters it draws",

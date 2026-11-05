@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import org.jtools.doccomparator.compare.CompareOptions.Aspect;
-import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.docx.DocxReader;
 import org.junit.jupiter.api.Test;
 
@@ -40,9 +40,9 @@ import org.junit.jupiter.api.Test;
  */
 class SamplesTest {
 
-    private static final WordDocument REVISION_A = read("procedure-revA.docx");
-    private static final WordDocument REVISION_B = read("procedure-revB.docx");
-    private static final WordDocument HANDBOOK = read("training-handbook.docx");
+    private static final Document REVISION_A = read("procedure-revA.docx");
+    private static final Document REVISION_B = read("procedure-revB.docx");
+    private static final Document HANDBOOK = read("training-handbook.docx");
 
     @Test
     void aDocumentComparedWithItselfIsTheSame() {
@@ -204,7 +204,7 @@ class SamplesTest {
                 .orElseThrow(() -> new AssertionError("no pairing on the right starts with " + start));
     }
 
-    private static WordDocument read(String name) {
+    private static Document read(String name) {
         try {
             return new DocxReader().read(Path.of("..", "samples", name));
         } catch (IOException e) {
