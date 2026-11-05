@@ -20,7 +20,7 @@
   </organization>
 
   <!-- What Maven Central asks of every project it holds: its licence, who makes it, where its sources are
-       (PUBLISHING.md, section 7). -->
+       (PUBLISHING.md, section 2). -->
   <licenses>
     <license>
       <name>Apache License Version 2.0</name>
@@ -177,8 +177,8 @@
         </executions>
       </plugin>
       <plugin>
-        <!-- Nothing ships but the program's own classes and the JRE: NoNetworkTest reads the program's classes
-             only, so a library would bring code it never checks (README, "No network"). -->
+        <!-- Nothing ships but the three modules' classes, FlatLaf's and the JRE: NoNetworkTest reads those only,
+             so another library would bring code it never checks (README, "No network"). -->
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
         <version>3.5.0</version>
@@ -271,10 +271,11 @@
 
     <!--
       mvn -Ppublish deploy
-      Publishes DocComparator on Maven Central through the Central Portal (PUBLISHING.md, section 7): the
-      program's own jar, FlatLaf a dependency of it rather than held in it; its sources and javadoc; the pom with
-      its version written out; each signed. Needs the portal's token as the server "central" in
-      ~/.m2/settings.xml and a GPG key whose public part is on a key server. The upload is validated but not
+      Publishes DocComparator on Maven Central through the Central Portal (PUBLISHING.md, section 2): the parent
+      pom and each module's jar, its own classes only, the other modules and FlatLaf its dependencies rather than
+      held in it; their sources and javadoc; each pom with its version written out; each signed. Needs the
+      portal's token as the server "central" in ~/.m2/settings.xml and a GPG key whose public part is on a key
+      server. The upload is validated but not
       released until it is published from the portal. Only with this profile: the other builds reach for none of
       these plugins.
     -->
@@ -283,7 +284,8 @@
       <build>
         <plugins>
           <plugin>
-            <!-- the jar of Maven Central: the program's classes, FlatLaf named by the pom, not held twice -->
+            <!-- the program's jar on Maven Central: its own classes, the two other modules and FlatLaf named by its
+                 pom, not held twice -->
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-shade-plugin</artifactId>
             <executions>
@@ -363,7 +365,7 @@
                  by hand from https://central.sonatype.com once its checks pass -->
             <groupId>org.sonatype.central</groupId>
             <artifactId>central-publishing-maven-plugin</artifactId>
-            <!-- 0.7.0 could not read the field the portal added to its status answer (XsdViewer, PUBLISHING.md) -->
+            <!-- at least this one: older versions fail on a field of the portal's status answer (PUBLISHING.md) -->
             <version>0.11.0</version>
             <extensions>true</extensions>
             <configuration>

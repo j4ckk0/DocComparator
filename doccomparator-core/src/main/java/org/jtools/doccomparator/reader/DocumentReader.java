@@ -27,7 +27,7 @@ import java.util.Locale;
 import org.jtools.doccomparator.document.WordDocument;
 
 /**
- * Reads files of one format into a WordDocument, the model every comparison works on. The program's readers — Word,
+ * Reads files of one format into a WordDocument, the model every comparison works on. This jar's readers — Word,
  * Excel, PDF, text — are found as services (java.util.ServiceLoader, see DocumentReaders): another format is added by
  * a jar that provides one more, declared in its module ({@code provides ... with}) or in
  * META-INF/services/org.jtools.doccomparator.reader.DocumentReader. AbstractDocumentReader does the extensions' part.
@@ -37,7 +37,7 @@ import org.jtools.doccomparator.document.WordDocument;
  */
 public interface DocumentReader {
 
-    /** The order of the program's readers among all, in the file chooser: another reader's comes after them. */
+    /** The order of a reader that names none: after this jar's own, whose orders run from 10 to 40. */
     int LATER = 100;
 
     /** The file name extensions it reads: lower case, without their dot ("docx"). */

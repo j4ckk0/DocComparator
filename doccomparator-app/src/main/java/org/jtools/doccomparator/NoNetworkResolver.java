@@ -29,8 +29,9 @@ import java.util.stream.Stream;
 /**
  * The program's name service, which answers nothing: a name lookup reaches the network, even one the JDK makes on its
  * own — on Linux, Swing's fonts look up the machine's name to name their cache file (README, "No network"). Java
- * takes it in place of the system's through META-INF/services/java.net.spi.InetAddressResolverProvider. Every lookup
- * fails as an unknown host, which the JDK's callers expect: the fonts' cache is then named after "localhost".
+ * takes it in place of the system's, as a service: META-INF/services on the class path, module-info.java in the
+ * runtime image. Every lookup fails as an unknown host, which the JDK's callers expect: the fonts' cache is then
+ * named after "localhost".
  */
 public final class NoNetworkResolver extends InetAddressResolverProvider {
 

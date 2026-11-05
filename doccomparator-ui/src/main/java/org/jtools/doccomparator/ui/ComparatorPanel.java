@@ -66,7 +66,8 @@ import org.jtools.doccomparator.report.ComparisonWords;
  *
  * <p>Another program shows it as any component: open() gives it two files, or two DocumentSource of the program's
  * own; onCompared() tells each comparison; fileActions(), goActions() and the two menus are its commands, to put in the
- * program's own menus and tool bars.
+ * program's own menus and tool bars. The language and the look are the program's: it calls languageChanged() once
+ * I18n speaks another, and changes the look when onDarkMode() tells it Dark was ticked.
  */
 public final class ComparatorPanel extends JPanel {
 
@@ -197,7 +198,7 @@ public final class ComparatorPanel extends JPanel {
         listener.accept(documentNames());
     }
 
-    /** Told when Dark is ticked or not, in the ribbon or the View menu: the window changes its look. */
+    /** Told when Dark is ticked or not, in the ribbon or the View menu: the look is the program's to change. */
     public void onDarkMode(Consumer<Boolean> listener) {
         controls.onDarkMode(listener);
     }
@@ -217,10 +218,12 @@ public final class ComparatorPanel extends JPanel {
         controls.showRibbon(open);
     }
 
+    /** Open the left or the right document, paste on the left or the right, swap the sides: for a File menu. */
     public List<Action> fileActions() {
         return List.of(openLeft, openRight, pasteLeft, pasteRight, swap);
     }
 
+    /** The previous and the next difference (Shift+F7, F7), for a Go menu or a tool bar. */
     public List<Action> goActions() {
         return List.of(previous, next);
     }
@@ -416,7 +419,7 @@ public final class ComparatorPanel extends JPanel {
         return comparison != null;
     }
 
-    /** Shows a comparison, keeping the place the view was at. */
+    /** Shows a comparison, keeping the place the view was at; the heads still say what the sides were given to open. */
     public void show(Comparison result) {
         comparison = result;
         sides.forEach((side, state) -> heads.get(side).show(state.source(), state.read()));
@@ -433,7 +436,10 @@ public final class ComparatorPanel extends JPanel {
         updateActions();
     }
 
-    /** The lines to show have changed (the view, if viewChanged): shown again, the document alone read again. */
+    /**
+     * The lines to show have changed (the view, if viewChanged): shown again; a document alone only for another view,
+     * the one choice its lines follow — from what is read already.
+     */
     private void shownChanged(boolean viewChanged) {
         if (comparison != null) {
             show(comparison);
@@ -499,8 +505,8 @@ public final class ComparatorPanel extends JPanel {
     }
 
     /**
-     * Another look (View ▸ Look): once every part of the window has taken it, the comparison shown again, laid out in
-     * its fonts; the right-click menu, not a part of the window, told too.
+     * Another look, set by the program: once every part of the window has taken it, the comparison shown again, laid
+     * out in its fonts; the right-click menu, not a part of the window, told too.
      */
     @Override
     public void updateUI() {

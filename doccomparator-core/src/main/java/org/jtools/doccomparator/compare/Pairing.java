@@ -22,7 +22,7 @@ package org.jtools.doccomparator.compare;
 
 /**
  * A paragraph (or a table) of the left document and the one of the right it is paired with, or one of them alone: what
- * a line of the side-by-side view shows. A moved paragraph has a pairing where it is on each side, each naming the
+ * a line of a side-by-side view shows. A moved paragraph has a pairing where it is on each side, each naming the
  * other. The cells of compared tables are pairings too.
  *
  * @param left        the left paragraph, null for none

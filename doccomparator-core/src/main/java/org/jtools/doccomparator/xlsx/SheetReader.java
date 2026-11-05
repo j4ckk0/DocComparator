@@ -36,11 +36,9 @@ import org.jtools.doccomparator.ooxml.OoxmlException;
 import org.jtools.doccomparator.ooxml.XmlCursor;
 
 /**
- * A worksheet (xl/worksheets/sheetN.xml) as a table: the rectangle of its cells that hold a value or a formula, every
- * row and column of it, empty cells included, so that rows and columns compare as a Word table's do. A cell's text is
- * its value as Excel shows it; its formula, its look and its column's width are its properties; merged cells span as
- * Word's do (gridSpan across, vMerge down). Row numbers and column letters are not cells: one row inserted would make
- * every row after it differ.
+ * A worksheet (xl/worksheets/sheetN.xml) as a table, so that its rows and columns compare as a Word table's do: the
+ * rectangle of its cells that hold a value or a formula, empty cells included, each cell's text its value as Excel
+ * shows it. Row numbers and column letters are not cells: one row inserted would make every row after it differ.
  */
 final class SheetReader {
 

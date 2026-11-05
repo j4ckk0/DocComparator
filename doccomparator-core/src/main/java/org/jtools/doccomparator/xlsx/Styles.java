@@ -34,9 +34,8 @@ import org.jtools.doccomparator.ooxml.XmlCursor;
 
 /**
  * A workbook's cell styles (xl/styles.xml) as Word's properties, so that a cell's look compares and shows as a table
- * cell's does: its font as a run's (rFonts, sz, b, i, u, strike, color, vertAlign), its fill as shading (shd), its
- * borders (tcBorders), its alignment (jc, vAlign), and what Word has no name for: its number format (numFmt), text
- * wrapped (wrapText).
+ * cell's does: its font as a run's, its fill as shading, its borders and alignment; what Word has no name for, its
+ * number format and text wrapped, under names of their own (numFmt, wrapText).
  */
 final class Styles {
 

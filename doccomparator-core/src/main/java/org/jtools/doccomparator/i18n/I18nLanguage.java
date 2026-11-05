@@ -23,7 +23,8 @@ package org.jtools.doccomparator.i18n;
 import java.util.Locale;
 
 /**
- * A language the program speaks: its texts in i18n/messages_&lt;code&gt;.properties. French until another is chosen.
+ * A language the texts are in: each jar's in its own messages_&lt;code&gt;.properties (I18nTexts). French until
+ * another is chosen.
  */
 public enum I18nLanguage {
 
@@ -39,7 +40,7 @@ public enum I18nLanguage {
         this.code = code;
     }
 
-    /** Its ISO 639 code, which names its file and is kept in the settings: "fr", "en". */
+    /** Its ISO 639 code, which names its texts' files and stands for it where a choice is saved: "fr", "en". */
     public String code() {
         return code;
     }
@@ -53,7 +54,7 @@ public enum I18nLanguage {
         return I18n.text("language." + code);
     }
 
-    /** The language of this code; the default one for a code the program does not speak. */
+    /** The language of this code; the default one for any other code, null included. */
     public static I18nLanguage ofCode(String code) {
         for (I18nLanguage language : values()) {
             if (language.code.equals(code)) {

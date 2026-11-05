@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Writes src/main/resources/org/jtools/doccomparator/pdf/standard-widths.txt: the widths of the characters of the PDF
-standard fonts — Helvetica and Times, each in its four styles — that a PDF may use without giving them (ISO 32000-2,
-9.6.2.2), as the program needs them to know where a word ends. Courier needs none: all its characters are 600 wide.
+Writes doccomparator-core/src/main/resources/org/jtools/doccomparator/pdf/standard-widths.txt: the widths of the
+characters of the PDF standard fonts — Helvetica and Times, each in its four styles — that a PDF may use without
+giving them (ISO 32000-2, 9.6.2.2), as the program needs them to know where a word ends. Courier needs none: all its
+characters are 600 wide.
 
 The widths are those of the URW base 35 fonts, made to the same metrics (Nimbus Sans for Helvetica, Nimbus Roman for
 Times), read from their AFM files (Debian's fonts-urw-base35 package). A line a font: its name, then the widths of
@@ -15,7 +16,7 @@ import os
 
 AFM = '/usr/share/fonts/type1/urw-base35'
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, '..', 'src', 'main', 'resources', 'org', 'jtools', 'doccomparator', 'pdf',
+OUT = os.path.join(HERE, '..', 'doccomparator-core', 'src', 'main', 'resources', 'org', 'jtools', 'doccomparator', 'pdf',
                    'standard-widths.txt')
 FONTS = [('Helvetica', 'NimbusSans-Regular'), ('Helvetica-Bold', 'NimbusSans-Bold'),
          ('Helvetica-Oblique', 'NimbusSans-Italic'), ('Helvetica-BoldOblique', 'NimbusSans-BoldItalic'),

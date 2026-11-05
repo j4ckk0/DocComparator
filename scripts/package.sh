@@ -8,7 +8,8 @@
 #   scripts/package.sh -DskipTests      # extra arguments are passed to mvn
 #
 # The JDK comes from external/ (scripts/setup.sh deploys it; scripts/externals.sh checks it is there). The AOT cache
-# is made by running the program once (pom.xml, profile dist): with no display, xvfb-run gives one when it is there.
+# is made by running the program once (doccomparator-app/pom.xml, profile dist): with no display, xvfb-run gives one
+# when it is there.
 # The releases of the previous versions are removed once the new one is built: releases/ holds the release
 # of the version pom.xml names, and whatever else you put there is left alone.
 #

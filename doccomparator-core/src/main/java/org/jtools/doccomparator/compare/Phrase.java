@@ -44,7 +44,7 @@ public sealed interface Phrase {
         return new Verbatim(value);
     }
 
-    /** A property by its name in Word ("ind.left"), which the view says as a reader does ("indent left"). */
+    /** A property by its name in Word ("ind.left"), which PropertyNames says as a reader does ("indent left"). */
     static Phrase property(String wordName) {
         return new Property(wordName);
     }

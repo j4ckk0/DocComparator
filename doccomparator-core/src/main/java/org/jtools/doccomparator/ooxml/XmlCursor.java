@@ -34,7 +34,7 @@ import org.jtools.doccomparator.i18n.I18n;
 /**
  * A walk through one XML part of an Office Open XML file, element by element, that fetches nothing: no DTD, no external
  * entity. A file could otherwise make the parser read another file, or reach the network (README, "No network");
- * Office writes neither, so a part with a DOCTYPE is refused. The program parses XML here and nowhere else
+ * Office writes neither, so a part with a DOCTYPE is refused. DocComparator parses XML here and nowhere else
  * (NoNetworkTest).
  *
  * A reader handed the cursor on an element's start consumes it up to its end; nextChild() then moves to the next one.

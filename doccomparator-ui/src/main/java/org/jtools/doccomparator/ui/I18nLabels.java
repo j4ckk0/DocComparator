@@ -31,7 +31,8 @@ import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * The labels of a part of the window, each bound to its key: set as they are bound, and set again, in the language
- * then in use, by apply() — which the window calls on each part when the language changes.
+ * then in use, by apply() — which the program calls on each of its own when the language changes; the panel's, by
+ * ComparatorPanel.languageChanged().
  */
 public final class I18nLabels {
 
@@ -48,6 +49,7 @@ public final class I18nLabels {
         label.run();
     }
 
+    /** A button's text, now and at each apply(); the button returned. */
     public <B extends AbstractButton> B text(B button, String key) {
         bind(button::setText, key);
         return button;
@@ -63,11 +65,13 @@ public final class I18nLabels {
         return item;
     }
 
+    /** A label's text, now and at each apply(); the label returned. */
     public JLabel text(JLabel label, String key) {
         bind(label::setText, key);
         return label;
     }
 
+    /** A component's tooltip, now and at each apply(); the component returned. */
     public <C extends JComponent> C tip(C component, String key) {
         bind(component::setToolTipText, key);
         return component;

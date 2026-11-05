@@ -33,8 +33,7 @@ import org.jtools.doccomparator.pdf.PdfObjects.Ref;
 
 /**
  * Reads PDF values from bytes — a file's objects, a content stream's operands and operators — leniently: a stray
- * delimiter is passed over, a value cut short ends where the bytes do. Keywords (obj, stream, R aside) come as
- * Operator.
+ * delimiter is passed over, a value cut short ends where the bytes do. Keywords come as Operator, "n g R" as a Ref.
  */
 final class Lexer {
 
@@ -372,7 +371,7 @@ final class Lexer {
             }
             return Double.parseDouble(word);
         } catch (NumberFormatException _) {
-            // "--5", "1.2.3": what some writers leave; the digits they hold are not trusted
+            // "--5", "1.2.3": what some writers leave, read as a number all the same
             return word.matches("[+-]*[0-9.]+") ? lenient(word) : null;
         }
     }

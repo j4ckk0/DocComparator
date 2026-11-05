@@ -29,7 +29,7 @@ import java.util.TreeMap;
  * The properties a paragraph, a run, a table, a cell or a style sets, one entry per property, under Word's own names:
  * an element gives its name and value ("b" → "true", "sz" → "24", "jc" → "center"), each further attribute an entry of
  * its own ("u.color", "rFonts.ascii"), a nested element a dotted path ("pBdr.top.sz"). Generic on purpose: every
- * property can be compared, those the program has no name for included.
+ * property can be compared, those without a name of ours (PropertyNames) included.
  */
 public record Formatting(SortedMap<String, String> values) {
 

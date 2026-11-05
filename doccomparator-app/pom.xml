@@ -115,9 +115,10 @@
       mvn clean; the previous versions' releases are removed by scripts/package.*):
         releases/doccomparator-<version>-windows.zip    on Windows: DocComparator.exe, doccomparator.bat
         releases/doccomparator-<version>-linux.tar.gz   on Linux: doccomparator.sh
-      Its runtime is linked here (jlink) from the JDK that builds, with the program's three modules in it: jlink links
-      only for the system it runs on. Built from the root, as the two other modules' jars are read from their target/. Then Java's AOT cache of the program is made by running it once, on the two
-      sample procedures; with no display, or should that fail, the distribution goes without the cache.
+      Built from the root: the two other modules' jars are read from their target/. Its runtime is linked here
+      (jlink) from the JDK that builds, with the program's three modules in it: jlink links only for the system it
+      runs on. Then Java's AOT cache of the program is made by running it once, on the two sample procedures; with
+      no display, or should that fail, the distribution goes without the cache.
     -->
     <profile>
       <id>dist</id>
@@ -153,9 +154,8 @@
                       <zipfileset src="${flatlaf.jar}" excludes="com/formdev/flatlaf/natives/**"/>
                     </zip>
                     <!-- The runtime: the program (its module requires the two others), FlatLaf, the JDK's modules they
-                         need (java.desktop, java.xml), French
-                         and English locale data (dates, numbers, Swing's dialogs), the screen readers' bridge
-                         (jdk.accessibility) and the less common charsets. -->
+                         need (java.desktop, java.xml), French and English locale data (dates, numbers, Swing's
+                         dialogs), the screen readers' bridge (jdk.accessibility) and the less common charsets. -->
                     <delete dir="${runtime.image}"/>
                     <exec executable="${java.home}/bin/jlink${exe}" failonerror="true">
                       <arg value="--module-path"/>
@@ -172,9 +172,9 @@
                       <arg value="--output"/>
                       <arg value="${runtime.image}"/>
                     </exec>
-                    <!-- The AOT cache, trained with an empty class path: the launchers' -jar doccomparator.jar then
-                         adds the jar, whose time (which a zip does not keep across time zones) the cache then does
-                         not check, the program's classes coming from the runtime. The launchers' JVM flags. -->
+                    <!-- The AOT cache, trained with an empty class path: the jar the launchers add (-jar
+                         doccomparator.jar) is not in it, so its time, which a zip does not keep across time zones, goes
+                         unchecked; the program's classes come from the runtime. The launchers' JVM flags. -->
                     <delete file="${aot.cache}"/>
                     <exec executable="${runtime.image}/bin/java${exe}" timeout="300000" resultproperty="aot.trained"
                         failonerror="false" failifexecutionfails="false">

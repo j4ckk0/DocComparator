@@ -20,7 +20,8 @@ import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-WORDS = os.path.join(HERE, "..", "src", "test", "resources", "org", "jtools", "doccomparator", "pdf")
+WORDS = os.path.join(HERE, "..", "doccomparator-core", "src", "test", "resources", "org", "jtools", "doccomparator",
+                     "pdf")
 
 
 def main():

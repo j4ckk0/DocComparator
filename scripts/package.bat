@@ -8,7 +8,8 @@ rem   scripts\package.bat
 rem   scripts\package.bat -DskipTests      extra arguments are passed to mvn
 rem
 rem The JDK comes from external\ (scripts\setup.bat deploys it; scripts\externals.bat checks it is there). The AOT
-rem cache is made by running the program once (pom.xml, profile dist): the window shows for a moment.
+rem cache is made by running the program once (doccomparator-app\pom.xml, profile dist): the window shows for a
+rem moment.
 rem The releases of the previous versions are removed once the new one is built: releases\ holds the release
 rem of the version pom.xml names, and whatever else you put there is left alone.
 rem

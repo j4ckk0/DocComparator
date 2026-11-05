@@ -28,7 +28,7 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 
 /**
- * The readers there are: the program's and those other jars provide (DocumentReader), loaded once, in a fixed order —
+ * The readers there are: this jar's and those other jars provide (DocumentReader), loaded once, in a fixed order —
  * by DocumentReader.order(), then class name — whatever order the class path or the module graph gives them in.
  */
 public final class DocumentReaders {

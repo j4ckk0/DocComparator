@@ -37,8 +37,7 @@ import org.jtools.doccomparator.pdf.PdfObjects.Stream;
 
 /**
  * Runs a page's content streams as far as its text goes (ISO 32000-2, 9.4): the glyphs shown, in the order they are
- * drawn, each with where it starts and ends on the page, its size, font, colour, and whether a tagged PDF marks it
- * as a running header or footer. Paths, images and shadings are passed over; form XObjects are entered.
+ * drawn. Paths, images and shadings are passed over; form XObjects are entered.
  */
 final class ContentReader {
 
@@ -51,10 +50,9 @@ final class ContentReader {
     }
 
     /**
-     * A glyph shown: its characters (Encodings.UNKNOWN when its font does not say), its start and end on its baseline
-     * in page space, the unit vector of its baseline, its size in points, its font and fill colour (RRGGBB, null for
-     * black or one not known), whether it is drawn bold (filled and stroked) or slanted by the page rather than the
-     * font, and the artifact it is marked as.
+     * A glyph shown, in page space: its characters (Encodings.UNKNOWN when its font does not say), its size in points,
+     * its colour (RRGGBB, null for black or one not known), whether the page rather than the font makes it bold or
+     * slanted, and whether its characters are unknown because its font cannot be read.
      */
     record Glyph(String text, double x, double y, double endX, double endY, double dx, double dy, double size,
                  PdfFont font, String color, boolean drawnBold, boolean slanted, Artifact artifact,

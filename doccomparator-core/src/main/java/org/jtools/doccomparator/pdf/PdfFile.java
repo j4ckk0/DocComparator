@@ -38,9 +38,9 @@ import org.jtools.doccomparator.pdf.PdfObjects.Ref;
 import org.jtools.doccomparator.pdf.PdfObjects.Stream;
 
 /**
- * A PDF file's objects, found through its cross-reference sections — tables or streams, the newest first along /Prev
- * — and its object streams, decrypted when the file is (with the empty password a file opens with). A file whose
- * cross-references do not lead to its objects is read again by looking for every "n g obj" in it, as viewers do.
+ * A PDF file's objects, found through its cross-references and object streams, decrypted when the file is (with the
+ * empty password a file opens with). A file whose cross-references do not lead to its objects is read again by
+ * looking for every "n g obj" in it, as viewers do.
  */
 final class PdfFile {
 

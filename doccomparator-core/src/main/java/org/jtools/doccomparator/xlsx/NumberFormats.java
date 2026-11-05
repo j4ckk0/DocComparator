@@ -33,11 +33,9 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * A number as Excel shows it through a number format: "0.00", "#,##0", "0%", "dd/mm/yyyy", "[$€-40C] #,##0.00"… Excel
- * shows them in the machine's own conventions; here they are the same on every machine, so that a comparison does not
- * depend on where it runs: a point for decimals, a comma between thousands, English month and day names, and a date
- * Excel leaves to the machine (format 14) as 2026-11-05. What the subset does not render (fractions, conditions) is
- * shown as General: the value, to the 15 digits Excel keeps.
+ * A number as Excel shows it through a number format ("0.00", "dd/mm/yyyy", "[$€-40C] #,##0.00"…), but in the same
+ * conventions on every machine, so that a comparison does not depend on where it runs: a point for decimals, a comma
+ * between thousands, English month and day names, format 14 as 2026-11-05. Fractions and conditions are not rendered.
  */
 final class NumberFormats {
 

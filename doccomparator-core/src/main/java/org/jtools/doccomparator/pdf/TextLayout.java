@@ -39,11 +39,8 @@ import org.jtools.doccomparator.pdf.ContentReader.Artifact;
 import org.jtools.doccomparator.pdf.ContentReader.Glyph;
 
 /**
- * Rebuilds a document's text from the glyphs on its pages, which a PDF holds without words, lines or paragraphs:
- * glyphs drawn one after the other on a baseline are a line, a gap between them a space; lines a paragraph, until a
- * wider gap than the document's own line spacing, a change of size or of boldness, an indent, a bullet, or a short
- * line ending a sentence. A paragraph goes on across a page break when its sentence does. Lines repeated at the top or
- * the bottom of most pages — or marked so by a tagged PDF — are its running header and footer, apart from its body.
+ * Rebuilds a document's words, lines, paragraphs and lists from the glyphs on its pages, which a PDF holds without
+ * any, by where they are drawn; its running header and footer are set apart from its body.
  */
 final class TextLayout {
 

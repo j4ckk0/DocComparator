@@ -77,7 +77,7 @@ final class Pictures {
                 : new Picture(Picture.Kind.IMAGE, description, width, height, format, binary.digest(), binary.bytes());
     }
 
-    /** What the program cannot show — a chart, a diagram —: a picture saying so, its size kept. */
+    /** What cannot be shown — a chart, a diagram —: a picture saying so, its size kept. */
     static Picture unsupported(String what, String description, float width, float height) {
         return new Picture(Picture.Kind.UNSUPPORTED, description, width, height, what,
                 what + ":" + description + ":" + width + "x" + height, null);

@@ -39,10 +39,9 @@ import org.jtools.doccomparator.pdf.PdfObjects.Stream;
 import org.jtools.doccomparator.reader.AbstractDocumentReader;
 
 /**
- * Reads a PDF into a WordDocument, so that it compares as a document does: the text of its pages, its paragraphs
- * rebuilt from the lines (TextLayout), each character's font, size, bold, italic and colour; where its pages begin
- * kept as Word's are; its running header and footer apart. Pictures, annotations, form fields and the text of scanned
- * pages (images) are not read; tables are read as their lines.
+ * Reads a PDF into a WordDocument, so that it compares as a document does: its text and its look, its paragraphs
+ * rebuilt from the lines (TextLayout), its running header and footer apart. Pictures, annotations, form fields and
+ * the text of scanned pages (images) are not read; tables are read as their lines.
  */
 public final class PdfReader extends AbstractDocumentReader {
 
@@ -174,7 +173,7 @@ public final class PdfReader extends AbstractDocumentReader {
             Math.max(box[1], box[3])};
     }
 
-    /** A page's content streams, end to end, a line between each: one may end in the middle of nothing else. */
+    /** A page's content streams, end to end, a line between each: one's last token kept apart from the next's. */
     private static byte[] content(PdfFile file, Map<String, Object> page) throws PdfException {
         Object contents = file.resolve(page.get("Contents"));
         List<?> parts = contents instanceof List<?> list ? list : contents == null ? List.of() : List.of(contents);

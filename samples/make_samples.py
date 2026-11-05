@@ -5,9 +5,9 @@ Writes the sample documents of samples/, to try DocComparator on (README, "Sampl
   procedure-revA.docx      the reference: a maintenance procedure, revision A (Safety on a new page, a page break
                            before Records)
   procedure-revB.docx      its next version: paragraphs added and removed, sentences changed, two sections swapped,
-                           its figure redrawn,
-                           a table row added, formatting changed, a paragraph indented, the table's header shaded
-                           and taller, a cell's border, extra blanks, tracked changes, another footer and template
+                           its figure redrawn, a table row added, formatting changed, a paragraph indented, the
+                           table's header shaded and taller, a cell's border, extra blanks, tracked changes, another
+                           footer and template
   training-handbook.docx   another document, on another template, with other headings and styles, that copied
                            paragraphs from revision A, in another order, and changed pieces of them
 

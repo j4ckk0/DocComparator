@@ -33,7 +33,7 @@ public abstract class AbstractDocumentReader implements DocumentReader {
     private final List<String> extensions;
     private final int order;
 
-    /** A reader of these extensions (their case and leading dot do not matter), among the others after the program's. */
+    /** A reader of these extensions (their case and leading dot do not matter), after this jar's own (LATER). */
     protected AbstractDocumentReader(String... extensions) {
         this(LATER, extensions);
     }

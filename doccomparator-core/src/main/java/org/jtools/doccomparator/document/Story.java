@@ -24,7 +24,7 @@ import java.util.List;
 
 /**
  * One flow of text, as Word calls it: the body, a header, a footer, a footnote, an endnote; named by what tells it from
- * the others (Name), which the view says in words: "Body", "Header (first page), section 2", "Footnote 3".
+ * the others (Name), which ComparisonWords says in words: "Body", "Header (first page), section 2", "Footnote 3".
  */
 public record Story(Name name, List<Block> blocks) {
 

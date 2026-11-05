@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 #
 # Sourced by the scripts, from the project root: makes sure scripts/setup.sh has been run — everything it
-# deploys is there: external/jdk and maven — offering to run it when
-# something is missing (at a terminal; elsewhere, the CI or a hook, it stops with the way out). Then puts the
-# externals in front: external/jdk as JAVA_HOME, its java and Maven's mvn first in PATH. Only generic names:
-# the versions are externals.conf's business.
+# deploys is there: external/jdk and maven — offering to run it when something is missing (at a terminal;
+# elsewhere, the CI or a hook, it stops with the way out). Then puts the externals in front: external/jdk as
+# JAVA_HOME, its java and Maven's mvn first in PATH. Only generic names: the versions are externals.conf's business.
 #
 # take_build_lock makes one build at a time wait for the other, as each starts by deleting what the other is using.
 #

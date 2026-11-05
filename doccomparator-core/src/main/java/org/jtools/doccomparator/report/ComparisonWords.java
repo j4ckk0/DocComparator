@@ -33,7 +33,7 @@ import org.jtools.doccomparator.i18n.I18n;
 /**
  * What the comparison holds, said in the language in use: a story's name, where a paragraph is, a part's title, how
  * many differences, a property difference, any phrase of it. The comparison keeps them as data (Phrase); this says
- * them, every word the view shows of them, and any report of a comparison.
+ * them, for a view of the comparison or any report of it.
  */
 public final class ComparisonWords {
 
@@ -103,7 +103,7 @@ public final class ComparisonWords {
                 : I18n.text("count.many", differences);
     }
 
-    /** A property difference as the view says it: "shading: clear → fill D9E2F3". */
+    /** A property difference, in words: "shading: clear → fill D9E2F3". */
     public static String change(PropertyDifference difference) {
         return I18n.text("line.change", say(difference.property()), say(difference.left()), say(difference.right()));
     }

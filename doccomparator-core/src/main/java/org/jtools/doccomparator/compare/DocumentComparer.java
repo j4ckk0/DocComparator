@@ -175,10 +175,10 @@ public final class DocumentComparer {
         return sections;
     }
 
-    /** The defaults, then each style by name, as both documents define them: all of it a matter of styles. */
     /** A style one document defines and the other has not. */
     private static final Phrase DEFINED = Phrase.of("value.defined");
 
+    /** The defaults, then each style by name, as both documents define them: all of it a matter of styles. */
     private static void styleDifferences(Differences differences, StyleSheet a, StyleSheet b) {
         differences.formattingAs(Aspect.STYLES, name -> Phrase.of("compared.ofDefaultParagraph", name),
                 a.defaultParagraph(), b.defaultParagraph());

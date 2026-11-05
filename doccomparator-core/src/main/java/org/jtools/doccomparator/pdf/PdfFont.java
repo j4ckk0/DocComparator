@@ -32,13 +32,15 @@ import org.jtools.doccomparator.pdf.PdfObjects.Bytes;
 import org.jtools.doccomparator.pdf.PdfObjects.Stream;
 
 /**
- * A font of a page, as reading its text needs it: how a string's bytes split into codes, the characters each code
- * stands for (ToUnicode first, then the encoding), each code's width, and what the font says of itself — its family,
- * bold, italic. Its glyphs are never drawn, so the font program is not read (a Type 1's encoding aside).
+ * A font of a page, as far as reading its text needs: its codes, the characters and width of each, its family, bold
+ * and italic. Its glyphs are never drawn, so the font program is not read (a Type 1's encoding aside).
  */
 final class PdfFont {
 
-    /** A code of a string: the characters it stands for (null when unknown), its width in text space, unscaled. */
+    /**
+     * A code of a string: the characters it stands for (null when unknown), its width in text space, unscaled, and
+     * whether it is a single-byte space, the only code word spacing applies to.
+     */
     record Code(String characters, double width, boolean singleByteSpace) {
     }
 
@@ -60,7 +62,10 @@ final class PdfFont {
     private final Map<Integer, Double> widths = new HashMap<>();
     private final double defaultWidth;
     private final double scale;   // glyph space to text space: 1/1000, or a Type 3 font's matrix
-    /** Whether the characters of its codes cannot be known: a composite font without ToUnicode. */
+    /**
+     * Whether the characters of its codes cannot be known: a composite font whose codes are not UCS-2, without
+     * ToUnicode or with a predefined Encoding other than Identity.
+     */
     final boolean unreadable;
 
     private PdfFont(Map<String, Object> font, PdfFile file) {
@@ -312,7 +317,7 @@ final class PdfFont {
         return codes;
     }
 
-    /** The family a PostScript name says, its style left out: "TimesNewRomanPS-BoldMT" → "TimesNewRoman". */
+    /** The family and the style a PostScript name says: "TimesNewRomanPS-BoldMT" → "TimesNewRoman", "Bold". */
     static String[] familyAndStyle(String name) {
         String family = name;
         String style = "";
