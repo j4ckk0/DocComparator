@@ -10,7 +10,8 @@ paragraph, and marks what differs: the words and letters changed, the paragraphs
 row by row and column by column. It compares the text first. Each kind of layout (headings, lists, styles, indents,
 spacing, table layout, cell shading…) has its own switch and is compared only when you ask for it. It compares two
 versions of one file. It also compares two different documents, where one took paragraphs from the other and changed
-pieces of them.
+pieces of them. Excel workbooks (`.xlsx`) and text files (`.txt`, `.md`) compare too: a workbook's sheets as tables,
+their values, formulas and formatting.
 
 It is a desktop program that runs on its own: each distribution carries its Java runtime, so nothing needs installing
 where it is unpacked, and it **never reaches the network**: no update check, no telemetry, no name lookup (see
@@ -51,8 +52,8 @@ page.
 
 ![The diff view in a dark look](screenshots/diff-view-dark.png)
 
-**Before the documents**: each side says how to fill it. You can drop a Word document or a text file on it, choose
-one with *Open…*, type its path, or click the side and paste a text (Ctrl+V). The side clicked, where the paste goes, shows in
+**Before the documents**: each side says how to fill it. You can drop a Word document, an Excel workbook or a text
+file on it, choose one with *Open…*, type its path, or click the side and paste a text (Ctrl+V). The side clicked, where the paste goes, shows in
 blue.
 
 ![The window before the documents](screenshots/empty.png)
@@ -161,6 +162,34 @@ downloads its plugins into `~/.m2`. After that, `mvn -o` builds offline.
 - **Where Word's pages began** when Word last laid the document out (`w:lastRenderedPageBreak`), for the document view.
 
 Not read yet: comments, what an abstract list borrows from a numbering style.
+
+### Excel workbooks
+
+`XlsxReader` reads a `.xlsx` (and `.xlsm`, `.xltx`, `.xltm`, built alike; not Excel 97's `.xls`) into a `WordDocument`
+too, so that it compares as a document does: each sheet, in the workbook's order, a heading with its name, then the
+table of its cells. Rows and columns are then compared as a Word table's are: added, removed, moved, each cell's text
+word by word.
+
+- **The table** is the rectangle of the cells that hold a value or a formula, every row and column of it, empty cells
+  included. Row numbers and column letters are not cells of it: one row inserted would make every row after it differ.
+  Merged cells span as Word's do. A workbook is compared up to 250,000 cells, all its sheets together (10,000 rows of
+  25 columns): a comparison takes about 3.5 KB of memory a cell on each side, and Java a quarter of the machine's, 2 GB
+  of 8. The sheet that goes beyond is named, and the workbook refused.
+- **A cell's text** is its value as Excel shows it, through its number format: `1,234.50`, `12.5%`, `€ 1,234.50`,
+  `(1,234.50)`, dates and times. Excel shows them in the machine's conventions; here they are the same on every
+  machine, so that a comparison does not depend on where it runs: a point for decimals, a comma between thousands,
+  English month and day names, the machine's short date as `2026-11-05`. *General* shows the 15 digits Excel keeps.
+  What this subset does not render (fractions, conditions) shows as *General*. `TRUE`, `FALSE` and errors (`#DIV/0!`)
+  as Excel writes them.
+- **A cell's formula** (`SUM(B3:B5)`) is one of its properties, compared with *Cells*: a formula changed with the same
+  result is found. A shared formula, which Excel writes once for a whole range, is given to each cell, shifted.
+- **Its formatting**, as Word's properties, so that the switches apply as for a document: the font as characters'
+  (*Characters*: font, size, bold, italic, underline, colour), the fill and borders as a cell's (*Cells*), the
+  horizontal alignment (*Alignment*) and the vertical one, the number format and text wrapping (*Cells*), the
+  columns' widths and the rows' custom heights (*Table layout*), hidden rows. Colours given by the workbook's theme,
+  lightened or darkened, or by Excel's legacy palette, are resolved. The document view draws them.
+
+Not read: charts, pictures, comments, conditional formatting, data validation, hidden columns, protection.
 
 ## The window
 
@@ -338,15 +367,18 @@ paragraph's style, under the paragraph's own.
 ## Samples
 
 `samples/` holds three documents to try the program on, written by `samples/make_samples.py` (Python's standard library;
-run it again after a change: it writes the same files):
+run it again after a change: it writes the same files), and two workbooks, written by `samples/make_workbooks.py`
+(through LibreOffice, so that they are an office suite's own):
 
 | Document | What it is |
 |---|---|
 | `procedure-revA.docx` | the reference: a maintenance procedure, revision A, with page breaks, and Word's record of its pages |
 | `procedure-revB.docx` | its next version: its figure redrawn, paragraphs added, sentences changed, two sections swapped, a table row added, formatting and heading levels changed, a paragraph indented, the table's header row shaded and taller, a cell's border, blanks added, tracked changes, another footer and template |
 | `training-handbook.docx` | another document, on another template, with other headings and styles, that copied paragraphs from revision A, in another order, and changed pieces of them |
+| `budget-revA.xlsx` | a workshop budget: a merged title, a shaded header, costs, their shares as formulas, order dates, a total, and a second sheet of planning steps |
+| `budget-revB.xlsx` | its next version: a cost changed, a row inserted, the total by another formula with the same result, the header shaded otherwise, the total in italics, wider columns, two steps swapped |
 
-The script says what each change is; `SamplesTest` checks that the comparison finds them.
+The scripts say what each change is; `SamplesTest` and `WorkbookSamplesTest` check that the comparison finds them.
 
 ## Build and run
 
@@ -425,7 +457,9 @@ to be published; the distributions, with their runtimes, are never uploaded ther
 | `src/main/java/org/jtools/doccomparator/` | `Launcher` (the entry point, given two documents or none), `MainWindow` (the window, its menus, its look), `HelpMenu` (the licences and About, read offline), `Settings` (kept beside the program), `Looks` (FlatLaf's looks, light and dark, its native libraries off), `NoNetworkResolver` (see "No network") |
 | `…/document/` | what a Word document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
 | `…/text/` | `TextReader` (text pasted, or a text file, into a `WordDocument`, a paragraph a line) |
-| `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `DrawingReader` (a drawing's pictures and text boxes), `StylesReader`, `Numbering`, `FormattingReader`, `Pictures` (a part's pictures, through its relationships, nothing outside fetched) |
+| `…/ooxml/` | what Word's and Excel's files share: `OoxmlPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `Relationship`, `OoxmlException` (a file that cannot be read, and why) |
+| `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `StoryReader`, `DrawingReader` (a drawing's pictures and text boxes), `StylesReader`, `Numbering`, `FormattingReader`, `Pictures` (a part's pictures, through its relationships, nothing outside fetched) |
+| `…/xlsx/` | `XlsxReader` (a .xlsx into a `WordDocument`, a sheet a heading and a table), `SheetReader` (a worksheet's cells, merges, widths and heights), `Styles` (Excel's look as Word's properties), `NumberFormats` (a value as Excel shows it), `Formulas` (references, shared formulas shifted), `Colors` (theme, tint, palette) |
 | `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Pairing`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `Phrase` (what a difference says, kept as data: the view puts it into words) |
 | `…/ui/` | `ComparatorPanel` (the documents, read and compared in the background by `BackgroundWork`; each `Side`'s `SideState`; the sides' heads laid out by `HeadsLayout`), `OptionControls` (the ribbon and the Compare and View menus, kept in step), `DocumentSource` (what a side compares: a file, Word's or text, or text pasted), `DocumentHeader` and `DropHandler` (a side's head, documents and text dropped or pasted), `StatusLine`, `ClipboardMenu` (the right-click menu: copy a line, paste on its side), `ComparisonView` (the two sides, line by line; `LinePainter` draws the lines, `EmptySide` a side waiting for its document), `Lines` (a comparison into lines), `ComparisonWords` (what the comparison holds, said in the language in use — every word the user reads of it — with `PropertyNames`, Word's property names as a reader says them), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `ListNumbers` (list items numbered as Word does), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux); the small ones: `Line` and `LineSide` (a line of the view, and each side of it), `Palette` (the colours), `Fonts`, `DocumentOpener`, `RibbonEdge`, `FaintLabel`, `LookLine` |
 | `…/i18n/` | the languages (see "Languages"): `I18nLanguage`, `I18n`, `I18nLabels`, `I18nLanguageBox` |

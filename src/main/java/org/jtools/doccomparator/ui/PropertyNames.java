@@ -40,7 +40,7 @@ final class PropertyNames {
             "tblLook", "vAlign", "tblHeader", "cantSplit", "noWrap", "textDirection", "b", "bCs", "i", "iCs", "u",
             "strike", "dstrike", "sz", "szCs", "rFonts", "color", "highlight", "caps", "smallCaps", "vertAlign",
             "lang", "vanish", "keepNext", "keepLines", "pageBreakBefore", "widowControl", "tabs",
-            "contextualSpacing", "textAlignment");
+            "contextualSpacing", "textAlignment", "hidden", "formula", "numFmt", "wrapText");
     /** The parts of a property (its attributes, a border's side) with a name of ours: "property.part." + theirs. */
     static final Set<String> PARTS = Set.of("left", "right", "start", "end", "top", "bottom", "firstLine", "hanging",
             "before", "after", "line", "lineRule", "insideH", "insideV");
