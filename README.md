@@ -10,8 +10,8 @@ paragraph, and marks what differs: the words and letters changed, the paragraphs
 row by row and column by column. It compares the text first. Each kind of layout (headings, lists, styles, indents,
 spacing, table layout, cell shading…) has its own switch and is compared only when you ask for it. It compares two
 versions of one file. It also compares two different documents, where one took paragraphs from the other and changed
-pieces of them. Excel workbooks (`.xlsx`) and text files (`.txt`, `.md`) compare too: a workbook's sheets as tables,
-their values, formulas and formatting.
+pieces of them. Excel workbooks (`.xlsx`), PDFs and text files (`.txt`, `.md`) compare too: a workbook's sheets as
+tables, their values, formulas and formatting; a PDF's text, its paragraphs rebuilt from its lines, and its fonts.
 
 It is a desktop program that runs on its own: each distribution carries its Java runtime, so nothing needs installing
 where it is unpacked, and it **never reaches the network**: no update check, no telemetry, no name lookup (see
@@ -52,9 +52,9 @@ page.
 
 ![The diff view in a dark look](screenshots/diff-view-dark.png)
 
-**Before the documents**: each side says how to fill it. You can drop a Word document, an Excel workbook or a text
-file on it, choose one with *Open…*, type its path, or click the side and paste a text (Ctrl+V). The side clicked, where the paste goes, shows in
-blue.
+**Before the documents**: each side says how to fill it. You can drop a Word document, an Excel workbook, a PDF or a
+text file on it, choose one with *Open…*, type its path, or click the side and paste a text (Ctrl+V). The side
+clicked, where the paste goes, shows in blue.
 
 ![The window before the documents](screenshots/empty.png)
 
@@ -190,6 +190,37 @@ word by word.
   lightened or darkened, or by Excel's legacy palette, are resolved. The document view draws them.
 
 Not read: charts, pictures, comments, conditional formatting, data validation, hidden columns, protection.
+
+### PDFs
+
+`PdfReader` reads a `.pdf` into a `WordDocument` too, with the JDK alone: no PDF library. A PDF holds no words,
+lines or paragraphs, only characters placed on pages. The reader rebuilds them, so that a PDF compares as a document
+does.
+
+- **The text:** each page's characters in the order they are drawn, known through their font's table of characters
+  (ToUnicode) or its encoding, those of form XObjects included. A gap wider than a fifth of the size between two
+  characters is a space. Characters on one baseline make a line, and lines a paragraph until one of these comes: a
+  wider gap than the document's own line spacing, a change of size or of boldness, an indent, a list item's mark, a
+  short line that ends a sentence. A paragraph goes on across a page break while its sentence does. Where its pages
+  began is kept, as Word's are, for the document view. A word a hyphen cuts at a line's end is joined again when the
+  document writes it whole elsewhere.
+- **Lists:** a paragraph that starts with a bullet, a number or a letter (`•`, `1.`, `a)`) is a list item, its mark
+  apart from its text, so that an item only renumbered is no difference.
+- **The running header and footer:** the lines repeated near the top or the bottom of at least half the pages (their
+  page numbers aside), or marked so by a tagged PDF. They are read once, from the first page they are on, apart from
+  the body.
+- **The formatting:** each character's font family, size, bold, italic, colour, superscript or subscript, as Word's
+  properties (*Characters*). Bold and italic come from the font's name and description, or from how it is drawn.
+- **The files:** compressed ones, with cross-reference and object streams (PDF 1.5 and later); damaged ones, read
+  again by looking for their objects; encrypted ones that open without a password (RC4, AES-128, AES-256). A PDF that
+  asks a password is refused. When a PDF does not give the widths of a standard font's characters (Helvetica, Times,
+  Courier), they are those of the URW fonts made to its metrics (`scripts/standard-widths.py`). A file is read up to
+  2,000,000 characters, about 500 pages: two of 570 pages are read and compared in 5 seconds, within 1 GB.
+
+Not read: pictures, and so the text of scanned pages (a PDF without text is refused, saying so); annotations and form
+fields; links, compared as their text and never followed; tables as tables (their rows are read as lines); heading
+levels; vertical writing. A file mostly written in fonts that do not say which characters they draw is refused, the
+font named.
 
 ## The window
 
@@ -367,8 +398,9 @@ paragraph's style, under the paragraph's own.
 ## Samples
 
 `samples/` holds three documents to try the program on, written by `samples/make_samples.py` (Python's standard library;
-run it again after a change: it writes the same files), and two workbooks, written by `samples/make_workbooks.py`
-(through LibreOffice, so that they are an office suite's own):
+run it again after a change: it writes the same files), two workbooks, written by `samples/make_workbooks.py`, and
+two PDFs, printed from the procedure's two revisions by `samples/make_pdfs.py` (both through LibreOffice, so that
+they are an office suite's own):
 
 | Document | What it is |
 |---|---|
@@ -377,8 +409,11 @@ run it again after a change: it writes the same files), and two workbooks, writt
 | `training-handbook.docx` | another document, on another template, with other headings and styles, that copied paragraphs from revision A, in another order, and changed pieces of them |
 | `budget-revA.xlsx` | a workshop budget: a merged title, a shaded header, costs, their shares as formulas, order dates, a total, and a second sheet of planning steps |
 | `budget-revB.xlsx` | its next version: a cost changed, a row inserted, the total by another formula with the same result, the header shaded otherwise, the total in italics, wider columns, two steps swapped |
+| `procedure-revA.pdf` | `procedure-revA.docx` printed to PDF |
+| `procedure-revB.pdf` | `procedure-revB.docx` printed to PDF: the same changes to find, its pages laid out again |
 
-The scripts say what each change is; `SamplesTest` and `WorkbookSamplesTest` check that the comparison finds them.
+The scripts say what each change is; `SamplesTest`, `WorkbookSamplesTest` and `PdfSamplesTest` check that the
+comparison finds them.
 
 ## Build and run
 
@@ -459,16 +494,17 @@ to be published; the distributions, with their runtimes, are never uploaded ther
 | `…/text/` | `TextReader` (text pasted, or a text file, into a `WordDocument`, a paragraph a line) |
 | `…/ooxml/` | what Word's and Excel's files share: `OoxmlPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `Relationship`, `OoxmlException` (a file that cannot be read, and why) |
 | `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `StoryReader`, `DrawingReader` (a drawing's pictures and text boxes), `StylesReader`, `Numbering`, `FormattingReader`, `Pictures` (a part's pictures, through its relationships, nothing outside fetched) |
+| `…/pdf/` | `PdfReader` (a .pdf into a `WordDocument`), `PdfFile` (its objects, through its cross-references and object streams, rebuilt when damaged), `StandardSecurity` (decryption, the empty password), `Lexer` (PDF's syntax), `Filters` (streams decoded, bounded), `ContentReader` (a page's glyphs, where they are drawn), `PdfFont`, `CMap`, `Encodings` and `StandardWidths` (what a code is, and its width), `TextLayout` (glyphs into lines, paragraphs, lists, running header and footer), `PdfException` |
 | `…/xlsx/` | `XlsxReader` (a .xlsx into a `WordDocument`, a sheet a heading and a table), `SheetReader` (a worksheet's cells, merges, widths and heights), `Styles` (Excel's look as Word's properties), `NumberFormats` (a value as Excel shows it), `Formulas` (references, shared formulas shifted), `Colors` (theme, tint, palette) |
 | `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Pairing`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `Phrase` (what a difference says, kept as data: the view puts it into words) |
-| `…/ui/` | `ComparatorPanel` (the documents, read and compared in the background by `BackgroundWork`; each `Side`'s `SideState`; the sides' heads laid out by `HeadsLayout`), `OptionControls` (the ribbon and the Compare and View menus, kept in step), `DocumentSource` (what a side compares: a file, Word's or text, or text pasted), `DocumentHeader` and `DropHandler` (a side's head, documents and text dropped or pasted), `StatusLine`, `ClipboardMenu` (the right-click menu: copy a line, paste on its side), `ComparisonView` (the two sides, line by line; `LinePainter` draws the lines, `EmptySide` a side waiting for its document), `Lines` (a comparison into lines), `ComparisonWords` (what the comparison holds, said in the language in use — every word the user reads of it — with `PropertyNames`, Word's property names as a reader says them), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `ListNumbers` (list items numbered as Word does), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux); the small ones: `Line` and `LineSide` (a line of the view, and each side of it), `Palette` (the colours), `Fonts`, `DocumentOpener`, `RibbonEdge`, `FaintLabel`, `LookLine` |
+| `…/ui/` | `ComparatorPanel` (the documents, read and compared in the background by `BackgroundWork`; each `Side`'s `SideState`; the sides' heads laid out by `HeadsLayout`), `OptionControls` (the ribbon and the Compare and View menus, kept in step), `DocumentSource` (what a side compares: a file — Word's, Excel's, a PDF, text — or text pasted), `DocumentHeader` and `DropHandler` (a side's head, documents and text dropped or pasted), `StatusLine`, `ClipboardMenu` (the right-click menu: copy a line, paste on its side), `ComparisonView` (the two sides, line by line; `LinePainter` draws the lines, `EmptySide` a side waiting for its document), `Lines` (a comparison into lines), `ComparisonWords` (what the comparison holds, said in the language in use — every word the user reads of it — with `PropertyNames`, Word's property names as a reader says them), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `ListNumbers` (list items numbered as Word does), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux); the small ones: `Line` and `LineSide` (a line of the view, and each side of it), `Palette` (the colours), `Fonts`, `DocumentOpener`, `RibbonEdge`, `FaintLabel`, `LookLine` |
 | `…/i18n/` | the languages (see "Languages"): `I18nLanguage`, `I18n`, `I18nLabels`, `I18nLanguageBox` |
 | `src/main/resources/org/jtools/doccomparator/i18n/` | the texts, one file per language |
 | `src/main/resources/META-INF/services/` | what installs `NoNetworkResolver` |
-| `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `text/TextReaderTest`; `compare/`: each step, tables, and `SamplesTest`; `ui/LinesTest`, the view, drawn without a screen; `i18n/I18nTest`, the languages' files |
+| `src/test/java/org/jtools/doccomparator/` | `NoNetworkTest`, `NoNetworkResolverTest` (see "No network"); `docx/DocxReaderTest`, on documents `TestDocx` builds from the XML Word writes; `text/TextReaderTest`; `xlsx/`, on workbooks `TestXlsx` builds; `pdf/PdfReaderTest`, on PDFs `TestPdf` writes and encrypted ones `make_encrypted.py` made, and `PdfSamplesTest`; `compare/`: each step, tables, and `SamplesTest`; `ui/LinesTest`, the view, drawn without a screen; `i18n/I18nTest`, the languages' files |
 | `samples/` | the sample documents, and the script that writes them (see "Samples") |
 | `src/dist/`, `src/assembly/` | the launchers of the distributions, FlatLaf's licence, and what goes in them |
-| `scripts/` | the scripts above |
+| `scripts/` | the scripts above, and `standard-widths.py` (the standard PDF fonts' widths, from their URW clones) |
 | `.github/workflows/` | `build.yml`, the build and the tests on every push; `release.yml`, the release on a tag `vX.Y` |
 
 ## Licence

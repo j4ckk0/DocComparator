@@ -25,10 +25,11 @@ import java.nio.file.Path;
 import org.jtools.doccomparator.document.WordDocument;
 import org.jtools.doccomparator.docx.DocxReader;
 import org.jtools.doccomparator.i18n.I18n;
+import org.jtools.doccomparator.pdf.PdfReader;
 import org.jtools.doccomparator.text.TextReader;
 import org.jtools.doccomparator.xlsx.XlsxReader;
 
-/** What a side compares: a file — a Word document, an Excel workbook, text — or text pasted on it. */
+/** What a side compares: a file — a Word document, an Excel workbook, a PDF, text — or text pasted on it. */
 sealed interface DocumentSource {
 
     /** Its name, as the title and the side say it. */
@@ -36,7 +37,7 @@ sealed interface DocumentSource {
 
     WordDocument read() throws IOException;
 
-    /** A file: a workbook or text by its extension (XlsxReader, TextReader.EXTENSIONS), else a Word document. */
+    /** A file: a workbook, a PDF or text by its extension (their readers' EXTENSIONS), else a Word document. */
     record File(Path path) implements DocumentSource {
 
         @Override
@@ -49,6 +50,9 @@ sealed interface DocumentSource {
             try {
                 if (XlsxReader.reads(path)) {
                     return XlsxReader.read(path);
+                }
+                if (PdfReader.reads(path)) {
+                    return PdfReader.read(path);
                 }
                 return TextReader.reads(path) ? TextReader.read(path) : DocxReader.read(path);
             } catch (IOException e) {

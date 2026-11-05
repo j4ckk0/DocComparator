@@ -39,6 +39,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import org.jtools.doccomparator.document.WordDocument;
 import org.jtools.doccomparator.i18n.I18n;
+import org.jtools.doccomparator.pdf.PdfReader;
 import org.jtools.doccomparator.text.TextReader;
 import org.jtools.doccomparator.xlsx.XlsxReader;
 import org.jtools.doccomparator.i18n.I18nLabels;
@@ -149,6 +150,8 @@ final class DocumentHeader extends JPanel {
             said.add(I18n.text("header.textFile"));
         } else if (source instanceof DocumentSource.File file && XlsxReader.reads(file.path())) {
             said.add(I18n.text("header.workbook"));
+        } else if (source instanceof DocumentSource.File file && PdfReader.reads(file.path())) {
+            said.add(I18n.text("header.pdf"));
         }
         if (read != null && read.template().named() != null) {
             said.add(I18n.text("header.template", read.template().named()));

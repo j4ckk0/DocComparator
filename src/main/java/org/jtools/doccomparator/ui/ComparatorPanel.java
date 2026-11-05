@@ -54,6 +54,7 @@ import org.jtools.doccomparator.compare.DocumentComparer;
 import org.jtools.doccomparator.document.WordDocument;
 import org.jtools.doccomparator.docx.DocxReader;
 import org.jtools.doccomparator.i18n.I18n;
+import org.jtools.doccomparator.pdf.PdfReader;
 import org.jtools.doccomparator.text.TextReader;
 import org.jtools.doccomparator.xlsx.XlsxReader;
 import org.jtools.doccomparator.i18n.I18nLabels;
@@ -275,11 +276,13 @@ public final class ComparatorPanel extends JPanel {
         chooser.setDialogTitle(I18n.text(side.of("chooser.left", "chooser.right")));
         List<String> all = new ArrayList<>(DocxReader.EXTENSIONS);
         all.addAll(XlsxReader.EXTENSIONS);
+        all.addAll(PdfReader.EXTENSIONS);
         all.addAll(TextReader.EXTENSIONS);
         FileNameExtensionFilter documents = filter("chooser.documents", all);
         chooser.addChoosableFileFilter(documents);
         chooser.addChoosableFileFilter(filter("chooser.wordDocuments", DocxReader.EXTENSIONS));
         chooser.addChoosableFileFilter(filter("chooser.workbooks", XlsxReader.EXTENSIONS));
+        chooser.addChoosableFileFilter(filter("chooser.pdfFiles", PdfReader.EXTENSIONS));
         chooser.addChoosableFileFilter(filter("chooser.textFiles", TextReader.EXTENSIONS));
         chooser.setFileFilter(documents);
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
