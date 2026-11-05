@@ -41,8 +41,28 @@ Source code for the OpenJDK runtime is available from:
   - OpenJDK project:  https://github.com/openjdk/jdk25u
 
 
+Standard PDF font widths
+========================
+
+doccomparator.jar holds org/jtools/doccomparator/pdf/standard-widths.txt: the widths
+of the characters of Helvetica and Times, in their four styles, which a PDF may use
+without giving them. They are numbers only — no font, no glyph — read by
+scripts/standard-widths.py from the font metric (AFM) files of the URW base 35 fonts
+Nimbus Sans and Nimbus Roman, made to the same metrics:
+
+  Copyright (URW)++, Copyright 2014 by (URW)++ Design & Development
+  Copyright 2015 URW Software
+  https://github.com/ArtifexSoftware/urw-base35-fonts
+
+Those fonts are distributed under the GNU Affero General Public License, version 3,
+with a font exception. No font program of theirs is part of DocComparator.
+
+
 Sample files
 ============
 
-The documents of samples/ are original, written by samples/make_samples.py for this
-project; they fall under the same licence.
+The documents of samples/ are original, written for this project by
+samples/make_samples.py, samples/make_workbooks.py and samples/make_pdfs.py; they fall
+under the same licence. The two sample PDFs, printed by LibreOffice, embed subsets of
+the Noto Serif fonts (https://notofonts.github.io), licensed under the SIL Open Font
+License, version 1.1. The samples are not part of the distributions.
