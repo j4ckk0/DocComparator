@@ -139,7 +139,7 @@ class LinesTest {
 
     @Test
     void aDocumentAloneIsShownOnItsSideAsItIs() throws IOException {
-        List<Line> lines = Lines.alone(DocxReader.read(Path.of("samples", "procedure-revA.docx")), Side.RIGHT,
+        List<Line> lines = Lines.alone(new DocxReader().read(Path.of("samples", "procedure-revA.docx")), Side.RIGHT,
                 Shown.ALL.withOnlyDifferences(true), FONTS, Palette.LIGHT);
         assertEquals(List.of("Body", "Headers and footers", "Footnotes and endnotes"),
                 lines.stream().filter(Line::isTitle).map(line -> line.title).toList(), "no difference counted");
@@ -152,8 +152,8 @@ class LinesTest {
     /** Every switch off: the documents aligned, and nothing marked anywhere — no word, no space, no move said. */
     @Test
     void withNothingComparedNothingIsMarked() throws IOException {
-        Comparison comparison = DocumentComparer.compare(DocxReader.read(Path.of("samples", "procedure-revA.docx")),
-                DocxReader.read(Path.of("samples", "procedure-revB.docx")), CompareOptions.TEXT_ONLY.with(
+        Comparison comparison = DocumentComparer.compare(new DocxReader().read(Path.of("samples", "procedure-revA.docx")),
+                new DocxReader().read(Path.of("samples", "procedure-revB.docx")), CompareOptions.TEXT_ONLY.with(
                         CompareOptions.Aspect.TEXT, false));
         assertTrue(comparison.same());
         for (Line line : Lines.of(comparison, Shown.ALL, FONTS, Palette.LIGHT)) {
@@ -295,7 +295,7 @@ class LinesTest {
     }
 
     private static Comparison compare(String right) throws IOException {
-        return DocumentComparer.compare(DocxReader.read(Path.of("samples", "procedure-revA.docx")),
-                DocxReader.read(Path.of("samples", right)), CompareOptions.ALL.with(CompareOptions.Aspect.BLANKS, false));
+        return DocumentComparer.compare(new DocxReader().read(Path.of("samples", "procedure-revA.docx")),
+                new DocxReader().read(Path.of("samples", right)), CompareOptions.ALL.with(CompareOptions.Aspect.BLANKS, false));
     }
 }

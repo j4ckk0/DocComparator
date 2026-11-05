@@ -60,7 +60,6 @@ import javax.swing.KeyStroke;
 import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import org.jtools.doccomparator.i18n.I18n;
-import org.jtools.doccomparator.i18n.I18nLabels;
 
 /**
  * What is compared and what is shown, chosen in the ribbon or in the Compare and View menus: the options, the lines

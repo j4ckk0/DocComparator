@@ -21,7 +21,7 @@ package org.jtools.doccomparator.ui;
  */
 
 /** One of the two sides of the comparison: the left document, or the right. */
-enum Side {
+public enum Side {
     LEFT,
     RIGHT;
 

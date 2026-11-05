@@ -1,0 +1,4 @@
+org.jtools.doccomparator.docx.DocxReader
+org.jtools.doccomparator.xlsx.XlsxReader
+org.jtools.doccomparator.pdf.PdfReader
+org.jtools.doccomparator.text.TextReader

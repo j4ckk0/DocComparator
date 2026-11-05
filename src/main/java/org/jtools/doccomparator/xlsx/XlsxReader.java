@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.Formatting;
@@ -36,31 +35,38 @@ import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.Template;
 import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.ooxml.OoxmlPackage;
 import org.jtools.doccomparator.ooxml.Relationship;
 import org.jtools.doccomparator.ooxml.XmlCursor;
+import org.jtools.doccomparator.reader.AbstractDocumentReader;
 
 /**
  * Reads an Excel workbook (.xlsx) into a WordDocument, so that it compares as a document does: each sheet, in the
  * workbook's order, a heading with its name and the table of its cells (SheetReader). Charts, pictures, comments,
  * conditional formatting and data validation are not read.
  */
-public final class XlsxReader {
+public final class XlsxReader extends AbstractDocumentReader {
 
-    /** The workbooks it reads, by their extension: Excel's, its macro-enabled ones, and their templates. */
-    public static final List<String> EXTENSIONS = List.of("xlsx", "xlsm", "xltx", "xltm");
 
-    private XlsxReader() {
+    /** The reader of .xlsx, .xlsm, .xltx, .xltm files, found as a service (DocumentReaders). */
+    public XlsxReader() {
+        super(20, "xlsx", "xlsm", "xltx", "xltm");
     }
 
-    /** Whether this file is read as a workbook: its extension is one of EXTENSIONS. */
-    public static boolean reads(Path path) {
-        String name = String.valueOf(path.getFileName()).toLowerCase(Locale.ROOT);
-        int dot = name.lastIndexOf('.');
-        return dot >= 0 && EXTENSIONS.contains(name.substring(dot + 1));
+    @Override
+    public String formatName() {
+        return I18n.text("format.workbook");
     }
 
-    public static WordDocument read(Path file) throws IOException {
+    @Override
+    public String readingNote() {
+        return I18n.text("note.workbook");
+    }
+
+
+    @Override
+    public WordDocument read(Path file) throws IOException {
         try (OoxmlPackage xlsx = OoxmlPackage.open(file)) {
             String workbook = xlsx.mainPart("xl/workbook.xml");
             List<Relationship> relationships = xlsx.relationships(workbook);

@@ -549,7 +549,7 @@ class DocxReaderTest {
     void aFileThatIsNoZip() throws IOException {
         Path file = Files.writeString(directory.resolve("notes.docx"), "plain text");
 
-        OoxmlException refused = assertThrows(OoxmlException.class, () -> DocxReader.read(file));
+        OoxmlException refused = assertThrows(OoxmlException.class, () -> new DocxReader().read(file));
         assertEquals("notes.docx is neither a Word document nor an Excel workbook: it is not a zip archive", refused.getMessage());
     }
 
@@ -558,7 +558,7 @@ class DocxReaderTest {
         Path file = TestDocx.body("").withoutLinks("").raw("word/document.xml", "<other/>")
                 .raw("content.xml", "<x/>").write(directory);
 
-        OoxmlException refused = assertThrows(OoxmlException.class, () -> DocxReader.read(file));
+        OoxmlException refused = assertThrows(OoxmlException.class, () -> new DocxReader().read(file));
         assertTrue(refused.getMessage().contains("<other> where <document> was expected"), refused.getMessage());
     }
 
@@ -581,7 +581,7 @@ class DocxReaderTest {
             """;
 
     private WordDocument read(TestDocx docx) throws IOException {
-        return DocxReader.read(docx.write(directory));
+        return new DocxReader().read(docx.write(directory));
     }
 
     private static List<Paragraph> paragraphs(Story story) {

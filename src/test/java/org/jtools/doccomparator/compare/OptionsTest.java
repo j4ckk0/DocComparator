@@ -175,7 +175,7 @@ class OptionsTest {
 
     private static WordDocument read(String name) {
         try {
-            return DocxReader.read(Path.of("samples", name));
+            return new DocxReader().read(Path.of("samples", name));
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }

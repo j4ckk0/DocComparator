@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * A phrase of the comparison — a property's name, a value it gives — kept as data, which the view says in the language
- * in use (ComparisonWords): a text of the i18n files by its key, with its arguments; a value as the document has it; a
+ * A phrase of the comparison — a property's name, a value it gives — kept as data, which ComparisonWords says in the
+ * language in use: a text of the i18n files by its key, with its arguments; a value as the document has it; a
  * property by its name in Word; or several of them one after the other. Two are equal when they say the same in every
  * language. Its toString is the same in every language: keys and Word's names, as the tests read them.
  */

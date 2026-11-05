@@ -1,4 +1,4 @@
-package org.jtools.doccomparator.ui;
+package org.jtools.doccomparator.report;
 
 /*-
  * #%L
@@ -32,10 +32,10 @@ import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * What the comparison holds, said in the language in use: a story's name, where a paragraph is, a part's title, how
- * many differences, a property difference, any phrase of it. The comparison keeps them as data; the view says them,
- * every word of them, as it shows them.
+ * many differences, a property difference, any phrase of it. The comparison keeps them as data (Phrase); this says
+ * them, every word the view shows of them, and any report of a comparison.
  */
-final class ComparisonWords {
+public final class ComparisonWords {
 
     /** Between the places of a location: "Footer, table 2". */
     private static final String BETWEEN_PLACES = ", ";
@@ -44,7 +44,7 @@ final class ComparisonWords {
     }
 
     /** A story's name: "Body", "Header (first page), section 2", "Footnote 3". */
-    static String story(Story.Name name) {
+    public static String story(Story.Name name) {
         return switch (name.kind()) {
             case BODY -> I18n.text("story.body");
             case FOOTNOTE -> I18n.text("story.footnote", name.number());
@@ -67,7 +67,7 @@ final class ComparisonWords {
      * Where a paragraph or a table is, when the body's flow does not say (or always): "Table 2", "Footer, section 2",
      * "Body" itself left unsaid.
      */
-    static String location(Item item, boolean always) {
+    public static String location(Item item, boolean always) {
         boolean inBody = item.story().kind() == Story.Kind.BODY;
         if (inBody && item.places().isEmpty()) {
             return always ? story(item.story()) : null;
@@ -86,7 +86,7 @@ final class ComparisonWords {
     }
 
     /** A phrase of the comparison, in the language in use: a text with its arguments said, a value as it is. */
-    static String say(Phrase phrase) {
+    public static String say(Phrase phrase) {
         return switch (phrase) {
             case Phrase.Text text -> I18n.text(text.key(),
                     text.arguments().stream().map(a -> a instanceof Phrase inner ? say(inner) : a).toArray());
@@ -98,24 +98,23 @@ final class ComparisonWords {
     }
 
     /** How many differences: "no difference", "1 difference", "3 differences". */
-    static String count(long differences) {
+    public static String count(long differences) {
         return differences == 0 ? I18n.text("count.none") : differences == 1 ? I18n.text("count.one")
                 : I18n.text("count.many", differences);
     }
 
     /** A property difference as the view says it: "shading: clear → fill D9E2F3". */
-    static String change(PropertyDifference difference) {
+    public static String change(PropertyDifference difference) {
         return I18n.text("line.change", say(difference.property()), say(difference.left()), say(difference.right()));
     }
 
-    /** A property difference, one side's value: "heading: heading 2". */
-    static String property(PropertyDifference difference, Side side) {
-        Phrase value = side.of(difference.left(), difference.right());
-        return I18n.text("line.property", say(difference.property()), say(value));
+    /** A property and one side's value of it: "heading: heading 2". */
+    public static String property(Phrase property, Phrase value) {
+        return I18n.text("line.property", say(property), say(value));
     }
 
     /** The title of a part of the documents: "Body", "Headers and footers", "Footnotes and endnotes". */
-    static String part(StoryComparison.Part part) {
+    public static String part(StoryComparison.Part part) {
         return switch (part) {
             case BODY -> I18n.text("part.body");
             case HEADERS_AND_FOOTERS -> I18n.text("part.headersAndFooters");

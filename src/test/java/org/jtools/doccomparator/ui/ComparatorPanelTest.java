@@ -58,11 +58,16 @@ import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import org.jtools.doccomparator.compare.CompareOptions;
+import org.jtools.doccomparator.compare.Comparison;
 import org.jtools.doccomparator.compare.DocumentComparer;
+import org.jtools.doccomparator.document.WordDocument;
 import org.jtools.doccomparator.docx.DocxReader;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.i18n.I18nLanguage;
+import org.jtools.doccomparator.text.TextReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -78,6 +83,36 @@ class ComparatorPanelTest {
         assertNotNull(open.get(1).getAction(), "the right one does something");
         assertEquals("Open left…", open.get(0).getAction().getValue(Action.NAME));
         assertEquals("Open right…", open.get(1).getAction().getValue(Action.NAME));
+    }
+
+    /** A document read its own way by the program that shows the panel: compared, the comparison told. */
+    @Test
+    void aSourceOfAHostsOwnIsComparedAndTheComparisonTold() throws Exception {
+        record Memory(String name, String text) implements DocumentSource {
+            @Override
+            public WordDocument read() {
+                return TextReader.read(name, text);
+            }
+
+            @Override
+            public String readingNote() {
+                return "from memory";
+            }
+        }
+        ComparatorPanel[] panel = new ComparatorPanel[1];
+        CompletableFuture<Comparison> told = new CompletableFuture<>();
+        SwingUtilities.invokeAndWait(() -> {
+            panel[0] = new ComparatorPanel();
+            panel[0].onCompared(told::complete);
+            panel[0].open(new Memory("a", "one\ntwo"), new Memory("b", "one\nthree"));
+        });
+        Comparison comparison = told.get(30, TimeUnit.SECONDS);
+        assertFalse(comparison.same());
+        assertEquals("a", comparison.left().fileName());
+        SwingUtilities.invokeAndWait(() -> assertEquals(comparison, panel[0].comparison()));
+        List<String> texts = new ArrayList<>();
+        SwingUtilities.invokeAndWait(() -> labelTexts(panel[0], texts));
+        assertTrue(texts.contains("from memory"), "its note in its side's head: " + texts);
     }
 
     /** Every button of ours, each with its label (not the scroll bars' arrows, Swing's own), does something. */
@@ -103,8 +138,8 @@ class ComparatorPanelTest {
                 panel[0] = new ComparatorPanel();
                 try {
                     panel[0].show(DocumentComparer.compare(
-                            DocxReader.read(Path.of("samples", "procedure-revA.docx")),
-                            DocxReader.read(Path.of("samples", "procedure-revB.docx")), CompareOptions.DEFAULT));
+                            new DocxReader().read(Path.of("samples", "procedure-revA.docx")),
+                            new DocxReader().read(Path.of("samples", "procedure-revB.docx")), CompareOptions.DEFAULT));
                 } catch (IOException e) {
                     throw new IllegalStateException(e);
                 }
@@ -137,8 +172,8 @@ class ComparatorPanelTest {
             SwingUtilities.invokeAndWait(() -> {
                 ComparatorPanel panel = new ComparatorPanel();
                 try {
-                    panel.show(DocumentComparer.compare(DocxReader.read(Path.of("samples", "procedure-revA.docx")),
-                            DocxReader.read(Path.of("samples", "procedure-revB.docx")), CompareOptions.DEFAULT));
+                    panel.show(DocumentComparer.compare(new DocxReader().read(Path.of("samples", "procedure-revA.docx")),
+                            new DocxReader().read(Path.of("samples", "procedure-revB.docx")), CompareOptions.DEFAULT));
                 } catch (IOException e) {
                     throw new IllegalStateException(e);
                 }
@@ -198,8 +233,8 @@ class ComparatorPanelTest {
         SwingUtilities.invokeAndWait(() -> {
             ComparatorPanel panel = new ComparatorPanel();
             try {
-                panel.show(DocumentComparer.compare(DocxReader.read(Path.of("samples", "procedure-revA.docx")),
-                        DocxReader.read(Path.of("samples", "procedure-revB.docx")), CompareOptions.DEFAULT));
+                panel.show(DocumentComparer.compare(new DocxReader().read(Path.of("samples", "procedure-revA.docx")),
+                        new DocxReader().read(Path.of("samples", "procedure-revB.docx")), CompareOptions.DEFAULT));
             } catch (IOException e) {
                 throw new IllegalStateException(e);
             }
@@ -412,7 +447,7 @@ class ComparatorPanelTest {
         SwingUtilities.invokeAndWait(() -> {
             ComparisonView view = new ComparisonView();
             try {
-                view.setLines(Lines.alone(DocxReader.read(Path.of("samples", "procedure-revA.docx")), Side.LEFT,
+                view.setLines(Lines.alone(new DocxReader().read(Path.of("samples", "procedure-revA.docx")), Side.LEFT,
                         Lines.Shown.ALL, view.fonts(), Palette.LIGHT), -1, Palette.LIGHT);
             } catch (IOException e) {
                 throw new IllegalStateException(e);
@@ -488,6 +523,17 @@ class ComparatorPanelTest {
             }
         }
         return found;
+    }
+
+    private static void labelTexts(Container container, List<String> texts) {
+        for (Component child : container.getComponents()) {
+            if (child instanceof JLabel label) {
+                texts.add(label.getText());
+            }
+            if (child instanceof Container inner) {
+                labelTexts(inner, texts);
+            }
+        }
     }
 
     private static Component find(Container container, Class<?> type) {

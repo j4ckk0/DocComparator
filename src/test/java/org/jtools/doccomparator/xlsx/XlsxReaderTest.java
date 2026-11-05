@@ -70,7 +70,7 @@ class XlsxReaderTest {
     }
 
     private WordDocument read(TestXlsx workbook) throws IOException {
-        return XlsxReader.read(workbook.write(folder, "book" + System.nanoTime() + ".xlsx"));
+        return new XlsxReader().read(workbook.write(folder, "book" + System.nanoTime() + ".xlsx"));
     }
 
     private static Table table(WordDocument document, int sheet) {
@@ -97,10 +97,10 @@ class XlsxReaderTest {
 
     @Test
     void workbooksByTheirExtension() {
-        assertTrue(XlsxReader.reads(Path.of("Budget.XLSX")));
-        assertTrue(XlsxReader.reads(Path.of("macros.xlsm")));
-        assertFalse(XlsxReader.reads(Path.of("old.xls")), "Excel 97's format is not a zip of XML");
-        assertFalse(XlsxReader.reads(Path.of("a.docx")));
+        assertTrue(new XlsxReader().reads(Path.of("Budget.XLSX")));
+        assertTrue(new XlsxReader().reads(Path.of("macros.xlsm")));
+        assertFalse(new XlsxReader().reads(Path.of("old.xls")), "Excel 97's format is not a zip of XML");
+        assertFalse(new XlsxReader().reads(Path.of("a.docx")));
     }
 
     @Test
@@ -276,7 +276,7 @@ class XlsxReaderTest {
     void aSheetTooLargeIsRefusedNamed() throws IOException {
         Path file = new TestXlsx().sheet("Huge", "<sheetData>" + row(1, number("A1", "1"))
                 + row(1_000_000, number("C1000000", "2")) + "</sheetData>").write(folder, "huge.xlsx");
-        OoxmlException refused = assertThrows(OoxmlException.class, () -> XlsxReader.read(file));
+        OoxmlException refused = assertThrows(OoxmlException.class, () -> new XlsxReader().read(file));
         assertTrue(refused.getMessage().contains("too many cells to compare: sheet Huge takes the workbook beyond "
                 + "250000"), refused.getMessage());
     }
@@ -286,17 +286,17 @@ class XlsxReaderTest {
         String corners = "<sheetData>" + row(1, number("A1", "1")) + row(1000, number("CV1000", "2"))
                 + "</sheetData>";   // 1,000 rows of 100 columns: 100,000 cells
         Path two = new TestXlsx().sheet("One", corners).sheet("Two", corners).write(folder, "two.xlsx");
-        assertEquals(4, XlsxReader.read(two).body().blocks().size(), "200,000 cells: read");
+        assertEquals(4, new XlsxReader().read(two).body().blocks().size(), "200,000 cells: read");
         Path three = new TestXlsx().sheet("One", corners).sheet("Two", corners).sheet("Three", corners)
                 .write(folder, "three.xlsx");
-        OoxmlException refused = assertThrows(OoxmlException.class, () -> XlsxReader.read(three));
+        OoxmlException refused = assertThrows(OoxmlException.class, () -> new XlsxReader().read(three));
         assertTrue(refused.getMessage().contains("sheet Three takes the workbook beyond 250000"), refused.getMessage());
     }
 
     @Test
     void notAZipIsRefusedSaidAsSuch() throws IOException {
         Path file = Files.writeString(folder.resolve("notes.xlsx"), "not a workbook");
-        OoxmlException refused = assertThrows(OoxmlException.class, () -> XlsxReader.read(file));
+        OoxmlException refused = assertThrows(OoxmlException.class, () -> new XlsxReader().read(file));
         assertEquals("notes.xlsx is neither a Word document nor an Excel workbook: it is not a zip archive",
                 refused.getMessage());
     }

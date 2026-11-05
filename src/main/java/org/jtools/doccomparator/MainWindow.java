@@ -38,9 +38,9 @@ import javax.swing.JRadioButtonMenuItem;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import org.jtools.doccomparator.i18n.I18n;
-import org.jtools.doccomparator.i18n.I18nLabels;
+import org.jtools.doccomparator.ui.I18nLabels;
 import org.jtools.doccomparator.i18n.I18nLanguage;
-import org.jtools.doccomparator.i18n.I18nLanguageBox;
+import org.jtools.doccomparator.ui.I18nLanguageBox;
 import org.jtools.doccomparator.ui.ComparatorPanel;
 
 /** The program's only window: the comparison and its menus. Closing it, or File ▸ Exit, ends the program. */

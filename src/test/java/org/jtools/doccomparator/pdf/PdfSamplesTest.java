@@ -46,7 +46,7 @@ import org.junit.jupiter.api.Test;
 class PdfSamplesTest {
 
     private static WordDocument sample(String name) throws IOException {
-        return PdfReader.read(Path.of("samples", name));
+        return new PdfReader().read(Path.of("samples", name));
     }
 
     /** Every pairing that differs, as "status: left | right", in each story. */

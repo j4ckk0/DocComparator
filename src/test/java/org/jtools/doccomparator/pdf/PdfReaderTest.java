@@ -55,7 +55,7 @@ class PdfReaderTest {
 
     private static WordDocument fixture(String name) throws IOException {
         try {
-            return PdfReader.read(Path.of(PdfReaderTest.class.getResource(name).toURI()));
+            return new PdfReader().read(Path.of(PdfReaderTest.class.getResource(name).toURI()));
         } catch (URISyntaxException e) {
             throw new IllegalStateException(e);
         }

@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.jtools.doccomparator.document.Block;
@@ -37,6 +36,7 @@ import org.jtools.doccomparator.document.Template;
 import org.jtools.doccomparator.document.WordDocument;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.pdf.PdfObjects.Stream;
+import org.jtools.doccomparator.reader.AbstractDocumentReader;
 
 /**
  * Reads a PDF into a WordDocument, so that it compares as a document does: the text of its pages, its paragraphs
@@ -44,10 +44,8 @@ import org.jtools.doccomparator.pdf.PdfObjects.Stream;
  * kept as Word's are; its running header and footer apart. Pictures, annotations, form fields and the text of scanned
  * pages (images) are not read; tables are read as their lines.
  */
-public final class PdfReader {
+public final class PdfReader extends AbstractDocumentReader {
 
-    /** The files read as PDF, by their extension. */
-    public static final List<String> EXTENSIONS = List.of("pdf");
 
     /**
      * The most characters a file is read with, about 500 pages of text: two PDFs of 570 pages each (2.3 million
@@ -61,17 +59,24 @@ public final class PdfReader {
     /** The share of the characters a font that does not say them may hold before the file is refused. */
     private static final double MOST_UNREADABLE = 0.2;
 
-    private PdfReader() {
+    /** The reader of .pdf files, found as a service (DocumentReaders). */
+    public PdfReader() {
+        super(30, "pdf");
     }
 
-    /** Whether this file is read as a PDF: its extension is one of EXTENSIONS. */
-    public static boolean reads(Path path) {
-        String name = String.valueOf(path.getFileName()).toLowerCase(Locale.ROOT);
-        int dot = name.lastIndexOf('.');
-        return dot >= 0 && EXTENSIONS.contains(name.substring(dot + 1));
+    @Override
+    public String formatName() {
+        return I18n.text("format.pdf");
     }
 
-    public static WordDocument read(Path path) throws IOException {
+    @Override
+    public String readingNote() {
+        return I18n.text("note.pdf");
+    }
+
+
+    @Override
+    public WordDocument read(Path path) throws IOException {
         return read(PdfFile.open(path));
     }
 

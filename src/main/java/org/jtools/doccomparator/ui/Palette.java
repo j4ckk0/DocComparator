@@ -20,7 +20,6 @@ package org.jtools.doccomparator.ui;
  * #L%
  */
 
-import com.formdev.flatlaf.FlatLaf;
 import java.awt.Color;
 import javax.swing.UIManager;
 
@@ -100,11 +99,8 @@ final class Palette {
         return lookIsDark() && !documentView ? DARK : LIGHT;
     }
 
-    /** Whether the look in use is dark: FlatLaf says; for another, its panels' background. */
+    /** Whether the look in use is dark: its panels' background is, whichever look it is. */
     static boolean lookIsDark() {
-        if (UIManager.getLookAndFeel() instanceof FlatLaf) {
-            return FlatLaf.isLafDark();
-        }
         Color background = UIManager.getColor("Panel.background");
         return background != null
                 && (background.getRed() * 299 + background.getGreen() * 587 + background.getBlue() * 114) / 1000 < 128;

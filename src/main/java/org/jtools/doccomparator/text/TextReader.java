@@ -30,7 +30,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.Paragraph;
@@ -39,32 +38,39 @@ import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Template;
 import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.i18n.I18n;
+import org.jtools.doccomparator.reader.AbstractDocumentReader;
 
 /**
  * Reads plain text — pasted, dropped, or a text file — into a WordDocument, so it compares as a document does: a body
  * alone, a paragraph a line, without style nor formatting, an empty line an empty paragraph. Markdown is read as the
  * text it is, its marks compared as words.
  */
-public final class TextReader {
+public final class TextReader extends AbstractDocumentReader {
 
-    /** The files read as text, by their extension, rather than as Word documents. */
-    public static final List<String> EXTENSIONS = List.of("txt", "text", "md", "markdown");
 
     /** What text written on Windows before UTF-8 most likely is, when it is not UTF-8. */
     private static final Charset WINDOWS_LATIN = Charset.forName("windows-1252");
 
-    private TextReader() {
+    /** The reader of .txt, .text, .md, .markdown files, found as a service (DocumentReaders). */
+    public TextReader() {
+        super(40, "txt", "text", "md", "markdown");
     }
 
-    /** Whether this file is read as text: its extension is one of EXTENSIONS. */
-    public static boolean reads(Path path) {
-        String name = String.valueOf(path.getFileName()).toLowerCase(Locale.ROOT);
-        int dot = name.lastIndexOf('.');
-        return dot >= 0 && EXTENSIONS.contains(name.substring(dot + 1));
+    @Override
+    public String formatName() {
+        return I18n.text("format.text");
     }
+
+    @Override
+    public String readingNote() {
+        return I18n.text("note.textFile");
+    }
+
 
     /** A text file, named by its file name. */
-    public static WordDocument read(Path path) throws IOException {
+    @Override
+    public WordDocument read(Path path) throws IOException {
         return read(String.valueOf(path.getFileName()), decode(Files.readAllBytes(path)));
     }
 

@@ -38,7 +38,7 @@ import org.junit.jupiter.api.Test;
 class WorkbookSamplesTest {
 
     private static WordDocument sample(String name) throws IOException {
-        return XlsxReader.read(Path.of("samples", name));
+        return new XlsxReader().read(Path.of("samples", name));
     }
 
     /** Every cell pairing of every table, as "status: left | right, its properties' differences". */

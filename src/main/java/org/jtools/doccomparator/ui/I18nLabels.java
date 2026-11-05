@@ -1,4 +1,4 @@
-package org.jtools.doccomparator.i18n;
+package org.jtools.doccomparator.ui;
 
 /*-
  * #%L
@@ -27,6 +27,7 @@ import javax.swing.AbstractButton;
 import javax.swing.Action;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * The labels of a part of the window, each bound to its key: set as they are bound, and set again, in the language

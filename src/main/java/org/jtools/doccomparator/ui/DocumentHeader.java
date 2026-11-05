@@ -39,10 +39,6 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import org.jtools.doccomparator.document.WordDocument;
 import org.jtools.doccomparator.i18n.I18n;
-import org.jtools.doccomparator.pdf.PdfReader;
-import org.jtools.doccomparator.text.TextReader;
-import org.jtools.doccomparator.xlsx.XlsxReader;
-import org.jtools.doccomparator.i18n.I18nLabels;
 
 /**
  * The head of a side, as Beyond Compare has it: the path of its document, which can be typed (Enter opens it), a
@@ -144,14 +140,9 @@ final class DocumentHeader extends JPanel {
             return;
         }
         List<String> said = new ArrayList<>();
-        if (source instanceof DocumentSource.Pasted) {
-            said.add(I18n.text("header.pasted"));
-        } else if (source instanceof DocumentSource.File file && TextReader.reads(file.path())) {
-            said.add(I18n.text("header.textFile"));
-        } else if (source instanceof DocumentSource.File file && XlsxReader.reads(file.path())) {
-            said.add(I18n.text("header.workbook"));
-        } else if (source instanceof DocumentSource.File file && PdfReader.reads(file.path())) {
-            said.add(I18n.text("header.pdf"));
+        String note = source.readingNote();
+        if (note != null) {
+            said.add(note);
         }
         if (read != null && read.template().named() != null) {
             said.add(I18n.text("header.template", read.template().named()));

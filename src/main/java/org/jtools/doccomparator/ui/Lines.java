@@ -47,6 +47,7 @@ import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.WordDocument;
 import org.jtools.doccomparator.i18n.I18n;
+import org.jtools.doccomparator.report.ComparisonWords;
 
 /**
  * A comparison into the lines of the view: a title for each part, then its pairings. Those with a paragraph on one side
@@ -321,7 +322,7 @@ final class Lines {
             marking = marking.stronger(LineSide.Marking.OTHERWISE);
         }
         String notes = String.join(BETWEEN_NOTES, rowProperties.stream()
-                .map(d -> ComparisonWords.property(d, side)).toList());
+                .map(d -> ComparisonWords.property(d.property(), side.of(d.left(), d.right()))).toList());
         return new LineSide(marking, pairing, String.valueOf(number), null, null, columns,
                 notes.isEmpty() ? null : TextBlock.plain(notes, fonts.notes(), palette.faint, palette));
     }
@@ -441,7 +442,7 @@ final class Lines {
     private static String notes(Pairing pairing, Side side, List<FormatSpan> formatting) {
         List<String> notes = new ArrayList<>();
         for (PropertyDifference difference : pairing.diff().properties()) {
-            notes.add(ComparisonWords.property(difference, side));
+            notes.add(ComparisonWords.property(difference.property(), side.of(difference.left(), difference.right())));
         }
         Set<PropertyDifference> formats = new LinkedHashSet<>();
         formatting.forEach(span -> formats.addAll(span.differences()));

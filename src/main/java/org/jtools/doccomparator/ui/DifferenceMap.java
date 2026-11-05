@@ -30,7 +30,6 @@ import java.awt.event.MouseEvent;
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
 import javax.swing.JViewport;
-import org.jtools.doccomparator.i18n.I18nLabels;
 
 /**
  * The whole comparison at a glance, beside the view: a mark for each line that differs, at its height in the documents,

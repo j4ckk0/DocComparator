@@ -25,20 +25,40 @@ import java.nio.file.Path;
 import org.jtools.doccomparator.document.WordDocument;
 import org.jtools.doccomparator.docx.DocxReader;
 import org.jtools.doccomparator.i18n.I18n;
-import org.jtools.doccomparator.pdf.PdfReader;
+import org.jtools.doccomparator.reader.DocumentReader;
+import org.jtools.doccomparator.reader.DocumentReaders;
 import org.jtools.doccomparator.text.TextReader;
-import org.jtools.doccomparator.xlsx.XlsxReader;
 
-/** What a side compares: a file — a Word document, an Excel workbook, a PDF, text — or text pasted on it. */
-sealed interface DocumentSource {
+/**
+ * What a side compares: a file (File), text pasted on it (Pasted), or what a program that shows a ComparatorPanel
+ * reads its own way — a document from a database, from memory — as a source of its own.
+ */
+public interface DocumentSource {
 
     /** Its name, as the title and the side say it. */
     String name();
 
+    /**
+     * The document, read away from the window's thread.
+     *
+     * @throws IOException when it cannot be read, its message saying why, in words for the person who chose it
+     */
     WordDocument read() throws IOException;
 
-    /** A file: a workbook, a PDF or text by its extension (their readers' EXTENSIONS), else a Word document. */
+    /** What its side's head says of how it is read ("PDF: its paragraphs rebuilt…"); null for nothing. */
+    default String readingNote() {
+        return null;
+    }
+
+    /** A file, read by the reader of its extension (DocumentReaders); one of no reader's, as a Word document. */
     record File(Path path) implements DocumentSource {
+
+        /** What a file of an extension no reader has is read as: Word's own, whatever it is named. */
+        private static final DocumentReader OTHERWISE = new DocxReader();
+
+        private DocumentReader reader() {
+            return DocumentReaders.of(path).orElse(OTHERWISE);
+        }
 
         @Override
         public String name() {
@@ -48,16 +68,15 @@ sealed interface DocumentSource {
         @Override
         public WordDocument read() throws IOException {
             try {
-                if (XlsxReader.reads(path)) {
-                    return XlsxReader.read(path);
-                }
-                if (PdfReader.reads(path)) {
-                    return PdfReader.read(path);
-                }
-                return TextReader.reads(path) ? TextReader.read(path) : DocxReader.read(path);
+                return reader().read(path);
             } catch (IOException e) {
                 throw new IOException(I18n.text("error.in", name(), e.getMessage()), e);
             }
+        }
+
+        @Override
+        public String readingNote() {
+            return reader().readingNote();
         }
     }
 
@@ -72,6 +91,11 @@ sealed interface DocumentSource {
         @Override
         public WordDocument read() {
             return TextReader.read(name(), text);
+        }
+
+        @Override
+        public String readingNote() {
+            return I18n.text("header.pasted");
         }
     }
 }

@@ -52,12 +52,10 @@ import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.Comparison;
 import org.jtools.doccomparator.compare.DocumentComparer;
 import org.jtools.doccomparator.document.WordDocument;
-import org.jtools.doccomparator.docx.DocxReader;
 import org.jtools.doccomparator.i18n.I18n;
-import org.jtools.doccomparator.pdf.PdfReader;
-import org.jtools.doccomparator.text.TextReader;
-import org.jtools.doccomparator.xlsx.XlsxReader;
-import org.jtools.doccomparator.i18n.I18nLabels;
+import org.jtools.doccomparator.reader.DocumentReader;
+import org.jtools.doccomparator.reader.DocumentReaders;
+import org.jtools.doccomparator.report.ComparisonWords;
 
 /**
  * The comparison of two documents, all of it but the window: the ribbon (OptionControls), the head of each side
@@ -65,6 +63,10 @@ import org.jtools.doccomparator.i18n.I18nLabels;
  * documents, reads and compares them away from the window's thread, and goes through the differences. Documents are
  * opened from a side's head, by dropping them on their side, or given at the start; text pasted or dropped on a side
  * is compared as a document.
+ *
+ * <p>Another program shows it as any component: open() gives it two files, or two DocumentSource of the program's
+ * own; onCompared() tells each comparison; fileActions(), goActions() and the two menus are its commands, to put in the
+ * program's own menus and tool bars.
  */
 public final class ComparatorPanel extends JPanel {
 
@@ -126,6 +128,7 @@ public final class ComparatorPanel extends JPanel {
     private final Map<Side, SideState> sides = new EnumMap<>(Map.of(Side.LEFT, SideState.EMPTY,
             Side.RIGHT, SideState.EMPTY));
     private Comparison comparison;
+    private Consumer<Comparison> comparedListener = _ -> { };
     private Consumer<String> namesListener = _ -> { };
     private File lastDirectory;
 
@@ -235,14 +238,35 @@ public final class ComparatorPanel extends JPanel {
     // -----------------------------------------------------------------------------------------------------------------
     // The documents
 
-    /** Opens these two documents and compares them. */
+    /** Opens these two files and compares them; null leaves a side empty. */
     public void open(Path left, Path right) {
-        sides.put(Side.LEFT, left == null ? SideState.EMPTY : SideState.of(new DocumentSource.File(left)));
-        sides.put(Side.RIGHT, right == null ? SideState.EMPTY : SideState.of(new DocumentSource.File(right)));
+        open(left == null ? null : new DocumentSource.File(left), right == null ? null : new DocumentSource.File(right));
+    }
+
+    /** Opens these two documents, each read as its source reads it, and compares them; null leaves a side empty. */
+    public void open(DocumentSource left, DocumentSource right) {
+        sides.put(Side.LEFT, left == null ? SideState.EMPTY : SideState.of(left));
+        sides.put(Side.RIGHT, right == null ? SideState.EMPTY : SideState.of(right));
         compare();
     }
 
-    void open(Side side, Path path) {
+    /** Puts this document on a side, in place of the one there, and compares it with the other side's. */
+    public void open(Side side, DocumentSource source) {
+        put(side, source);
+    }
+
+    /** Told each new comparison, once both documents are read and compared: the differences, to count or report. */
+    public void onCompared(Consumer<Comparison> listener) {
+        comparedListener = listener;
+    }
+
+    /** The comparison shown; null while one side or both wait for their document. */
+    public Comparison comparison() {
+        return comparison;
+    }
+
+    /** Puts this file on a side, in place of the document there, and compares it with the other side's. */
+    public void open(Side side, Path path) {
         put(side, new DocumentSource.File(path));
     }
 
@@ -274,16 +298,13 @@ public final class ComparatorPanel extends JPanel {
     private void choose(Side side) {
         JFileChooser chooser = new JFileChooser(lastDirectory);
         chooser.setDialogTitle(I18n.text(side.of("chooser.left", "chooser.right")));
-        List<String> all = new ArrayList<>(DocxReader.EXTENSIONS);
-        all.addAll(XlsxReader.EXTENSIONS);
-        all.addAll(PdfReader.EXTENSIONS);
-        all.addAll(TextReader.EXTENSIONS);
-        FileNameExtensionFilter documents = filter("chooser.documents", all);
+        // every format's extensions, too many to list after its name
+        FileNameExtensionFilter documents = new FileNameExtensionFilter(I18n.text("chooser.documents"),
+                DocumentReaders.extensions().toArray(String[]::new));
         chooser.addChoosableFileFilter(documents);
-        chooser.addChoosableFileFilter(filter("chooser.wordDocuments", DocxReader.EXTENSIONS));
-        chooser.addChoosableFileFilter(filter("chooser.workbooks", XlsxReader.EXTENSIONS));
-        chooser.addChoosableFileFilter(filter("chooser.pdfFiles", PdfReader.EXTENSIONS));
-        chooser.addChoosableFileFilter(filter("chooser.textFiles", TextReader.EXTENSIONS));
+        for (DocumentReader reader : DocumentReaders.all()) {
+            chooser.addChoosableFileFilter(filter(reader.formatName(), reader.extensions()));
+        }
         chooser.setFileFilter(documents);
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             lastDirectory = chooser.getCurrentDirectory();
@@ -291,10 +312,10 @@ public final class ComparatorPanel extends JPanel {
         }
     }
 
-    /** A file chooser's filter: its text, the extensions listed after it ("Text files (*.txt, *.md)"). */
-    private static FileNameExtensionFilter filter(String key, List<String> extensions) {
+    /** A file chooser's filter: its name, the extensions listed after it ("Text files (*.txt, *.md)"). */
+    private static FileNameExtensionFilter filter(String name, List<String> extensions) {
         String listed = String.join(", ", extensions.stream().map(e -> "*." + e).toList());
-        return new FileNameExtensionFilter(I18n.text(key, listed), extensions.toArray(String[]::new));
+        return new FileNameExtensionFilter(I18n.text("chooser.filter", name, listed), extensions.toArray(String[]::new));
     }
 
     private void swap() {
@@ -337,6 +358,7 @@ public final class ComparatorPanel extends JPanel {
             sides.put(Side.LEFT, left.withRead(result.left()));
             sides.put(Side.RIGHT, right.withRead(result.right()));
             show(result);
+            comparedListener.accept(result);
         }, "status.notCompared", "dialog.cannotCompare");
     }
 

@@ -1,4 +1,4 @@
-package org.jtools.doccomparator.i18n;
+package org.jtools.doccomparator.ui;
 
 /*-
  * #%L
@@ -27,6 +27,8 @@ import java.util.function.Consumer;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
 import javax.swing.JList;
+import org.jtools.doccomparator.i18n.I18n;
+import org.jtools.doccomparator.i18n.I18nLanguage;
 
 /**
  * The drop list of the languages the program speaks, each named in itself ("Français", "English"), the one in use

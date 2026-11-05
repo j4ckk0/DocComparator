@@ -38,7 +38,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import org.jtools.doccomparator.i18n.I18n;
-import org.jtools.doccomparator.i18n.I18nLabels;
+import org.jtools.doccomparator.ui.I18nLabels;
 
 /**
  * The Help menu: the program's licence, the terms of the Java runtime it carries, and what the program is — its

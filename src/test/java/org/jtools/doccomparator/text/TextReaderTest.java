@@ -46,10 +46,10 @@ class TextReaderTest {
     @Test
     void textFilesByTheirExtensionWhateverItsCase() {
         for (String name : List.of("a.txt", "notes.TEXT", "README.md", "guide.Markdown")) {
-            assertTrue(TextReader.reads(Path.of(name)), name);
+            assertTrue(new TextReader().reads(Path.of(name)), name);
         }
         for (String name : List.of("a.docx", "md", "a.txt.docx", "a.mdx")) {
-            assertFalse(TextReader.reads(Path.of(name)), name);
+            assertFalse(new TextReader().reads(Path.of(name)), name);
         }
     }
 
@@ -76,7 +76,7 @@ class TextReaderTest {
     void aTextFileIsNamedByItsFile(@TempDir Path folder) throws IOException {
         Path file = folder.resolve("notes.md");
         Files.writeString(file, "# Title\r\n\r\nSome *text*.\r\n");
-        WordDocument document = TextReader.read(file);
+        WordDocument document = new TextReader().read(file);
         assertEquals("notes.md", document.fileName());
         assertEquals(List.of("# Title", "", "Some *text*."), texts(document), "Markdown as the text it is");
     }

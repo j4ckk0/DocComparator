@@ -32,25 +32,33 @@ import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Template;
 import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.ooxml.OoxmlException;
 import org.jtools.doccomparator.ooxml.OoxmlPackage;
 import org.jtools.doccomparator.ooxml.Relationship;
 import org.jtools.doccomparator.ooxml.XmlCursor;
+import org.jtools.doccomparator.reader.AbstractDocumentReader;
 
 /**
  * Reads a Word document (.docx, and .docm, .dotx, .dotm, which are built alike) into a WordDocument. Reads the file
  * and nothing else: the links it holds — a template on a share, a linked picture — are kept as written, never
  * followed (README, "No network").
  */
-public final class DocxReader {
+public final class DocxReader extends AbstractDocumentReader {
 
-    /** The files read, by their extension: Word's documents and templates, with macros or without, built alike. */
-    public static final List<String> EXTENSIONS = List.of("docx", "docm", "dotx", "dotm");
 
-    private DocxReader() {
+    /** The reader of .docx, .docm, .dotx, .dotm files, found as a service (DocumentReaders). */
+    public DocxReader() {
+        super(10, "docx", "docm", "dotx", "dotm");
     }
 
-    public static WordDocument read(Path file) throws IOException {
+    @Override
+    public String formatName() {
+        return I18n.text("format.word");
+    }
+
+    @Override
+    public WordDocument read(Path file) throws IOException {
         try (OoxmlPackage docx = OoxmlPackage.open(file)) {
             String main = docx.mainPart("word/document.xml");
             List<Relationship> relationships = docx.relationships(main);

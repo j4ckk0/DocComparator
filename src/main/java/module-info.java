@@ -33,4 +33,10 @@ module org.jtools.doccomparator {
 
     // no name ever looked up on the network, as on the class path (META-INF/services)
     provides java.net.spi.InetAddressResolverProvider with org.jtools.doccomparator.NoNetworkResolver;
+
+    // the readers of the files compared, found as services: another jar's own among them (DocumentReaders)
+    uses org.jtools.doccomparator.reader.DocumentReader;
+    provides org.jtools.doccomparator.reader.DocumentReader with org.jtools.doccomparator.docx.DocxReader,
+            org.jtools.doccomparator.xlsx.XlsxReader, org.jtools.doccomparator.pdf.PdfReader,
+            org.jtools.doccomparator.text.TextReader;
 }

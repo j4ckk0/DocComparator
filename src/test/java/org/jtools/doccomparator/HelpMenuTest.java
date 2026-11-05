@@ -28,7 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
-import org.jtools.doccomparator.i18n.I18nLabels;
+import org.jtools.doccomparator.ui.I18nLabels;
 import org.junit.jupiter.api.Test;
 
 /** The Help menu: the program's licence and the runtime's, read offline, and what the program is. */

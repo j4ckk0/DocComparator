@@ -30,7 +30,6 @@ import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import org.jtools.doccomparator.i18n.I18n;
-import org.jtools.doccomparator.i18n.I18nLabels;
 
 /**
  * The status line, under the sides: what the comparison says, on the left; on the right, the current difference and

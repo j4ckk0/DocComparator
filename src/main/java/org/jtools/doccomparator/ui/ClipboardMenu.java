@@ -30,7 +30,6 @@ import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import org.jtools.doccomparator.document.Picture;
 import org.jtools.doccomparator.i18n.I18n;
-import org.jtools.doccomparator.i18n.I18nLabels;
 
 /**
  * The view's right-click menu: a side's text of the line clicked, copied; what is copied, pasted on the side clicked.

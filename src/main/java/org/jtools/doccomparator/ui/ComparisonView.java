@@ -40,6 +40,7 @@ import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import org.jtools.doccomparator.compare.PropertyDifference;
 import org.jtools.doccomparator.i18n.I18n;
+import org.jtools.doccomparator.report.ComparisonWords;
 
 /**
  * The two documents side by side, line by line: each line as high as its taller side, so that what goes together

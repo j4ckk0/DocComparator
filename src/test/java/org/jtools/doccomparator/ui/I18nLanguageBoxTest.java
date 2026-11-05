@@ -1,4 +1,4 @@
-package org.jtools.doccomparator.i18n;
+package org.jtools.doccomparator.ui;
 
 /*-
  * #%L
@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import org.jtools.doccomparator.i18n.I18nLanguage;
 import org.junit.jupiter.api.Test;
 
 /** The languages' drop list: each named in itself; a choice told, the language shown set without telling. */
