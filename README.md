@@ -5,13 +5,14 @@
 ![Java 25](https://img.shields.io/badge/Java-25-orange)
 ![Windows | Linux](https://img.shields.io/badge/runs%20on-Windows%20%7C%20Linux-lightgrey)
 
-**See what changed between two Word documents.** DocComparator puts two `.docx` files side by side, paragraph beside
-paragraph, and marks what differs: the words and letters changed, the paragraphs added, removed or moved, the tables
-row by row and column by column. It compares the text first. Each kind of layout (headings, lists, styles, indents,
-spacing, table layout, cell shading…) has its own switch and is compared only when you ask for it. It compares two
-versions of one file. It also compares two different documents, where one took paragraphs from the other and changed
-pieces of them. Excel workbooks (`.xlsx`), PDFs and text files (`.txt`, `.md`) compare too: a workbook's sheets as
-tables, their values, formulas and formatting; a PDF's text, its paragraphs rebuilt from its lines, and its fonts.
+**See what changed between two documents — Word, Excel, PDF or text.** DocComparator puts two files side by side,
+paragraph beside paragraph, and marks what differs: the words and letters changed, the paragraphs added, removed or
+moved, the tables row by row and column by column. It compares the text first. Each kind of layout (headings, lists,
+styles, indents, spacing, table layout, cell shading…) has its own switch and is compared only when you ask for it. It
+compares two versions of one file. It also compares two different documents, where one took paragraphs from the other
+and changed pieces of them. It reads Word documents (`.docx`), Excel workbooks (`.xlsx`): their sheets as tables, their
+values, formulas and formatting; PDFs: their text, the paragraphs rebuilt from the lines, and the fonts; and text files
+(`.txt`, `.md`).
 
 It is a desktop program that runs on its own: each distribution carries its Java runtime, so nothing needs installing
 where it is unpacked, and it **never reaches the network**: no update check, no telemetry, no name lookup (see
