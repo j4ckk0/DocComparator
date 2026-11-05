@@ -24,6 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.Comparison;
@@ -33,9 +38,56 @@ import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.WordDocument;
 import org.jtools.doccomparator.document.Story;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-/** Text pasted, read as a document: a paragraph a line. */
+/** Text pasted, or a text file, read as a document: a paragraph a line. */
 class TextReaderTest {
+
+    @Test
+    void textFilesByTheirExtensionWhateverItsCase() {
+        for (String name : List.of("a.txt", "notes.TEXT", "README.md", "guide.Markdown")) {
+            assertTrue(TextReader.reads(Path.of(name)), name);
+        }
+        for (String name : List.of("a.docx", "md", "a.txt.docx", "a.mdx")) {
+            assertFalse(TextReader.reads(Path.of(name)), name);
+        }
+    }
+
+    @Test
+    void theEncodingTheByteOrderMarkNames() {
+        String text = "Été → déjà";
+        assertEquals(text, TextReader.decode(bytes(new byte[] {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF},
+                text, StandardCharsets.UTF_8)), "UTF-8, its mark dropped");
+        assertEquals(text, TextReader.decode(bytes(new byte[] {(byte) 0xFF, (byte) 0xFE},
+                text, StandardCharsets.UTF_16LE)), "UTF-16, little-endian");
+        assertEquals(text, TextReader.decode(bytes(new byte[] {(byte) 0xFE, (byte) 0xFF},
+                text, StandardCharsets.UTF_16BE)), "UTF-16, big-endian");
+    }
+
+    @Test
+    void withoutAMarkUtf8OrElseWindowsLatin() {
+        assertEquals("Été → déjà", TextReader.decode("Été → déjà".getBytes(StandardCharsets.UTF_8)));
+        assertEquals("Été, déjà, 5 €", TextReader.decode("Été, déjà, 5 €".getBytes(Charset.forName("windows-1252"))),
+                "not UTF-8: as an older Windows program wrote it");
+        assertEquals("", TextReader.decode(new byte[0]));
+    }
+
+    @Test
+    void aTextFileIsNamedByItsFile(@TempDir Path folder) throws IOException {
+        Path file = folder.resolve("notes.md");
+        Files.writeString(file, "# Title\r\n\r\nSome *text*.\r\n");
+        WordDocument document = TextReader.read(file);
+        assertEquals("notes.md", document.fileName());
+        assertEquals(List.of("# Title", "", "Some *text*."), texts(document), "Markdown as the text it is");
+    }
+
+    private static byte[] bytes(byte[] mark, String text, Charset charset) {
+        byte[] encoded = text.getBytes(charset);
+        byte[] all = new byte[mark.length + encoded.length];
+        System.arraycopy(mark, 0, all, 0, mark.length);
+        System.arraycopy(encoded, 0, all, mark.length, encoded.length);
+        return all;
+    }
 
     @Test
     void aParagraphALineWhateverItsBreaks() {

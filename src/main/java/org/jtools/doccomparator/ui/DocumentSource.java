@@ -27,7 +27,7 @@ import org.jtools.doccomparator.docx.DocxReader;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.text.TextReader;
 
-/** What a side compares: a Word document's file, or text pasted on it. */
+/** What a side compares: a file, a Word document or text, or text pasted on it. */
 sealed interface DocumentSource {
 
     /** Its name, as the title and the side say it. */
@@ -35,7 +35,7 @@ sealed interface DocumentSource {
 
     WordDocument read() throws IOException;
 
-    /** A Word document, read from its file. */
+    /** A file: a Word document, or text by its extension (TextReader.EXTENSIONS). */
     record File(Path path) implements DocumentSource {
 
         @Override
@@ -46,7 +46,7 @@ sealed interface DocumentSource {
         @Override
         public WordDocument read() throws IOException {
             try {
-                return DocxReader.read(path);
+                return TextReader.reads(path) ? TextReader.read(path) : DocxReader.read(path);
             } catch (IOException e) {
                 throw new IOException(I18n.text("error.in", name(), e.getMessage()), e);
             }

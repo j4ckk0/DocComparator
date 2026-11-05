@@ -51,8 +51,8 @@ page.
 
 ![The diff view in a dark look](screenshots/diff-view-dark.png)
 
-**Before the documents**: each side says how to fill it. You can drop a Word document on it, choose one with
-*Open…*, type its path, or click the side and paste a text (Ctrl+V). The side clicked, where the paste goes, shows in
+**Before the documents**: each side says how to fill it. You can drop a Word document or a text file on it, choose
+one with *Open…*, type its path, or click the side and paste a text (Ctrl+V). The side clicked, where the paste goes, shows in
 blue.
 
 ![The window before the documents](screenshots/empty.png)
@@ -186,6 +186,11 @@ bottom of the view, in its own shade, keeping them apart where they have no line
 formatting, so text pasted against a Word document is best compared with *Text only*: the other switches would show
 the document's styles and template as differences. A pasted side can face another pasted text or a document; a
 document copied in Explorer opens as if dropped.
+
+Text files compare the same way: a `.txt`, `.text`, `.md` or `.markdown` file, opened, dropped or given at the start,
+is read as text, a paragraph a line, and can face another text file, pasted text or a Word document. Its encoding is
+the one its byte order mark names; without one, UTF-8, or Windows-1252 when it is not valid UTF-8 (a file an older
+Windows program wrote). Markdown is compared as the text it is: its marks (`#`, `*`, `-`…) are words like the others.
 
 - **Two views**, in the ribbon's *View* or the *View* menu. *Diff*, the text plain and compact, the differences at a
   glance, as Beyond Compare shows them. *Document*, each paragraph as Word lays it out, through its styles: fonts,
@@ -419,10 +424,10 @@ to be published; the distributions, with their runtimes, are never uploaded ther
 |---|---|
 | `src/main/java/org/jtools/doccomparator/` | `Launcher` (the entry point, given two documents or none), `MainWindow` (the window, its menus, its look), `HelpMenu` (the licences and About, read offline), `Settings` (kept beside the program), `Looks` (FlatLaf's looks, light and dark, its native libraries off), `NoNetworkResolver` (see "No network") |
 | `…/document/` | what a Word document is to the comparison: `WordDocument`, its `Story`s of `Block`s (`Paragraph` of `Run`s, `Table`, `TextBox`), `Formatting`, `StyleSheet`, `Template` |
-| `…/text/` | `TextReader` (text pasted into a `WordDocument`, a paragraph a line) |
+| `…/text/` | `TextReader` (text pasted, or a text file, into a `WordDocument`, a paragraph a line) |
 | `…/docx/` | `DocxReader` (a .docx into a `WordDocument`), `DocxPackage` (the zip and its relationships), `XmlCursor` (the XML, fetching nothing), `StoryReader`, `DrawingReader` (a drawing's pictures and text boxes), `StylesReader`, `Numbering`, `FormattingReader`, `Pictures` (a part's pictures, through its relationships, nothing outside fetched) |
 | `…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Pairing`s), `Pairer` (step one), `ParagraphComparer` (step two), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `Diff` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `Phrase` (what a difference says, kept as data: the view puts it into words) |
-| `…/ui/` | `ComparatorPanel` (the documents, read and compared in the background by `BackgroundWork`; each `Side`'s `SideState`; the sides' heads laid out by `HeadsLayout`), `OptionControls` (the ribbon and the Compare and View menus, kept in step), `DocumentSource` (what a side compares: a file, or text pasted), `DocumentHeader` and `DropHandler` (a side's head, documents and text dropped or pasted), `StatusLine`, `ClipboardMenu` (the right-click menu: copy a line, paste on its side), `ComparisonView` (the two sides, line by line; `LinePainter` draws the lines, `EmptySide` a side waiting for its document), `Lines` (a comparison into lines), `ComparisonWords` (what the comparison holds, said in the language in use — every word the user reads of it — with `PropertyNames`, Word's property names as a reader says them), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `ListNumbers` (list items numbered as Word does), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux); the small ones: `Line` and `LineSide` (a line of the view, and each side of it), `Palette` (the colours), `Fonts`, `DocumentOpener`, `RibbonEdge`, `FaintLabel`, `LookLine` |
+| `…/ui/` | `ComparatorPanel` (the documents, read and compared in the background by `BackgroundWork`; each `Side`'s `SideState`; the sides' heads laid out by `HeadsLayout`), `OptionControls` (the ribbon and the Compare and View menus, kept in step), `DocumentSource` (what a side compares: a file, Word's or text, or text pasted), `DocumentHeader` and `DropHandler` (a side's head, documents and text dropped or pasted), `StatusLine`, `ClipboardMenu` (the right-click menu: copy a line, paste on its side), `ComparisonView` (the two sides, line by line; `LinePainter` draws the lines, `EmptySide` a side waiting for its document), `Lines` (a comparison into lines), `ComparisonWords` (what the comparison holds, said in the language in use — every word the user reads of it — with `PropertyNames`, Word's property names as a reader says them), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `ListNumbers` (list items numbered as Word does), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux); the small ones: `Line` and `LineSide` (a line of the view, and each side of it), `Palette` (the colours), `Fonts`, `DocumentOpener`, `RibbonEdge`, `FaintLabel`, `LookLine` |
 | `…/i18n/` | the languages (see "Languages"): `I18nLanguage`, `I18n`, `I18nLabels`, `I18nLanguageBox` |
 | `src/main/resources/org/jtools/doccomparator/i18n/` | the texts, one file per language |
 | `src/main/resources/META-INF/services/` | what installs `NoNetworkResolver` |

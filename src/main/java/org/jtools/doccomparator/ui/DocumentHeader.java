@@ -39,6 +39,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import org.jtools.doccomparator.document.WordDocument;
 import org.jtools.doccomparator.i18n.I18n;
+import org.jtools.doccomparator.text.TextReader;
 import org.jtools.doccomparator.i18n.I18nLabels;
 
 /**
@@ -143,6 +144,8 @@ final class DocumentHeader extends JPanel {
         List<String> said = new ArrayList<>();
         if (source instanceof DocumentSource.Pasted) {
             said.add(I18n.text("header.pasted"));
+        } else if (source instanceof DocumentSource.File file && TextReader.reads(file.path())) {
+            said.add(I18n.text("header.textFile"));
         }
         if (read != null && read.template().named() != null) {
             said.add(I18n.text("header.template", read.template().named()));

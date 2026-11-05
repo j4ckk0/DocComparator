@@ -33,6 +33,7 @@ import java.awt.event.KeyEvent;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.EnumMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -53,6 +54,7 @@ import org.jtools.doccomparator.compare.DocumentComparer;
 import org.jtools.doccomparator.document.WordDocument;
 import org.jtools.doccomparator.docx.DocxReader;
 import org.jtools.doccomparator.i18n.I18n;
+import org.jtools.doccomparator.text.TextReader;
 import org.jtools.doccomparator.i18n.I18nLabels;
 
 /**
@@ -270,12 +272,23 @@ public final class ComparatorPanel extends JPanel {
     private void choose(Side side) {
         JFileChooser chooser = new JFileChooser(lastDirectory);
         chooser.setDialogTitle(I18n.text(side.of("chooser.left", "chooser.right")));
-        chooser.setFileFilter(new FileNameExtensionFilter(I18n.text("chooser.wordDocuments"),
-                DocxReader.EXTENSIONS.toArray(String[]::new)));
+        List<String> all = new ArrayList<>(DocxReader.EXTENSIONS);
+        all.addAll(TextReader.EXTENSIONS);
+        FileNameExtensionFilter documents = filter("chooser.documents", all);
+        chooser.addChoosableFileFilter(documents);
+        chooser.addChoosableFileFilter(filter("chooser.wordDocuments", DocxReader.EXTENSIONS));
+        chooser.addChoosableFileFilter(filter("chooser.textFiles", TextReader.EXTENSIONS));
+        chooser.setFileFilter(documents);
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             lastDirectory = chooser.getCurrentDirectory();
             open(side, chooser.getSelectedFile().toPath());
         }
+    }
+
+    /** A file chooser's filter: its text, the extensions listed after it ("Text files (*.txt, *.md)"). */
+    private static FileNameExtensionFilter filter(String key, List<String> extensions) {
+        String listed = String.join(", ", extensions.stream().map(e -> "*." + e).toList());
+        return new FileNameExtensionFilter(I18n.text(key, listed), extensions.toArray(String[]::new));
     }
 
     private void swap() {

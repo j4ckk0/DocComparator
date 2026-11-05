@@ -34,6 +34,7 @@ import java.awt.event.MouseEvent;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -63,6 +64,7 @@ import org.jtools.doccomparator.docx.DocxReader;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.i18n.I18nLanguage;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /** The panel, made without a screen: what its buttons do. */
 class ComparatorPanelTest {
@@ -259,6 +261,27 @@ class ComparatorPanelTest {
         }
         assertEquals(1, differences[0], "two → 2");
         assertEquals("Pasted text ↔ Pasted text", panel[0].documentNames());
+    }
+
+    /** Two text files opened: compared as pasted text is, named by their files, said to be text files. */
+    @Test
+    void textFilesAreCompared(@TempDir Path folder) throws Exception {
+        Path left = folder.resolve("old.txt");
+        Path right = folder.resolve("new.md");
+        Files.writeString(left, "one\ntwo\nthree\n");
+        Files.writeString(right, "one\n2\nthree\n");
+        ComparatorPanel[] panel = new ComparatorPanel[1];
+        SwingUtilities.invokeAndWait(() -> {
+            panel[0] = new ComparatorPanel();
+            panel[0].open(left, right);
+        });
+        int[] differences = new int[1];
+        for (int wait = 0; wait < 500 && differences[0] == 0; wait++) {   // compared away from the window's thread
+            Thread.sleep(10);
+            SwingUtilities.invokeAndWait(() -> differences[0] = view(panel[0]).differenceCount()[0]);
+        }
+        assertEquals(1, differences[0], "two → 2");
+        assertEquals("old.txt ↔ new.md", panel[0].documentNames());
     }
 
     /**
