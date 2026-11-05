@@ -3,6 +3,17 @@
 What each version brought, newest first. The GitHub Releases carry the same notes with the downloads and their
 checksums.
 
+## 1.13 — 2026-11-05
+
+- **PDFs compared**: a `.pdf` file is read as its text, its paragraphs rebuilt from the lines of its pages, and
+  compared as a document is. A paragraph goes on across a page break; a list's bullets and numbers are its marks, so
+  that a step only renumbered is no difference; the running header and footer are compared once, apart from the body.
+  Each character's font, size, bold, italic, colour and superscript go under *Characters* and show in the document
+  view. Read with no added library: compressed and damaged files, and encrypted ones that open without a password.
+- A PDF is compared up to 2,000,000 characters, about 500 pages. Pictures, and so scanned pages, annotations, form
+  fields and tables as tables are not read; a PDF without text, or that asks a password, is refused, saying why.
+- *Open…* offers PDFs with the other documents, or apart.
+
 ## 1.12 — 2026-11-05
 
 - **Excel workbooks compared**: a `.xlsx`, `.xlsm`, `.xltx` or `.xltm` file is read as a heading for each sheet and a
