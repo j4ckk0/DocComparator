@@ -26,6 +26,7 @@ to install, a Java runtime is inside: unpack it anywhere and start `doccomparato
 | You compare documents | [**Screenshots**](#screenshots), then [**The window**](#the-window): what it shows and how to use it |
 | You want it on your machine | [**Build and run**](#build-and-run) and [**Packaging**](#packaging): self-contained archives for Windows and Linux |
 | You read or change the code | [**How it compares**](#how-it-compares) and [**Layout**](#layout) |
+| You use the comparison in a program of yours | [**examples/**](examples/README.md): the libraries `doccomparator-core` and `doccomparator-ui`, in three small programs |
 | Your security team asks | [**No network**](#no-network): what the program does not do, and the checks that keep it so |
 
 ## Screenshots
@@ -526,6 +527,7 @@ module's texts.
 | `doccomparator-ui/src/test/` | `ui/LinesTest`, the view, drawn without a screen; `ComparatorPanelTest` and the rest of the view's |
 | `doccomparator-app/src/test/` | `NoNetworkTest` (all three modules' classes and FlatLaf's), `NoNetworkResolverTest` (see "No network"); the window's |
 | `samples/` | the sample documents, and the scripts that write them (see "Samples") |
+| `examples/` | three programs using the libraries: comparing without a window, a format added, the view in a window of one's own |
 | `scripts/` | the scripts above, and `standard-widths.py` (the standard PDF fonts' widths, from their URW clones) |
 | `.github/workflows/` | `build.yml`, the build and the tests on every push; `release.yml`, the release on a tag `vX.Y` |
 

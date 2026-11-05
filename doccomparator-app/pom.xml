@@ -48,6 +48,24 @@
     </resources>
     <plugins>
       <plugin>
+        <!-- ExamplesTest compiles examples/ with the JDK's compiler (java.compiler), which the program does not read -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-testCompile</id>
+            <configuration>
+              <compilerArgs>
+                <arg>--add-modules</arg>
+                <arg>java.compiler</arg>
+                <arg>--add-reads</arg>
+                <arg>org.jtools.doccomparator=java.compiler</arg>
+              </compilerArgs>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
