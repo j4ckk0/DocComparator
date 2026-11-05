@@ -3,6 +3,14 @@
 What each version brought, newest first. The GitHub Releases carry the same notes with the downloads and their
 checksums.
 
+## 1.11 — 2026-11-05
+
+- **Text files compared**: a `.txt`, `.text`, `.md` or `.markdown` file, opened, dropped or given at the start, is
+  read as text, a paragraph a line, and can face another text file, pasted text or a Word document. Its encoding is
+  the one its byte order mark names, or else UTF-8, or else Windows-1252 (a file an older Windows program wrote).
+  Markdown is compared as the text it is.
+- *Open…* offers Word documents and text files together, or each apart.
+
 ## 1.10 — 2026-11-05
 
 - No change to what the program does: the code says, with Java's `_`, every value it is given and does not use.
