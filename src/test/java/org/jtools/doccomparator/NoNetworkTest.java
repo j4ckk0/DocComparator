@@ -111,7 +111,7 @@ class NoNetworkTest {
             // the module's descriptor: names the resolver's service, which it provides
             new Exemption("module-info", List.of("java/net/spi/InetAddressResolverProvider"), List.of()),
             // makes the program's only XML parser, set to fetch nothing
-            new Exemption("org/jtools/doccomparator/docx/XmlCursor", List.of(), List.of(
+            new Exemption("org/jtools/doccomparator/ooxml/XmlCursor", List.of(), List.of(
                     "javax/xml/stream/XMLInputFactory.newDefaultFactory")));
 
     @Test
@@ -214,7 +214,7 @@ class NoNetworkTest {
         assertTrue(asResolver.contains("java/net/Socket"), asResolver);
 
         String asXmlCursor = String.join("\n",
-                networkUses("org/jtools/doccomparator/docx/XmlCursor.class", ClassFileNames.read(OFFENDER)));
+                networkUses("org/jtools/doccomparator/ooxml/XmlCursor.class", ClassFileNames.read(OFFENDER)));
         assertTrue(asXmlCursor.contains("calls javax/xml/stream/XMLInputFactory.newInstance"), asXmlCursor);
     }
 

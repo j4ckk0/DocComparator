@@ -25,6 +25,8 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.jtools.doccomparator.document.Formatting;
+import org.jtools.doccomparator.ooxml.OoxmlException;
+import org.jtools.doccomparator.ooxml.XmlCursor;
 
 /** Properties (w:pPr, w:rPr, w:tblPr, w:tcPr…) into a Formatting, under Word's own names (see Formatting). */
 final class FormattingReader {
@@ -46,7 +48,7 @@ final class FormattingReader {
      * The properties of the element the cursor is on (a w:rPr, a w:tblPr…), consumed. A tracked change of formatting
      * (w:rPrChange…, which holds the properties as they were) is not read: changeFound is told of it.
      */
-    static Formatting read(XmlCursor xml, Runnable changeFound) throws DocxException {
+    static Formatting read(XmlCursor xml, Runnable changeFound) throws OoxmlException {
         SortedMap<String, String> values = new TreeMap<>();
         while (xml.nextChild()) {
             if (xml.isWord() && xml.localName().endsWith("PrChange")) {
@@ -62,12 +64,12 @@ final class FormattingReader {
     }
 
     /** One property element, consumed, into the values. */
-    static void readProperty(XmlCursor xml, SortedMap<String, String> values) throws DocxException {
+    static void readProperty(XmlCursor xml, SortedMap<String, String> values) throws OoxmlException {
         readProperty(xml, xml.localName(), values);
     }
 
     private static void readProperty(XmlCursor xml, String name, SortedMap<String, String> values)
-            throws DocxException {
+            throws OoxmlException {
         Map<String, String> attributes = xml.wordAttributes();
         for (Map.Entry<String, String> attribute : attributes.entrySet()) {
             if (attribute.getKey().equals("val")) {

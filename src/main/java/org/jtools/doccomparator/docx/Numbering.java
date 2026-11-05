@@ -23,6 +23,8 @@ package org.jtools.doccomparator.docx;
 import java.util.HashMap;
 import java.util.Map;
 import org.jtools.doccomparator.document.Formatting;
+import org.jtools.doccomparator.ooxml.OoxmlException;
+import org.jtools.doccomparator.ooxml.XmlCursor;
 
 /**
  * The document's lists (numbering.xml): for a list (numId) and a level, the numbering it shows. A list is an
@@ -49,7 +51,7 @@ final class Numbering {
         return abstractLevels.getOrDefault(abstractOfList.get(listId), Map.of()).get(level);
     }
 
-    static Numbering read(XmlCursor xml) throws DocxException {
+    static Numbering read(XmlCursor xml) throws OoxmlException {
         Numbering numbering = new Numbering();
         xml.root("numbering");
         while (xml.nextChild()) {
@@ -91,7 +93,7 @@ final class Numbering {
         return numbering;
     }
 
-    private static void readLevel(XmlCursor xml, Map<Integer, Level> levels) throws DocxException {
+    private static void readLevel(XmlCursor xml, Map<Integer, Level> levels) throws OoxmlException {
         int level = parseLevel(xml.wordAttribute("ilvl"));
         String format = null;
         String text = null;

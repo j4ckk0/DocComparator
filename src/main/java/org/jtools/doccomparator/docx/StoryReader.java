@@ -36,6 +36,8 @@ import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.TextBox;
+import org.jtools.doccomparator.ooxml.OoxmlException;
+import org.jtools.doccomparator.ooxml.XmlCursor;
 
 /**
  * The blocks of a story — the body, a header, a footnote… — as the reader of the comparison wants them: the text as
@@ -93,14 +95,14 @@ final class StoryReader {
     }
 
     /** The blocks of the element the cursor is on (w:body, w:hdr, w:tc, w:txbxContent…), consumed. */
-    List<Block> readBlocks(XmlCursor xml) throws DocxException {
+    List<Block> readBlocks(XmlCursor xml) throws OoxmlException {
         List<Block> blocks = new ArrayList<>();
         xml.forChildren(child -> readBlock(child, blocks));
         return blocks;
     }
 
     /** The footnotes or endnotes of footnotes.xml or endnotes.xml, numbered as they come; separators are not notes. */
-    List<Story> readNotes(XmlCursor xml, Story.Kind kind) throws DocxException {
+    List<Story> readNotes(XmlCursor xml, Story.Kind kind) throws OoxmlException {
         List<Story> notes = new ArrayList<>();
         while (xml.nextChild()) {
             String type = xml.wordAttribute("type");
@@ -114,7 +116,7 @@ final class StoryReader {
         return notes;
     }
 
-    private void readBlock(XmlCursor xml, List<Block> blocks) throws DocxException {
+    private void readBlock(XmlCursor xml, List<Block> blocks) throws OoxmlException {
         if (xml.isWord("p")) {
             readParagraph(xml, blocks);
         } else if (xml.isWord("tbl")) {
@@ -176,7 +178,7 @@ final class StoryReader {
         }
     }
 
-    private void readParagraph(XmlCursor xml, List<Block> blocks) throws DocxException {
+    private void readParagraph(XmlCursor xml, List<Block> blocks) throws OoxmlException {
         ParagraphContent content = new ParagraphContent();
         while (xml.nextChild()) {
             if (xml.isWord("pPr")) {
@@ -194,7 +196,7 @@ final class StoryReader {
         blocks.addAll(content.textBoxes);
     }
 
-    private void readParagraphProperties(XmlCursor xml, ParagraphContent content) throws DocxException {
+    private void readParagraphProperties(XmlCursor xml, ParagraphContent content) throws OoxmlException {
         while (xml.nextChild()) {
             if (xml.isWord("sectPr")) {
                 readSection(xml);
@@ -232,7 +234,7 @@ final class StoryReader {
     }
 
     /** What a paragraph holds besides its properties: runs, and what wraps runs. */
-    private void readInline(XmlCursor xml, ParagraphContent content) throws DocxException {
+    private void readInline(XmlCursor xml, ParagraphContent content) throws OoxmlException {
         if (xml.isWord("r")) {
             readRun(xml, content);
         } else if (xml.isWord("hyperlink") || xml.isWord("smartTag") || xml.isWord("customXml")
@@ -255,7 +257,7 @@ final class StoryReader {
         }
     }
 
-    private void readRun(XmlCursor xml, ParagraphContent content) throws DocxException {
+    private void readRun(XmlCursor xml, ParagraphContent content) throws OoxmlException {
         SortedMap<String, String> properties = new TreeMap<>();
         StringBuilder text = new StringBuilder();
         xml.forChildren(child -> readRunChild(child, properties, text, content));
@@ -264,7 +266,7 @@ final class StoryReader {
     }
 
     private void readRunChild(XmlCursor xml, SortedMap<String, String> properties, StringBuilder text,
-                              ParagraphContent content) throws DocxException {
+                              ParagraphContent content) throws OoxmlException {
         if (xml.isMarkupCompatibility("AlternateContent")) {
             xml.firstChoice(choice -> choice.forChildren(child -> readRunChild(child, properties, text, content)));
             return;
@@ -328,7 +330,7 @@ final class StoryReader {
         }
     }
 
-    private static void append(XmlCursor xml, StringBuilder text, String shown) throws DocxException {
+    private static void append(XmlCursor xml, StringBuilder text, String shown) throws OoxmlException {
         text.append(shown);
         xml.skip();
     }
@@ -343,7 +345,7 @@ final class StoryReader {
     }
 
     /** An equation's text: its m:t, in order. */
-    private String equationText(XmlCursor xml) throws DocxException {
+    private String equationText(XmlCursor xml) throws OoxmlException {
         StringBuilder text = new StringBuilder();
         xml.forChildren(child -> text.append(child.isMath("t") ? child.text() : equationText(child)));
         return text.toString();
@@ -351,7 +353,7 @@ final class StoryReader {
 
     // ---- tables ----------------------------------------------------------------------------------------------
 
-    private Table readTable(XmlCursor xml) throws DocxException {
+    private Table readTable(XmlCursor xml) throws OoxmlException {
         Formatting properties = Formatting.NONE;
         List<Table.Row> rows = new ArrayList<>();
         while (xml.nextChild()) {
@@ -364,7 +366,7 @@ final class StoryReader {
         return new Table(properties.get("tblStyle"), properties.without("tblStyle"), rows);
     }
 
-    private void readRows(XmlCursor xml, List<Table.Row> rows) throws DocxException {
+    private void readRows(XmlCursor xml, List<Table.Row> rows) throws OoxmlException {
         if (xml.isWord("tr")) {
             List<Table.Cell> cells = new ArrayList<>();
             Formatting[] properties = {Formatting.NONE};
@@ -397,7 +399,7 @@ final class StoryReader {
         return formatting.values().keySet().stream().anyMatch(key -> key.equals(name) || key.startsWith(name + "."));
     }
 
-    private void readCells(XmlCursor xml, List<Table.Cell> cells) throws DocxException {
+    private void readCells(XmlCursor xml, List<Table.Cell> cells) throws OoxmlException {
         if (xml.isWord("tc")) {
             Formatting properties = Formatting.NONE;
             List<Block> blocks = new ArrayList<>();
@@ -427,7 +429,7 @@ final class StoryReader {
     // ---- sections --------------------------------------------------------------------------------------------
 
     /** A section's end (w:sectPr): its headers and footers, by type. */
-    private void readSection(XmlCursor xml) throws DocxException {
+    private void readSection(XmlCursor xml) throws OoxmlException {
         sections++;
         while (xml.nextChild()) {
             if (xml.isWord("headerReference") || xml.isWord("footerReference")) {

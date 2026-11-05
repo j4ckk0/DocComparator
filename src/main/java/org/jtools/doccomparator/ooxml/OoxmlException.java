@@ -1,4 +1,4 @@
-package org.jtools.doccomparator.docx;
+package org.jtools.doccomparator.ooxml;
 
 /*-
  * #%L
@@ -23,14 +23,16 @@ package org.jtools.doccomparator.docx;
 import java.io.IOException;
 import org.jtools.doccomparator.i18n.I18n;
 
-/** A file that cannot be read as a Word document, and why, in words for the person who chose it. */
-public final class DocxException extends IOException {
+/**
+ * A file that cannot be read as a Word document or an Excel workbook, and why, in words for the person who chose it.
+ */
+public final class OoxmlException extends IOException {
 
-    public DocxException(String message) {
+    public OoxmlException(String message) {
         super(message);
     }
 
-    DocxException(String part, String message) {
+    public OoxmlException(String part, String message) {
         super(I18n.text("error.in", part, message));
     }
 }

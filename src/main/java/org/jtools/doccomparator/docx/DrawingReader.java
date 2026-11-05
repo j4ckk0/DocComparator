@@ -23,6 +23,8 @@ package org.jtools.doccomparator.docx;
 import java.util.ArrayList;
 import java.util.List;
 import org.jtools.doccomparator.document.Picture;
+import org.jtools.doccomparator.ooxml.OoxmlException;
+import org.jtools.doccomparator.ooxml.XmlCursor;
 
 /**
  * A drawing, a VML picture or an object (w:drawing, w:pict, w:object), all of it: its pictures (a:blip, the bitmap Word
@@ -51,7 +53,7 @@ final class DrawingReader {
 
     /** The pictures of the element the cursor is on, consumed; each w:txbxContent in it handed to textBoxes. */
     static List<Picture> read(XmlCursor xml, Pictures pictures, XmlCursor.ElementReader textBoxes)
-            throws DocxException {
+            throws OoxmlException {
         DrawingReader drawing = new DrawingReader(pictures, textBoxes);
         drawing.scan(xml);
         if (drawing.found.isEmpty() && drawing.unsupported != null) {
@@ -61,7 +63,7 @@ final class DrawingReader {
         return drawing.found;
     }
 
-    private void scan(XmlCursor xml) throws DocxException {
+    private void scan(XmlCursor xml) throws OoxmlException {
         xml.forChildren(child -> {
             if (child.isWord("txbxContent")) {
                 textBoxes.read(child);

@@ -45,6 +45,7 @@ import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.Template;
 import org.jtools.doccomparator.document.TextBox;
 import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.ooxml.OoxmlException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -523,7 +524,7 @@ class DocxReaderTest {
                 <w:document %s><w:body><w:p><w:r><w:t>&secret;</w:t></w:r></w:p></w:body></w:document>
                 """.formatted(secret.toUri(), TestDocx.NAMESPACES);
 
-        DocxException refused = assertThrows(DocxException.class,
+        OoxmlException refused = assertThrows(OoxmlException.class,
                 () -> read(TestDocx.body("").raw("word/document.xml", document)));
         assertTrue(refused.getMessage().contains("DOCTYPE"), refused.getMessage());
         assertFalse(refused.getMessage().contains("SECRET-CONTENT"));
@@ -539,7 +540,7 @@ class DocxReaderTest {
                 <w:document %s><w:body><w:p><w:r><w:t>&secret;</w:t></w:r></w:p></w:body></w:document>
                 """.formatted(dtd.toUri(), TestDocx.NAMESPACES);
 
-        DocxException refused = assertThrows(DocxException.class,
+        OoxmlException refused = assertThrows(OoxmlException.class,
                 () -> read(TestDocx.body("").raw("word/document.xml", document)));
         assertFalse(refused.getMessage().contains("SECRET-CONTENT"));
     }
@@ -548,8 +549,8 @@ class DocxReaderTest {
     void aFileThatIsNoZip() throws IOException {
         Path file = Files.writeString(directory.resolve("notes.docx"), "plain text");
 
-        DocxException refused = assertThrows(DocxException.class, () -> DocxReader.read(file));
-        assertEquals("notes.docx is not a Word document (.docx): it is not a zip archive", refused.getMessage());
+        OoxmlException refused = assertThrows(OoxmlException.class, () -> DocxReader.read(file));
+        assertEquals("notes.docx is neither a Word document nor an Excel workbook: it is not a zip archive", refused.getMessage());
     }
 
     @Test
@@ -557,8 +558,8 @@ class DocxReaderTest {
         Path file = TestDocx.body("").withoutLinks("").raw("word/document.xml", "<other/>")
                 .raw("content.xml", "<x/>").write(directory);
 
-        DocxException refused = assertThrows(DocxException.class, () -> DocxReader.read(file));
-        assertTrue(refused.getMessage().contains("<other> where a Word document has <document>"), refused.getMessage());
+        OoxmlException refused = assertThrows(OoxmlException.class, () -> DocxReader.read(file));
+        assertTrue(refused.getMessage().contains("<other> where <document> was expected"), refused.getMessage());
     }
 
     // ---- helpers -----------------------------------------------------------------------------------------------

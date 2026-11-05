@@ -25,6 +25,8 @@ import java.util.Map;
 import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.Style;
 import org.jtools.doccomparator.document.StyleSheet;
+import org.jtools.doccomparator.ooxml.OoxmlException;
+import org.jtools.doccomparator.ooxml.XmlCursor;
 
 /** styles.xml into a StyleSheet: the defaults, and each style's own properties. */
 final class StylesReader {
@@ -32,7 +34,7 @@ final class StylesReader {
     private StylesReader() {
     }
 
-    static StyleSheet read(XmlCursor xml) throws DocxException {
+    static StyleSheet read(XmlCursor xml) throws OoxmlException {
         xml.root("styles");
         Map<String, Style> styles = new LinkedHashMap<>();
         Formatting defaultParagraph = Formatting.NONE;
@@ -66,7 +68,7 @@ final class StylesReader {
         return new StyleSheet(styles, defaultParagraph, defaultRun, defaultParagraphStyle);
     }
 
-    private static Style readStyle(XmlCursor xml) throws DocxException {
+    private static Style readStyle(XmlCursor xml) throws OoxmlException {
         String id = xml.wordAttribute("styleId");
         String type = xml.wordAttribute("type");
         String name = null;
@@ -92,7 +94,7 @@ final class StylesReader {
     }
 
     /** The properties element of this name within the one the cursor is on. */
-    private static Formatting readInner(XmlCursor xml, String properties) throws DocxException {
+    private static Formatting readInner(XmlCursor xml, String properties) throws OoxmlException {
         Formatting formatting = Formatting.NONE;
         while (xml.nextChild()) {
             if (xml.isWord(properties)) {

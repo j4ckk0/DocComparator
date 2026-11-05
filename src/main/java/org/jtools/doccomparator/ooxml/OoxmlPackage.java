@@ -1,4 +1,4 @@
-package org.jtools.doccomparator.docx;
+package org.jtools.doccomparator.ooxml;
 
 /*-
  * #%L
@@ -44,49 +44,52 @@ import java.util.zip.ZipFile;
 import org.jtools.doccomparator.i18n.I18n;
 
 /**
- * A .docx as what it is: a zip of XML parts, linked by relationships (Open Packaging Conventions). Gives a part's
- * relationships and opens a part; the file itself is never changed.
+ * An Office Open XML file — a .docx, a .xlsx — as what it is: a zip of XML parts, linked by relationships (Open
+ * Packaging Conventions). Gives a part's relationships and opens a part; the file itself is never changed.
  */
-final class DocxPackage implements AutoCloseable {
+public final class OoxmlPackage implements AutoCloseable {
 
     /**
      * The most one part may hold once unzipped: far beyond any document, short of what a crafted zip could inflate to.
      */
-    static final long LARGEST_PART = 512L << 20;
+    public static final long LARGEST_PART = 512L << 20;
 
     private final String fileName;
     private final ZipFile zip;
     private final Map<String, ZipEntry> entries = new HashMap<>();   // by name in lower case: part names ignore case
 
-    private DocxPackage(String fileName, ZipFile zip) {
+    private OoxmlPackage(String fileName, ZipFile zip) {
         this.fileName = fileName;
         this.zip = zip;
         zip.stream().forEach(entry -> entries.put(entry.getName().toLowerCase(Locale.ROOT), entry));
     }
 
-    static DocxPackage open(Path file) throws IOException {
+    public static OoxmlPackage open(Path file) throws IOException {
         String fileName = String.valueOf(file.getFileName());
         try {
-            return new DocxPackage(fileName, new ZipFile(file.toFile()));
+            return new OoxmlPackage(fileName, new ZipFile(file.toFile()));
         } catch (ZipException _) {
-            throw new DocxException(I18n.text("error.notZip", fileName));
+            throw new OoxmlException(I18n.text("error.notZip", fileName));
         }
     }
 
-    /** The main document part ("word/document.xml" as Word writes it), from the package's relationships. */
-    String mainDocument() throws DocxException {
+    /**
+     * The main part, from the package's relationships: "word/document.xml" as Word writes it, "xl/workbook.xml" as
+     * Excel does; usual, when the package does not say.
+     */
+    public String mainPart(String usual) throws OoxmlException {
         Optional<String> main = target(relationships(""), "officeDocument");
         if (main.isPresent() && has(main.get())) {
             return main.get();
         }
-        if (has("word/document.xml")) {
-            return "word/document.xml";
+        if (has(usual)) {
+            return usual;
         }
-        throw new DocxException(I18n.text("error.noMainDocument", fileName));
+        throw new OoxmlException(I18n.text("error.noMainDocument", fileName));
     }
 
     /** The relationships of a part ("" for the package's own), none when it has no relationship part. */
-    List<Relationship> relationships(String part) throws DocxException {
+    public List<Relationship> relationships(String part) throws OoxmlException {
         String relationshipsPart = relationshipsPart(part);
         List<Relationship> relationships = new ArrayList<>();
         if (!has(relationshipsPart)) {
@@ -112,26 +115,26 @@ final class DocxPackage implements AutoCloseable {
     }
 
     /** The part the first relationship of one of these kinds targets, when it is a part of the file. */
-    static Optional<String> target(List<Relationship> relationships, String... kinds) {
+    public static Optional<String> target(List<Relationship> relationships, String... kinds) {
         return relationships.stream()
                 .filter(r -> r.isPart() && Arrays.stream(kinds).anyMatch(r::isA))
                 .map(Relationship::target).findFirst();
     }
 
-    boolean has(String part) {
+    public boolean has(String part) {
         return entries.containsKey(part.toLowerCase(Locale.ROOT));
     }
 
     /** A cursor on the part, before its root. */
-    XmlCursor open(String part) throws DocxException {
+    public XmlCursor open(String part) throws OoxmlException {
         ZipEntry entry = entries.get(part.toLowerCase(Locale.ROOT));
         if (entry == null) {
-            throw new DocxException(fileName, I18n.text("error.noPart", part));
+            throw new OoxmlException(fileName, I18n.text("error.noPart", part));
         }
         try {
             return XmlCursor.open(new LimitedInputStream(zip.getInputStream(entry), part), part);
         } catch (IOException e) {
-            throw new DocxException(fileName, I18n.text("error.unreadable", part, e.getMessage()));
+            throw new OoxmlException(fileName, I18n.text("error.unreadable", part, e.getMessage()));
         }
     }
 
@@ -139,21 +142,21 @@ final class DocxPackage implements AutoCloseable {
     private final Map<String, Binary> binaries = new HashMap<>();
 
     /** A binary part read: its SHA-256 in hexadecimal, and its bytes, null when larger than the size kept. */
-    record Binary(String digest, byte[] bytes) {
+    public record Binary(String digest, byte[] bytes) {
     }
 
     /**
      * A binary part — a picture — read once: its digest computed as it goes, its bytes kept up to keptBytes, the rest
      * only counted; past LARGEST_PART, refused as any part.
      */
-    Binary binary(String part, int keptBytes) throws DocxException {
+    public Binary binary(String part, int keptBytes) throws OoxmlException {
         Binary known = binaries.get(part.toLowerCase(Locale.ROOT));
         if (known != null) {
             return known;   // an image used again — an icon in every step — read and kept once
         }
         ZipEntry entry = entries.get(part.toLowerCase(Locale.ROOT));
         if (entry == null) {
-            throw new DocxException(fileName, I18n.text("error.noPart", part));
+            throw new OoxmlException(fileName, I18n.text("error.noPart", part));
         }
         MessageDigest digest;
         try {
@@ -177,7 +180,7 @@ final class DocxPackage implements AutoCloseable {
                 }
             }
         } catch (IOException e) {
-            throw new DocxException(fileName, I18n.text("error.unreadable", part, e.getMessage()));
+            throw new OoxmlException(fileName, I18n.text("error.unreadable", part, e.getMessage()));
         }
         Binary binary = new Binary(HexFormat.of().formatHex(digest.digest()), keeping ? kept.toByteArray() : null);
         binaries.put(part.toLowerCase(Locale.ROOT), binary);
@@ -191,7 +194,7 @@ final class DocxPackage implements AutoCloseable {
     }
 
     /** A target relative to the part that links to it, or absolute ("/word/styles.xml"), as a part name. */
-    static String resolve(String sourcePart, String target) {
+    public static String resolve(String sourcePart, String target) {
         String path = target.startsWith("/") ? target.substring(1)
                 : sourcePart.substring(0, sourcePart.lastIndexOf('/') + 1) + target;
         Deque<String> segments = new ArrayDeque<>();
@@ -239,10 +242,10 @@ final class DocxPackage implements AutoCloseable {
             return n;
         }
 
-        private void count(int bytes) throws DocxException {
+        private void count(int bytes) throws OoxmlException {
             left -= bytes;
             if (left < 0) {
-                throw new DocxException(part, I18n.text("error.tooLarge", LARGEST_PART >> 20));
+                throw new OoxmlException(part, I18n.text("error.tooLarge", LARGEST_PART >> 20));
             }
         }
     }

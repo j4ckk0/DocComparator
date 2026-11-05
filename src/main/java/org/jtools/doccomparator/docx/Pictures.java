@@ -25,6 +25,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.jtools.doccomparator.document.Picture;
+import org.jtools.doccomparator.ooxml.OoxmlException;
+import org.jtools.doccomparator.ooxml.OoxmlPackage;
+import org.jtools.doccomparator.ooxml.Relationship;
 
 /**
  * The pictures of the part being read — the body, a header, the footnotes —, through that part's own relationships:
@@ -39,10 +42,10 @@ final class Pictures {
     /** No picture to be had: a part read without relationships. */
     static final Pictures NONE = new Pictures(null, List.of());
 
-    private final DocxPackage docx;
+    private final OoxmlPackage docx;
     private final Map<String, Relationship> relationships = new HashMap<>();
 
-    Pictures(DocxPackage docx, List<Relationship> relationships) {
+    Pictures(OoxmlPackage docx, List<Relationship> relationships) {
         this.docx = docx;
         for (Relationship relationship : relationships) {
             this.relationships.put(relationship.id(), relationship);
@@ -53,7 +56,7 @@ final class Pictures {
      * The picture a drawing names — by r:embed (in the package) or r:link (outside it), or a VML r:id — at the size
      * and with the description it gives.
      */
-    Picture image(String embedId, String linkId, String description, float width, float height) throws DocxException {
+    Picture image(String embedId, String linkId, String description, float width, float height) throws OoxmlException {
         String id = embedId != null ? embedId : linkId;
         Relationship relationship = id == null ? null : relationships.get(id);
         if (relationship == null || docx == null) {
@@ -68,7 +71,7 @@ final class Pictures {
             return new Picture(Picture.Kind.UNSUPPORTED, description, width, height, format,
                     "missing:" + relationship.target(), null);
         }
-        DocxPackage.Binary binary = docx.binary(relationship.target(), KEPT_BYTES);
+        OoxmlPackage.Binary binary = docx.binary(relationship.target(), KEPT_BYTES);
         return binary.bytes() == null
                 ? new Picture(Picture.Kind.TOO_LARGE, description, width, height, format, binary.digest(), null)
                 : new Picture(Picture.Kind.IMAGE, description, width, height, format, binary.digest(), binary.bytes());

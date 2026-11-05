@@ -32,6 +32,10 @@ import org.jtools.doccomparator.document.Story;
 import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Template;
 import org.jtools.doccomparator.document.WordDocument;
+import org.jtools.doccomparator.ooxml.OoxmlException;
+import org.jtools.doccomparator.ooxml.OoxmlPackage;
+import org.jtools.doccomparator.ooxml.Relationship;
+import org.jtools.doccomparator.ooxml.XmlCursor;
 
 /**
  * Reads a Word document (.docx, and .docm, .dotx, .dotm, which are built alike) into a WordDocument. Reads the file
@@ -47,8 +51,8 @@ public final class DocxReader {
     }
 
     public static WordDocument read(Path file) throws IOException {
-        try (DocxPackage docx = DocxPackage.open(file)) {
-            String main = docx.mainDocument();
+        try (OoxmlPackage docx = OoxmlPackage.open(file)) {
+            String main = docx.mainPart("word/document.xml");
             List<Relationship> relationships = docx.relationships(main);
             StyleSheet styles = readStyles(docx, relationships);
             StoryReader stories = new StoryReader(styles, readNumbering(docx, relationships));
@@ -75,8 +79,8 @@ public final class DocxReader {
         }
     }
 
-    private static StyleSheet readStyles(DocxPackage docx, List<Relationship> relationships) throws DocxException {
-        Optional<String> part = DocxPackage.target(relationships, "styles");
+    private static StyleSheet readStyles(OoxmlPackage docx, List<Relationship> relationships) throws OoxmlException {
+        Optional<String> part = OoxmlPackage.target(relationships, "styles");
         if (part.isEmpty() || !docx.has(part.get())) {
             return StyleSheet.NONE;
         }
@@ -85,8 +89,8 @@ public final class DocxReader {
         }
     }
 
-    private static Numbering readNumbering(DocxPackage docx, List<Relationship> relationships) throws DocxException {
-        Optional<String> part = DocxPackage.target(relationships, "numbering");
+    private static Numbering readNumbering(OoxmlPackage docx, List<Relationship> relationships) throws OoxmlException {
+        Optional<String> part = OoxmlPackage.target(relationships, "numbering");
         if (part.isEmpty() || !docx.has(part.get())) {
             return Numbering.NONE;
         }
@@ -99,8 +103,8 @@ public final class DocxReader {
      * The headers and footers the sections refer to, in the order the body does, each part once: a section that
      * refers to none keeps those of the section before, as in Word.
      */
-    private static List<Story> readHeadersAndFooters(DocxPackage docx, List<Relationship> relationships,
-                                                     StoryReader stories) throws DocxException {
+    private static List<Story> readHeadersAndFooters(OoxmlPackage docx, List<Relationship> relationships,
+                                                     StoryReader stories) throws OoxmlException {
         boolean severalSections = stories.sections() > 1;
         Set<String> read = new HashSet<>();
         List<Story> headersAndFooters = new ArrayList<>();
@@ -123,9 +127,9 @@ public final class DocxReader {
         return headersAndFooters;
     }
 
-    private static List<Story> readNotes(DocxPackage docx, List<Relationship> relationships, String kind,
-                                         Story.Kind storyKind, StoryReader stories) throws DocxException {
-        Optional<String> part = DocxPackage.target(relationships, kind);
+    private static List<Story> readNotes(OoxmlPackage docx, List<Relationship> relationships, String kind,
+                                         Story.Kind storyKind, StoryReader stories) throws OoxmlException {
+        Optional<String> part = OoxmlPackage.target(relationships, kind);
         if (part.isEmpty() || !docx.has(part.get())) {
             return List.of();
         }
@@ -140,9 +144,9 @@ public final class DocxReader {
      * The template the settings attach (w:attachedTemplate, whose target is the link as written) and the one the
      * document's properties name (docProps/app.xml).
      */
-    private static Template readTemplate(DocxPackage docx, List<Relationship> relationships) throws DocxException {
+    private static Template readTemplate(OoxmlPackage docx, List<Relationship> relationships) throws OoxmlException {
         String attached = null;
-        Optional<String> settings = DocxPackage.target(relationships, "settings");
+        Optional<String> settings = OoxmlPackage.target(relationships, "settings");
         if (settings.isPresent() && docx.has(settings.get())) {
             String id = null;
             try (XmlCursor xml = docx.open(settings.get())) {
@@ -162,7 +166,7 @@ public final class DocxReader {
         }
 
         String named = null;
-        Optional<String> properties = DocxPackage.target(docx.relationships(""), "extended-properties",
+        Optional<String> properties = OoxmlPackage.target(docx.relationships(""), "extended-properties",
                 "extendedProperties");
         if (properties.isPresent() && docx.has(properties.get())) {
             try (XmlCursor xml = docx.open(properties.get())) {
