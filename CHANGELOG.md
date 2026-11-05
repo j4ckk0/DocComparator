@@ -3,6 +3,17 @@
 What each version brought, newest first. The GitHub Releases carry the same notes with the downloads and their
 checksums.
 
+## 1.12 — 2026-11-05
+
+- **Excel workbooks compared**: a `.xlsx`, `.xlsm`, `.xltx` or `.xltm` file is read as a heading for each sheet and a
+  table of its cells, compared row by row and column by column like a Word table. Values show as Excel's number
+  formats show them, the same on every machine (a `.` for decimals, dates as `2026-11-05`). A changed formula is
+  caught even when its result stays the same (*Cells* switch). Fonts, fills, borders, alignment, number formats,
+  wrapping, column widths, row heights and hidden rows go under the existing switches and show in the document view.
+- A workbook is compared up to 250,000 cells, all its sheets together; a larger one is refused at once, naming the
+  sheet. Charts, pictures, comments, conditional formatting and the old `.xls` format are not read.
+- *Open…* offers Word documents, Excel workbooks and text files together, or each apart.
+
 ## 1.11 — 2026-11-05
 
 - **Text files compared**: a `.txt`, `.text`, `.md` or `.markdown` file, opened, dropped or given at the start, is
