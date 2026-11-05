@@ -38,9 +38,8 @@ import org.jtools.doccomparator.pdf.PdfObjects.Ref;
 import org.jtools.doccomparator.pdf.PdfObjects.Stream;
 
 /**
- * A PDF file's objects, found through its cross-references and object streams, decrypted when the file is (with the
- * empty password a file opens with). A file whose cross-references do not lead to its objects is read again by
- * looking for every "n g obj" in it, as viewers do.
+ * A PDF file's objects, where its cross-references say they are (CrossReferences), in the file or in object streams,
+ * decrypted when the file is (with the empty password a file opens with).
  */
 final class PdfFile {
 
@@ -52,12 +51,10 @@ final class PdfFile {
     private final String fileName;
     private final byte[] data;
     private final Filters filters = new Filters();
-    /** Where each object is: an offset in the file, or its object stream and its index in it. */
-    private final Map<Integer, long[]> places = new HashMap<>();
+    private final CrossReferences references;
     private final Map<Integer, Object> objects = new HashMap<>();
     private final Set<Integer> reading = new HashSet<>();
     private final Map<Integer, Map<Integer, Object>> objectStreams = new HashMap<>();
-    private Map<String, Object> trailer = new LinkedHashMap<>();
     private StandardSecurity security;
     private Ref encryptRef;
     private boolean rebuilt;
@@ -65,6 +62,7 @@ final class PdfFile {
     private PdfFile(String fileName, byte[] data) {
         this.fileName = fileName;
         this.data = data;
+        this.references = new CrossReferences(data, this);
     }
 
     String fileName() {
@@ -93,34 +91,49 @@ final class PdfFile {
             throw new PdfException(I18n.text("error.notPdf"));
         }
         try {
-            readCrossReferences();
+            references.read();
         } catch (RuntimeException _) {
-            places.clear();
+            references.places.clear();
         }
-        if (!(resolve(trailer.get("Root")) instanceof Map<?, ?>)) {
+        if (!(resolve(trailer().get("Root")) instanceof Map<?, ?>)) {
             rebuild();
         }
-        if (!(resolve(trailer.get("Root")) instanceof Map<?, ?>)) {
+        if (!(resolve(trailer().get("Root")) instanceof Map<?, ?>)) {
             throw new PdfException(I18n.text("error.pdfDamaged"));
         }
-        Object encrypt = trailer.get("Encrypt");
+        Object encrypt = trailer().get("Encrypt");
         if (encrypt != null) {
             encryptRef = encrypt instanceof Ref ref ? ref : null;
             Map<String, Object> dictionary = PdfObjects.dictionary(resolve(encrypt));
             if (dictionary != null) {
-                List<?> ids = PdfObjects.array(resolve(trailer.get("ID")));
+                List<?> ids = PdfObjects.array(resolve(trailer().get("ID")));
                 byte[] id = ids != null && !ids.isEmpty() && resolve(ids.getFirst()) instanceof Bytes bytes
                         ? bytes.value() : new byte[0];
                 security = StandardSecurity.of(dictionary, id, this);
-                objects.clear();   // read again, decrypted
-                objectStreams.clear();
+                forget();   // read again, decrypted
             }
         }
     }
 
+    private Map<String, Object> trailer() {
+        return references.trailer;
+    }
 
     Map<String, Object> catalog() {
-        return PdfObjects.dictionary(resolve(trailer.get("Root")));
+        return PdfObjects.dictionary(resolve(trailer().get("Root")));
+    }
+
+    /** Its objects read again from now on: the places they are at have changed, or the file is decrypted. */
+    void forget() {
+        objects.clear();
+        objectStreams.clear();
+    }
+
+    /** Where its objects are found again by looking for them, once: its cross-references lead elsewhere. */
+    private void rebuild() {
+        rebuilt = true;
+        forget();
+        references.rebuild();
     }
 
     /** The value itself: a reference followed to its object (null for one the file does not hold). */
@@ -136,7 +149,8 @@ final class PdfFile {
         return filters.decode(stream, this);
     }
 
-    private Object object(int number) {
+    /** An object of the file by its number, read once; null for one the file does not hold. */
+    Object object(int number) {
         if (objects.containsKey(number)) {
             return objects.get(number);
         }
@@ -163,7 +177,7 @@ final class PdfFile {
     private static final Object MISPLACED = new Object();
 
     private Object read(int number) {
-        long[] place = places.get(number);
+        long[] place = references.places.get(number);
         if (place == null || place[0] == 0) {
             return null;   // not in the file, or freed
         }
@@ -185,7 +199,7 @@ final class PdfFile {
     }
 
     /** An object's value after "n g obj", its stream read with it, decrypted. */
-    private Object body(Lexer lexer, int number, int generation, boolean encrypted) {
+    Object body(Lexer lexer, int number, int generation, boolean encrypted) {
         Object value = lexer.next();
         if (value instanceof Operator || value == Lexer.END) {
             return null;
@@ -263,7 +277,8 @@ final class PdfFile {
         return bytes;
     }
 
-    private Map<Integer, Object> objectStream(int number) {
+    /** The objects an object stream holds, by number, read once; null for a stream that holds itself. */
+    Map<Integer, Object> objectStream(int number) {
         if (objectStreams.containsKey(number)) {
             return objectStreams.get(number);
         }
@@ -299,218 +314,8 @@ final class PdfFile {
         return held;
     }
 
-    private void readCrossReferences() {
-        int startxref = lastIndexOf(data, "startxref");
-        if (startxref < 0) {
-            return;
-        }
-        Lexer lexer = new Lexer(data, startxref + "startxref".length());
-        if (!(lexer.next() instanceof Long offset)) {
-            return;
-        }
-        Set<Long> seen = new HashSet<>();
-        List<Long> pending = new ArrayList<>(List.of(offset));
-        boolean newest = true;
-        while (!pending.isEmpty()) {
-            long at = pending.removeFirst();
-            if (at < 0 || at >= data.length || !seen.add(at)) {
-                continue;
-            }
-            Map<String, Object> sectionTrailer = section((int) at);
-            if (sectionTrailer == null) {
-                if (newest) {
-                    places.clear();
-                    return;   // the newest section is not where it is said to be: rebuilt
-                }
-                continue;
-            }
-            if (newest) {
-                trailer = new LinkedHashMap<>(sectionTrailer);
-                newest = false;
-            } else {
-                sectionTrailer.forEach(trailer::putIfAbsent);
-            }
-            if (sectionTrailer.get("XRefStm") instanceof Long hybrid) {
-                pending.addFirst(hybrid);
-            }
-            if (sectionTrailer.get("Prev") instanceof Number previous) {
-                pending.add(previous.longValue());
-            }
-        }
-    }
 
-    /** A cross-reference section's entries, kept where no newer one says otherwise; its trailer, null if none is. */
-    private Map<String, Object> section(int at) {
-        Lexer lexer = new Lexer(data, at);
-        if (lexer.at("xref")) {
-            lexer.position(lexer.position() + 4);
-            while (true) {
-                lexer.skipWhitespace();
-                if (lexer.at("trailer")) {
-                    lexer.position(lexer.position() + 7);
-                    return PdfObjects.dictionary(lexer.next());
-                }
-                if (!(lexer.next() instanceof Long first) || !(lexer.next() instanceof Long count)) {
-                    return null;
-                }
-                for (long i = 0; i < count; i++) {
-                    Object offset = lexer.next();
-                    Object generation = lexer.next();
-                    Object kind = lexer.next();
-                    if (!(offset instanceof Long o) || !(generation instanceof Long g)
-                            || !(kind instanceof Operator k)) {
-                        return null;
-                    }
-                    int number = (int) (first + i);
-                    if (k.name().equals("n") && o > 0) {
-                        places.putIfAbsent(number, new long[] {1, o, g});
-                    } else {
-                        places.putIfAbsent(number, new long[] {0, 0});
-                    }
-                }
-            }
-        }
-        if (!(lexer.next() instanceof Long number) || !(lexer.next() instanceof Long) || !lexer.at("obj")) {
-            return null;
-        }
-        lexer.position(lexer.position() + 3);
-        if (!(body(lexer, number.intValue(), 0, false) instanceof Stream stream)
-                || !"XRef".equals(PdfObjects.name(stream.dictionary().get("Type")))) {
-            return null;
-        }
-        Map<String, Object> dictionary = stream.dictionary();
-        byte[] bytes;
-        try {
-            bytes = decoded(stream);
-        } catch (PdfException _) {
-            return null;
-        }
-        List<?> widths = PdfObjects.array(dictionary.get("W"));
-        if (bytes == null || widths == null || widths.size() < 3) {
-            return null;
-        }
-        int[] w = {PdfObjects.integer(widths.get(0), 0), PdfObjects.integer(widths.get(1), 0),
-                PdfObjects.integer(widths.get(2), 0)};
-        if (w[0] < 0 || w[1] < 0 || w[2] < 0 || w[0] + w[1] + w[2] == 0 || w[0] + w[1] + w[2] > 32) {
-            return null;
-        }
-        List<?> index = PdfObjects.array(dictionary.get("Index"));
-        if (index == null) {
-            index = List.of(0L, (long) PdfObjects.integer(dictionary.get("Size"), 0));
-        }
-        int row = w[0] + w[1] + w[2];
-        int offset = 0;
-        for (int i = 0; i + 1 < index.size(); i += 2) {
-            int first = PdfObjects.integer(index.get(i), 0);
-            int count = PdfObjects.integer(index.get(i + 1), 0);
-            for (int k = 0; k < count && offset + row <= bytes.length; k++) {
-                long type = w[0] == 0 ? 1 : field(bytes, offset, w[0]);
-                long second = field(bytes, offset + w[0], w[1]);
-                long third = field(bytes, offset + w[0] + w[1], w[2]);
-                offset += row;
-                int objectNumber = first + k;
-                if (type == 1) {
-                    places.putIfAbsent(objectNumber, new long[] {1, second, third});
-                } else if (type == 2) {
-                    places.putIfAbsent(objectNumber, new long[] {2, second, third});
-                } else {
-                    places.putIfAbsent(objectNumber, new long[] {0, 0});
-                }
-            }
-        }
-        Map<String, Object> sectionTrailer = new LinkedHashMap<>(dictionary);
-        return sectionTrailer;
-    }
-
-    private static long field(byte[] bytes, int at, int width) {
-        long value = 0;
-        for (int i = 0; i < width; i++) {
-            value = (value << 8) | (bytes[at + i] & 0xFF);
-        }
-        return value;
-    }
-
-    /** Every "n g obj" of the file, the last of a number kept; the trailer from the last that names a catalog. */
-    private void rebuild() {
-        rebuilt = true;
-        places.clear();
-        objects.clear();
-        objectStreams.clear();
-        Map<String, Object> found = new LinkedHashMap<>();
-        for (int i = 0; i < data.length - 4; i++) {
-            if (data[i] == 'o' && data[i + 1] == 'b' && data[i + 2] == 'j'
-                    && (i + 3 == data.length || Lexer.isWhitespace(data[i + 3] & 0xFF)
-                    || Lexer.isDelimiter(data[i + 3] & 0xFF))) {
-                int start = numbersBefore(i);
-                if (start >= 0) {
-                    Lexer lexer = new Lexer(data, start);
-                    if (lexer.next() instanceof Long number && lexer.next() instanceof Long generation) {
-                        places.put(number.intValue(), new long[] {1, start, generation});
-                    }
-                }
-            } else if (data[i] == 't' && startsWith(data, i, "trailer")) {
-                Map<String, Object> dictionary = PdfObjects.dictionary(new Lexer(data, i + 7).next());
-                if (dictionary != null && dictionary.containsKey("Root")) {
-                    found.putAll(dictionary);
-                }
-            }
-        }
-        // the object streams' objects, after every plain one is known
-        for (Map.Entry<Integer, long[]> entry : new ArrayList<>(places.entrySet())) {
-            Object value = object(entry.getKey());
-            if (value instanceof Stream stream) {
-                String type = PdfObjects.name(stream.dictionary().get("Type"));
-                if ("ObjStm".equals(type)) {
-                    Map<Integer, Object> held = objectStream(entry.getKey());
-                    if (held != null) {
-                        for (Integer number : held.keySet()) {
-                            places.putIfAbsent(number, new long[] {2, entry.getKey(), 0});
-                        }
-                    }
-                } else if ("XRef".equals(type) && stream.dictionary().containsKey("Root")) {
-                    found.putAll(stream.dictionary());
-                }
-            }
-        }
-        objects.clear();
-        if (!found.containsKey("Root")) {
-            for (Integer number : places.keySet()) {
-                Map<String, Object> dictionary = PdfObjects.dictionary(object(number));
-                if (dictionary != null && "Catalog".equals(PdfObjects.name(dictionary.get("Type")))) {
-                    found.put("Root", new Ref(number, 0));
-                }
-            }
-        }
-        if (!found.isEmpty()) {
-            found.forEach(trailer::putIfAbsent);
-            if (found.containsKey("Root")) {
-                trailer.put("Root", found.get("Root"));
-            }
-        }
-        objects.clear();
-    }
-
-    /** The start of "n g " before an "obj" at this place, -1 when there is none. */
-    private int numbersBefore(int obj) {
-        int i = obj - 1;
-        int numbers = 0;
-        while (numbers < 2) {
-            while (i >= 0 && Lexer.isWhitespace(data[i] & 0xFF)) {
-                i--;
-            }
-            int end = i;
-            while (i >= 0 && data[i] >= '0' && data[i] <= '9') {
-                i--;
-            }
-            if (i == end) {
-                return -1;
-            }
-            numbers++;
-        }
-        return i + 1;
-    }
-
-    private static boolean startsWith(byte[] data, int at, String text) {
+    static boolean startsWith(byte[] data, int at, String text) {
         if (at + text.length() > data.length) {
             return false;
         }
@@ -532,7 +337,7 @@ final class PdfFile {
         return -1;
     }
 
-    private static int lastIndexOf(byte[] data, String text) {
+    static int lastIndexOf(byte[] data, String text) {
         for (int i = data.length - text.length(); i >= 0; i--) {
             if (data[i] == text.charAt(0) && startsWith(data, i, text)) {
                 return i;

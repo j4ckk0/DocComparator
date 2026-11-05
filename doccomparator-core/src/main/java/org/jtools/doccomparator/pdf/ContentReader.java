@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.jtools.doccomparator.i18n.I18n;
@@ -94,6 +93,7 @@ final class ContentReader {
     }
 
     private final PdfFile file;
+    private final FillColors colors;
     private final Map<Map<String, Object>, PdfFont> fonts;
     private final List<Glyph> glyphs = new ArrayList<>();
     private final Set<Stream> entered = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -106,6 +106,7 @@ final class ContentReader {
 
     private ContentReader(PdfFile file, Map<Map<String, Object>, PdfFont> fonts, long[] glyphsLeft) {
         this.file = file;
+        this.colors = new FillColors(file);
         this.fonts = fonts;
         this.glyphsLeft = glyphsLeft;
     }
@@ -117,11 +118,11 @@ final class ContentReader {
     static List<Glyph> read(PdfFile file, byte[] content, Map<String, Object> resources,
                             Map<Map<String, Object>, PdfFont> fonts, long[] glyphsLeft) throws PdfException {
         ContentReader reader = new ContentReader(file, fonts, glyphsLeft);
-        reader.run(content, resources, 0);
+        reader.interpret(content, resources, 0);
         return reader.glyphs;
     }
 
-    private void run(byte[] content, Map<String, Object> resources, int depth) throws PdfException {
+    private void interpret(byte[] content, Map<String, Object> resources, int depth) throws PdfException {
         Lexer lexer = new Lexer(content, 0);
         List<Object> operands = new ArrayList<>();
         while (true) {
@@ -233,27 +234,27 @@ final class ContentReader {
             }
             case "g" -> {
                 state.fillSpace = new Name("DeviceGray");
-                state.fill = color(state.fillSpace, operands, resources);
+                state.fill = colors.of(state.fillSpace, operands, resources);
             }
             case "G" -> {
                 state.strokeSpace = new Name("DeviceGray");
-                state.stroke = color(state.strokeSpace, operands, resources);
+                state.stroke = colors.of(state.strokeSpace, operands, resources);
             }
             case "rg" -> {
                 state.fillSpace = new Name("DeviceRGB");
-                state.fill = color(state.fillSpace, operands, resources);
+                state.fill = colors.of(state.fillSpace, operands, resources);
             }
             case "RG" -> {
                 state.strokeSpace = new Name("DeviceRGB");
-                state.stroke = color(state.strokeSpace, operands, resources);
+                state.stroke = colors.of(state.strokeSpace, operands, resources);
             }
             case "k" -> {
                 state.fillSpace = new Name("DeviceCMYK");
-                state.fill = color(state.fillSpace, operands, resources);
+                state.fill = colors.of(state.fillSpace, operands, resources);
             }
             case "K" -> {
                 state.strokeSpace = new Name("DeviceCMYK");
-                state.stroke = color(state.strokeSpace, operands, resources);
+                state.stroke = colors.of(state.strokeSpace, operands, resources);
             }
             case "cs" -> {
                 if (!operands.isEmpty()) {
@@ -267,8 +268,8 @@ final class ContentReader {
                     state.stroke = null;
                 }
             }
-            case "sc", "scn" -> state.fill = color(state.fillSpace, operands, resources);
-            case "SC", "SCN" -> state.stroke = color(state.strokeSpace, operands, resources);
+            case "sc", "scn" -> state.fill = colors.of(state.fillSpace, operands, resources);
+            case "SC", "SCN" -> state.stroke = colors.of(state.strokeSpace, operands, resources);
             case "gs" -> graphicsState(resources, operands);
             case "Do" -> {
                 if (!operands.isEmpty()) {
@@ -355,7 +356,7 @@ final class ContentReader {
             double[] text = textMatrix;
             double[] line = lineMatrix;
             int savedDepth = saved.size();
-            run(content, own != null ? own : resources, depth + 1);
+            interpret(content, own != null ? own : resources, depth + 1);
             while (saved.size() > savedDepth) {
                 saved.pop();
             }
@@ -410,99 +411,6 @@ final class ContentReader {
             advance((code.width() * size + state.charSpacing + (code.singleByteSpace() ? state.wordSpacing : 0))
                     * scale);
         }
-    }
-
-    private String color(Object space, List<Object> operands, Map<String, Object> resources) {
-        List<Double> values = new ArrayList<>();
-        for (Object operand : operands) {
-            if (operand instanceof Number number) {
-                values.add(number.doubleValue());
-            }
-        }
-        Object resolved = resolveSpace(space, resources);
-        List<?> array = PdfObjects.array(resolved);
-        if (array != null && !array.isEmpty() && "Indexed".equals(PdfObjects.name(file.resolve(array.getFirst())))
-                && array.size() >= 4 && !values.isEmpty()) {
-            Object base = file.resolve(array.get(1));
-            int n = components(base, resources);
-            Object lookup = file.resolve(array.get(3));
-            byte[] table = lookup instanceof Bytes bytes ? bytes.value() : null;
-            if (lookup instanceof Stream stream) {
-                try {
-                    table = file.decoded(stream);
-                } catch (PdfException _) {
-                    table = null;
-                }
-            }
-            int index = (int) Math.round(values.getFirst());
-            if (table == null || n <= 0 || (index + 1) * n > table.length || index < 0) {
-                return null;
-            }
-            List<Double> entry = new ArrayList<>();
-            for (int i = 0; i < n; i++) {
-                entry.add((table[index * n + i] & 0xFF) / 255.0);
-            }
-            return hex(entry, n);
-        }
-        int n = components(resolved, resources);
-        if (values.size() < n || n == 0) {
-            return null;
-        }
-        return hex(values.subList(0, n), n);
-    }
-
-    private static String hex(List<Double> values, int n) {
-        double r;
-        double g;
-        double b;
-        if (n == 1) {
-            r = g = b = values.getFirst();
-        } else if (n == 3) {
-            r = values.get(0);
-            g = values.get(1);
-            b = values.get(2);
-        } else if (n == 4) {
-            double k = values.get(3);
-            r = (1 - values.get(0)) * (1 - k);
-            g = (1 - values.get(1)) * (1 - k);
-            b = (1 - values.get(2)) * (1 - k);
-        } else {
-            return null;
-        }
-        return String.format(Locale.ROOT, "%02X%02X%02X", channel(r), channel(g), channel(b));
-    }
-
-    private static int channel(double value) {
-        return (int) Math.round(Math.max(0, Math.min(1, value)) * 255);
-    }
-
-    private Object resolveSpace(Object space, Map<String, Object> resources) {
-        if (space instanceof Name name && !name.value().startsWith("Device")) {
-            Map<String, Object> spaces = PdfObjects.dictionary(file.resolve(resources.get("ColorSpace")));
-            Object found = spaces == null ? null : file.resolve(spaces.get(name.value()));
-            return found != null ? found : space;
-        }
-        return file.resolve(space);
-    }
-
-    /** The components of a colour space whose colours are known here: gray, RGB, CMYK; 0 for the others. */
-    private int components(Object space, Map<String, Object> resources) {
-        Object resolved = resolveSpace(space, resources);
-        String name = PdfObjects.name(resolved);
-        List<?> array = PdfObjects.array(resolved);
-        if (array != null && !array.isEmpty()) {
-            name = PdfObjects.name(file.resolve(array.getFirst()));
-            if ("ICCBased".equals(name) && array.size() > 1
-                    && PdfObjects.dictionary(file.resolve(array.get(1))) instanceof Map<String, Object> icc) {
-                return PdfObjects.integer(file.resolve(icc.get("N")), 0);
-            }
-        }
-        return switch (name == null ? "" : name) {
-            case "DeviceGray", "CalGray", "G" -> 1;
-            case "DeviceRGB", "CalRGB", "RGB" -> 3;
-            case "DeviceCMYK", "CMYK" -> 4;
-            default -> 0;
-        };
     }
 
     private static double number(List<Object> operands, double otherwise) {

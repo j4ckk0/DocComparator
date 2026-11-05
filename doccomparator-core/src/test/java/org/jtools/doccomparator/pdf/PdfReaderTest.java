@@ -185,6 +185,18 @@ class PdfReaderTest {
         assertEquals(List.of("Found all the same."), paragraphs(document));
     }
 
+    /** A word a hyphen cuts at a line's end: joined whole when the document writes it whole elsewhere. */
+    @Test
+    void aWordCutAtALinesEndIsJoinedAgainWhenTheDocumentKnowsIt() throws IOException {
+        List<String> paragraphs = paragraphs(new TestPdf()
+                .page(text("F1", 12, 72, 700, "An example first, then an exam-")
+                        + text("F1", 12, 72, 686, "ple cut, and a well-")
+                        + text("F1", 12, 72, 672, "known word."))
+                .read());
+
+        assertEquals(List.of("An example first, then an example cut, and a well-known word."), paragraphs);
+    }
+
     @Test
     void aParagraphGoesOnAcrossAPageBreakAndThePageStartIsKept() throws IOException {
         Document document = new TestPdf()

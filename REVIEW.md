@@ -60,6 +60,7 @@ format-specific, one generic. The message prefix, built in three places, is wher
 **Effort / risk:** small to medium; the messages' tests pin the exact texts.
 
 ### 3. `TextLayout` holds four jobs, and one of its predicates changes what it looks at
+**Status:** Done: `TextLayout` (the entry point), `PdfLines`, `RunningLines.takeOut`, `PdfParagraphs`; `join` returns a `Join` (space, nothing, hyphen dropped), the caller dropping the glyph.
 **Where:** `doccomparator-core/…/pdf/TextLayout.java` (603 lines): glyphs into lines (140–245), running header and
 footer (245–295), lines into paragraphs (295–440), paragraphs into runs, list marks and hyphenated words (440–603);
 `joinedBySpace` (549) removes the previous line's last glyph while its name promises a yes/no answer.
@@ -72,6 +73,7 @@ dropped by the caller.
 **Effort / risk:** medium; the PDF tests (`PdfReaderTest`, `PdfSamplesTest`) cover the behaviour.
 
 ### 4. `PdfFile` is the object store and the cross-reference parser
+**Status:** Done: `CrossReferences` (read and rebuilt); `PdfFile` resolves the objects.
 **Where:** `doccomparator-core/…/pdf/PdfFile.java` (546 lines): finding objects — tables, streams, `/Prev` chains, the
 rebuild by scanning — (305–515) beside resolving, decrypting and decoding them (130–305).
 **Why it costs:** the two change for different reasons (a damaged file's layout; a new encryption or filter), and the
@@ -81,6 +83,7 @@ keeps resolving them.
 **Effort / risk:** small to medium; covered by the rebuilt-file, object-stream and encryption tests.
 
 ### 5. The colour spaces sit inside the content interpreter
+**Status:** Done: `FillColors`.
 **Where:** `doccomparator-core/…/pdf/ContentReader.java` (562 lines): `color`, `hex`, `channel`, `resolveSpace`,
 `components` (417–510), a self-contained subject inside the operator loop.
 **Proposed change:** extract `FillColors` (a colour space and its operands to RRGGBB, or none); `ContentReader` keeps
@@ -99,7 +102,7 @@ calls it, and the ui → docx edge disappears.
 
 ## Patterns
 
-- **Generic method names, 2:** `ContentReader.run(content, …)` (it interprets a content stream: `interpret`),
+- **Generic method names, 2** (done: `interpret`, `RunningLines.takeOut`): `ContentReader.run(content, …)` (it interprets a content stream: `interpret`),
   `TextLayout.running(…)` (it takes the running lines out of the pages: `takeRunningLines`).
 - **One language for the whole JVM:** `I18n` keeps the language in a static field, which core's readers use for
   their messages. Right for the program; for a server comparing for several users, one language at a time. Not a
