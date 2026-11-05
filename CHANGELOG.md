@@ -3,6 +3,21 @@
 What each version brought, newest first. The GitHub Releases carry the same notes with the downloads and their
 checksums.
 
+## 2.0 — 2026-11-05
+
+- **Three jars, for other programs too**: DocComparator is now built as three Java modules, each a jar —
+  `doccomparator-core`, the comparison with no window (the readers, the comparison, its words, the languages; the
+  JDK alone), `doccomparator-ui`, the comparison view as a Swing component another program can show, and
+  `doccomparator`, the program. The distributions carry all three, linked into their runtime; nothing changes in how
+  the program is started or used.
+- **What another program can build on**: a format is added as a `DocumentReader` service (`AbstractDocumentReader`
+  does the extensions and the errors); a jar's texts as an `I18nTexts` service; the panel opens documents from files
+  or from the program's own sources (`DocumentSource`) and tells each comparison (`onCompared`). Every format is read
+  into one `Document`, and a file that cannot be read is one `DocumentReadException`, naming the file once.
+- The window no longer says a PDF's name twice in its error ("report.pdf: report.pdf: …").
+- An Excel fraction (`# ?/?`) or condition (`[>100]`) shows the cell's value, no longer half rendered (`13 /`).
+- *Open…*'s first filter reads "All documents".
+
 ## 1.13 — 2026-11-05
 
 - **PDFs compared**: a `.pdf` file is read as its text, its paragraphs rebuilt from the lines of its pages, and
