@@ -32,11 +32,11 @@ import org.jtools.doccomparator.compare.CompareOptions.Aspect;
 import org.jtools.doccomparator.compare.Comparison;
 import org.jtools.doccomparator.compare.DocumentComparer;
 import org.jtools.doccomparator.compare.FormatSpan;
-import org.jtools.doccomparator.compare.Item;
+import org.jtools.doccomparator.compare.ComparedBlock;
 import org.jtools.doccomparator.compare.PropertyDifference;
 import org.jtools.doccomparator.compare.Pairing;
 import org.jtools.doccomparator.compare.Slot;
-import org.jtools.doccomparator.compare.Span;
+import org.jtools.doccomparator.compare.TextSpan;
 import org.jtools.doccomparator.compare.StoryComparison;
 import org.jtools.doccomparator.compare.TableComparison;
 import org.jtools.doccomparator.document.ListItem;
@@ -284,7 +284,7 @@ final class Lines {
             columns.add(new LineSide(columnMarking, null, null, null,
                     TextBlock.plain(said, fonts.small(), palette.faint, palette), null, null));
         }
-        Item item = side.of(pairing.left(), pairing.right());
+        ComparedBlock item = side.of(pairing.left(), pairing.right());
         String notes = notes(pairing, side, List.of());
         return new LineSide(marking, pairing, null,
                 TextBlock.plain(ComparisonWords.location(item, true), fonts.small(), palette.faint, palette),
@@ -384,12 +384,13 @@ final class Lines {
     }
 
     private LineSide side(Pairing pairing, Side side, LineSide.Marking marking) {
-        Item item = side.of(pairing.left(), pairing.right());
+        ComparedBlock item = side.of(pairing.left(), pairing.right());
         // alone: nothing on the other side compared with it (a moved row of a table is compared with its match)
         boolean alone = (pairing.left() == null || pairing.right() == null) && !pairing.moved()
-                && side.other().of(pairing.diff().left(), pairing.diff().right()).isEmpty();
-        List<Span> spans = alone ? List.of() : side.of(pairing.diff().left(), pairing.diff().right());
-        List<FormatSpan> formatting = side.of(pairing.diff().leftFormatting(), pairing.diff().rightFormatting());
+                && side.other().of(pairing.difference().left(), pairing.difference().right()).isEmpty();
+        List<TextSpan> spans = alone ? List.of() : side.of(pairing.difference().left(), pairing.difference().right());
+        List<FormatSpan> formatting =
+                side.of(pairing.difference().leftFormatting(), pairing.difference().rightFormatting());
         boolean heading = item.paragraph().headingLevel() > 0;
         boolean inTable = !item.places().isEmpty() && !item.places().getLast().textBox();
         DocumentLook laidOut = styles == null ? null : DocumentLook.of(styles.get(side), item.paragraph());
@@ -418,14 +419,14 @@ final class Lines {
     private LineSide property(String property, String value) {
         String text = I18n.text("line.property", property, value);
         int named = text.length() - value.length();   // the value last, its name and the colon before it
-        List<Span> spans = List.of(new Span(0, named, Span.Kind.SAME),
-                new Span(named, text.length(), Span.Kind.CHANGED));
+        List<TextSpan> spans = List.of(new TextSpan(0, named, TextSpan.Kind.SAME),
+                new TextSpan(named, text.length(), TextSpan.Kind.CHANGED));
         return new LineSide(LineSide.Marking.CHANGED, null, null, null,
                 new TextBlock(text, fonts.text(), palette.text, palette, spans, List.of(), " "), null, null);
     }
 
     /** A paragraph's pictures, by their offset in its text. */
-    private static Map<Integer, Picture> pictures(Item item) {
+    private static Map<Integer, Picture> pictures(ComparedBlock item) {
         Map<Integer, Picture> pictures = new HashMap<>();
         int offset = 0;
         for (Run run : item.paragraph().runs()) {
@@ -441,7 +442,7 @@ final class Lines {
     /** What else differs, this side's values: "heading: heading 2 · formatting (dotted): bold: true → (none)". */
     private static String notes(Pairing pairing, Side side, List<FormatSpan> formatting) {
         List<String> notes = new ArrayList<>();
-        for (PropertyDifference difference : pairing.diff().properties()) {
+        for (PropertyDifference difference : pairing.difference().properties()) {
             notes.add(ComparisonWords.property(difference.property(), side.of(difference.left(), difference.right())));
         }
         Set<PropertyDifference> formats = new LinkedHashSet<>();
@@ -455,7 +456,7 @@ final class Lines {
     }
 
     /** The heading level ("H2"), or the mark of a list item as Word shows it; null for neither. */
-    private static String marker(Item item, ListNumbers numbers) {
+    private static String marker(ComparedBlock item, ListNumbers numbers) {
         if (item.paragraph().headingLevel() > 0) {
             return I18n.text("line.heading", item.paragraph().headingLevel());
         }

@@ -35,28 +35,29 @@ import org.jtools.doccomparator.document.Table;
 final class TableGrid {
 
     /** The cells by row and column; null where none starts. */
-    final Item[][] cells;
+    final ComparedBlock[][] cells;
     final int columns;
 
-    private TableGrid(Item[][] cells, int columns) {
+    private TableGrid(ComparedBlock[][] cells, int columns) {
         this.cells = cells;
         this.columns = columns;
     }
 
-    static TableGrid of(Item table) {
+    static TableGrid of(ComparedBlock table) {
         List<Table.Row> rows = table.table().rows();
         int number = table.places().getLast().table();
-        List<Item[]> grid = new ArrayList<>();
+        List<ComparedBlock[]> grid = new ArrayList<>();
         int columns = 0;
         for (int r = 0; r < rows.size(); r++) {
-            List<Item> row = new ArrayList<>();
+            List<ComparedBlock> row = new ArrayList<>();
             for (Table.Cell cell : rows.get(r).cells()) {
                 int span = span(cell.formatting());
                 String merge = cell.formatting().get("vMerge");
                 boolean continued = merge != null && !merge.equals("restart");
                 if (!continued) {
-                    row.add(new Item(table.story(),
-                            Items.within(table.places(), Item.Place.inCell(number, r + 1, row.size() + 1)),
+                    row.add(new ComparedBlock(table.story(),
+                            ComparedBlocks.within(table.places(),
+                                    ComparedBlock.Place.inCell(number, r + 1, row.size() + 1)),
                             paragraph(cell), null, cell.formatting()));
                 } else {
                     row.add(null);
@@ -66,9 +67,9 @@ final class TableGrid {
                 }
             }
             columns = Math.max(columns, row.size());
-            grid.add(row.toArray(new Item[0]));
+            grid.add(row.toArray(new ComparedBlock[0]));
         }
-        Item[][] cells = new Item[grid.size()][columns];
+        ComparedBlock[][] cells = new ComparedBlock[grid.size()][columns];
         for (int r = 0; r < grid.size(); r++) {
             System.arraycopy(grid.get(r), 0, cells[r], 0, grid.get(r).length);
         }
@@ -85,7 +86,7 @@ final class TableGrid {
 
     /** The cell's paragraphs as one: their runs, a line break between paragraphs, the first one's properties. */
     private static Paragraph paragraph(Table.Cell cell) {
-        List<Paragraph> paragraphs = Items.paragraphs(cell.blocks());
+        List<Paragraph> paragraphs = ComparedBlocks.paragraphs(cell.blocks());
         if (paragraphs.isEmpty()) {
             return Paragraph.of(List.of());
         }

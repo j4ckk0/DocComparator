@@ -29,19 +29,20 @@ import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
 
-class DiffTest {
+class EditScriptTest {
 
     @Test
     void theSameSequenceIsOneEqualStretch() {
-        assertEquals(List.of(new Diff.Edit(true, 0, 3, 0, 3)), Diff.of(new int[] {1, 2, 3}, new int[] {1, 2, 3}));
-        assertEquals(List.of(), Diff.of(new int[0], new int[0]));
+        assertEquals(List.of(new EditScript.Edit(true, 0, 3, 0, 3)),
+                EditScript.of(new int[] {1, 2, 3}, new int[] {1, 2, 3}));
+        assertEquals(List.of(), EditScript.of(new int[0], new int[0]));
     }
 
     @Test
     void whatOneSideAloneHasIsAChange() {
-        assertEquals(List.of(new Diff.Edit(false, 0, 0, 0, 2)), Diff.of(new int[0], new int[] {1, 2}));
-        assertEquals(List.of(new Diff.Edit(true, 0, 1, 0, 1), new Diff.Edit(false, 1, 2, 1, 1),
-                new Diff.Edit(true, 2, 3, 1, 2)), Diff.of(new int[] {1, 2, 3}, new int[] {1, 3}));
+        assertEquals(List.of(new EditScript.Edit(false, 0, 0, 0, 2)), EditScript.of(new int[0], new int[] {1, 2}));
+        assertEquals(List.of(new EditScript.Edit(true, 0, 1, 0, 1), new EditScript.Edit(false, 1, 2, 1, 1),
+                new EditScript.Edit(true, 2, 3, 1, 2)), EditScript.of(new int[] {1, 2, 3}, new int[] {1, 3}));
     }
 
     @Test
@@ -49,8 +50,8 @@ class DiffTest {
         // Myers' own example: ABCABBA → CBABAC keeps four
         int[] a = {1, 2, 3, 1, 2, 2, 1};
         int[] b = {3, 2, 1, 2, 1, 3};
-        assertValid(a, b, Diff.of(a, b), 4);
-        assertEquals(4, Diff.commonLength(a, b, 100));
+        assertValid(a, b, EditScript.of(a, b), 4);
+        assertEquals(4, EditScript.commonLength(a, b, 100));
     }
 
     @Test
@@ -60,8 +61,8 @@ class DiffTest {
             int[] a = random.ints(random.nextInt(30), 0, 4).toArray();
             int[] b = random.ints(random.nextInt(30), 0, 4).toArray();
             int longest = longestCommonSubsequence(a, b);
-            assertValid(a, b, Diff.of(a, b), longest);
-            assertEquals(longest, Diff.commonLength(a, b, a.length + b.length));
+            assertValid(a, b, EditScript.of(a, b), longest);
+            assertEquals(longest, EditScript.commonLength(a, b, a.length + b.length));
         }
     }
 
@@ -69,18 +70,18 @@ class DiffTest {
     void commonLengthGivesUpPastTheDifferencesAllowed() {
         int[] a = {1, 2, 3, 4};
         int[] b = {1, 5, 6, 4};   // 2 kept: 4 removed and added
-        assertEquals(2, Diff.commonLength(a, b, 4));
-        assertEquals(-1, Diff.commonLength(a, b, 3));
-        assertEquals(-1, Diff.commonLength(new int[0], new int[] {1, 2}, 1));
+        assertEquals(2, EditScript.commonLength(a, b, 4));
+        assertEquals(-1, EditScript.commonLength(a, b, 3));
+        assertEquals(-1, EditScript.commonLength(new int[0], new int[] {1, 2}, 1));
     }
 
     /** The script covers both sequences in order, its equal stretches are equal, and keep this many. */
-    private static void assertValid(int[] a, int[] b, List<Diff.Edit> edits, int kept) {
+    private static void assertValid(int[] a, int[] b, List<EditScript.Edit> edits, int kept) {
         int x = 0;
         int y = 0;
         int equal = 0;
         List<Integer> rebuilt = new ArrayList<>();
-        for (Diff.Edit edit : edits) {
+        for (EditScript.Edit edit : edits) {
             assertEquals(x, edit.fromA());
             assertEquals(y, edit.fromB());
             if (edit.equal()) {

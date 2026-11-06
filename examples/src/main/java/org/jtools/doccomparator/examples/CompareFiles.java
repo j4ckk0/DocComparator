@@ -115,8 +115,8 @@ public class CompareFiles {
             case MOVED -> System.out.println("~ moved: " + before);
             default -> System.out.println("* " + before + "\n  → " + after);
         }
-        if (pairing.diff() != null) {
-            for (PropertyDifference difference : pairing.diff().properties()) {
+        if (pairing.difference() != null) {
+            for (PropertyDifference difference : pairing.difference().properties()) {
                 System.out.println("    " + ComparisonWords.change(difference));   // "bold: off → on"
             }
         }

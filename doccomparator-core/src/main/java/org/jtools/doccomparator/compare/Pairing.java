@@ -28,13 +28,13 @@ package org.jtools.doccomparator.compare;
  * @param left        the left paragraph, null for none
  * @param right       the right paragraph, null for none
  * @param counterpart for a moved paragraph, the pairing holding its match; -1 otherwise
- * @param diff        how the paragraph differs from its match; for one alone, its whole text only on its side; for a
+ * @param difference  how the paragraph differs from its match; for one alone, its whole text only on its side; for a
  *                    table, its own properties only
  * @param table       for a table, how it compares with its match, row by row and column by column (or how it is laid
  *                    out, alone); null for a paragraph
  */
-public record Pairing(Item left, Item right, Status status, int counterpart, ParagraphDiff diff,
-                      TableComparison table) {
+public record Pairing(ComparedBlock left, ComparedBlock right, Status status, int counterpart,
+                      ParagraphDifference difference, TableComparison table) {
 
     public enum Status {
         /** The same, as the options compare it. */
@@ -60,10 +60,10 @@ public record Pairing(Item left, Item right, Status status, int counterpart, Par
         return status != Status.SAME;
     }
 
-    static Status statusOf(ParagraphDiff diff) {
-        if (diff.textDiffers()) {
+    static Status statusOf(ParagraphDifference difference) {
+        if (difference.textDiffers()) {
             return Status.CHANGED;
         }
-        return diff.otherwiseDiffers() ? Status.OTHERWISE : Status.SAME;
+        return difference.otherwiseDiffers() ? Status.OTHERWISE : Status.SAME;
     }
 }

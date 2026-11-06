@@ -82,7 +82,7 @@ class OptionsTest {
                 CompareOptions.TEXT_ONLY.with(Aspect.INDENTATION, true)), "The parts needed");
         assertEquals(Pairing.Status.OTHERWISE, indented.status());
         assertEquals(List.of("INDENTATION ind.left: value.none → 720"),
-                Paragraphs.said(indented.diff().properties()));
+                Paragraphs.said(indented.difference().properties()));
     }
 
     /** A list item's indent comes from its list's level, which wins over its style's: Word's order. */
@@ -104,7 +104,7 @@ class OptionsTest {
         Comparison comparison = DocumentComparer.compare(REVISION_A, REVISION_B, layout);
         Pairing changed = pairing(comparison, "This procedure describes");
         assertEquals(Pairing.Status.SAME, changed.status(), "its words differ, but they do not count");
-        assertEquals(changed.right().text(), marked(changed.right().text(), changed.diff().right()),
+        assertEquals(changed.right().text(), marked(changed.right().text(), changed.difference().right()),
                 "nor shown: nothing marked in it");
         assertEquals(Pairing.Status.SAME, pairing(comparison, "It replaces revision A").status(), "added: text");
         Pairing moved = pairing(comparison, "Safety");
@@ -143,14 +143,15 @@ class OptionsTest {
         List<PropertyDifference> all = new ArrayList<>(comparison.documentDifferences());
         for (StoryComparison story : comparison.stories()) {
             for (Pairing pairing : story.pairings()) {
-                all.addAll(pairing.diff().properties());
-                all.addAll(pairing.diff().leftFormatting().stream().flatMap(f -> f.differences().stream()).toList());
+                all.addAll(pairing.difference().properties());
+                all.addAll(pairing.difference().leftFormatting().stream().flatMap(f -> f.differences().stream())
+                        .toList());
                 if (pairing.table() != null) {
                     pairing.table().rowProperties().forEach(all::addAll);
                     for (List<Pairing> cells : pairing.table().cells()) {
                         for (Pairing cell : cells) {
                             if (cell != null) {
-                                all.addAll(cell.diff().properties());
+                                all.addAll(cell.difference().properties());
                             }
                         }
                     }

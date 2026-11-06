@@ -68,8 +68,8 @@ final class Paragraphs {
                 new Picture(Picture.Kind.IMAGE, digest, 100, 60, "png", digest, new byte[] {1}));
     }
 
-    static Item item(Paragraph paragraph) {
-        return new Item(Story.Name.BODY, List.of(), paragraph, null);
+    static ComparedBlock item(Paragraph paragraph) {
+        return new ComparedBlock(Story.Name.BODY, List.of(), paragraph, null);
     }
 
     static Unit unit(Paragraph paragraph, boolean blanks, Vocabulary vocabulary) {

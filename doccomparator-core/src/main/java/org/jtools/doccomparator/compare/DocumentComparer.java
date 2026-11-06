@@ -86,22 +86,22 @@ public final class DocumentComparer {
                 Unit unit = l.get(slot.left());
                 if (slot.moved()) {
                     Pairing pair = pair(unit, r.get(slots.get(slot.counterpart()).right()), slot.counterpart());
-                    pairings.add(new Pairing(pair.left(), null, pair.status(), pair.counterpart(), pair.diff(),
+                    pairings.add(new Pairing(pair.left(), null, pair.status(), pair.counterpart(), pair.difference(),
                             pair.table()));
                 } else {
                     pairings.add(new Pairing(unit.item(), null, alone(Pairing.Status.LEFT_ONLY), -1,
-                            ParagraphDiff.alone(unit.isTable() ? "" : unit.text(), true, options.text()),
+                            ParagraphDifference.alone(unit.isTable() ? "" : unit.text(), true, options.text()),
                             unit.isTable() ? tables.alone(unit, true) : null));
                 }
             } else {
                 Unit unit = r.get(slot.right());
                 if (slot.moved()) {
                     Pairing pair = pair(l.get(slots.get(slot.counterpart()).left()), unit, slot.counterpart());
-                    pairings.add(new Pairing(null, pair.right(), pair.status(), pair.counterpart(), pair.diff(),
+                    pairings.add(new Pairing(null, pair.right(), pair.status(), pair.counterpart(), pair.difference(),
                             pair.table()));
                 } else {
                     pairings.add(new Pairing(null, unit.item(), alone(Pairing.Status.RIGHT_ONLY), -1,
-                            ParagraphDiff.alone(unit.isTable() ? "" : unit.text(), false, options.text()),
+                            ParagraphDifference.alone(unit.isTable() ? "" : unit.text(), false, options.text()),
                             unit.isTable() ? tables.alone(unit, false) : null));
                 }
             }
@@ -119,7 +119,7 @@ public final class DocumentComparer {
      */
     private Pairing pair(Unit a, Unit b, int counterpart) {
         Pairing.Status status;
-        ParagraphDiff diff;
+        ParagraphDifference diff;
         TableComparison table = null;
         if (a.isTable()) {
             table = tables.compare(a, b);
@@ -138,7 +138,7 @@ public final class DocumentComparer {
     /** The paragraphs to compare; with the blanks left out, empty ones are not. */
     private List<Unit> units(List<Story> stories) {
         List<Unit> units = new ArrayList<>();
-        for (Item item : Items.of(stories)) {
+        for (ComparedBlock item : ComparedBlocks.of(stories)) {
             Unit unit = Unit.of(item, options.blanks(), vocabulary);
             if (options.blanks() || !unit.isBlank()) {
                 units.add(unit);

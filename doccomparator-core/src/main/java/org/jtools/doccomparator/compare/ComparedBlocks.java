@@ -30,38 +30,38 @@ import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.TextBox;
 
 /** Stories into the items the comparison pairs: their paragraphs and tables in reading order, text boxes opened. */
-final class Items {
+final class ComparedBlocks {
 
     private final Story story;
-    private final List<Item> items = new ArrayList<>();
+    private final List<ComparedBlock> items = new ArrayList<>();
     private int tables;
 
-    private Items(Story story) {
+    private ComparedBlocks(Story story) {
         this.story = story;
     }
 
-    static List<Item> of(List<Story> stories) {
-        List<Item> items = new ArrayList<>();
+    static List<ComparedBlock> of(List<Story> stories) {
+        List<ComparedBlock> items = new ArrayList<>();
         for (Story story : stories) {
-            Items reader = new Items(story);
+            ComparedBlocks reader = new ComparedBlocks(story);
             reader.add(story.blocks(), List.of());
             items.addAll(reader.items);
         }
         return items;
     }
 
-    private void add(List<Block> blocks, List<Item.Place> places) {
+    private void add(List<Block> blocks, List<ComparedBlock.Place> places) {
         for (Block block : blocks) {
             switch (block) {
-                case Paragraph paragraph -> items.add(new Item(story.name(), places, paragraph, null));
-                case TextBox textBox -> add(textBox.blocks(), within(places, Item.Place.inTextBox()));
+                case Paragraph paragraph -> items.add(new ComparedBlock(story.name(), places, paragraph, null));
+                case TextBox textBox -> add(textBox.blocks(), within(places, ComparedBlock.Place.inTextBox()));
                 case Table table -> {
                     List<Run> runs = new ArrayList<>();
                     for (Paragraph paragraph : paragraphs(List.of(table))) {
                         runs.add(Run.of((runs.isEmpty() ? "" : "\t") + paragraph.text()));
                     }
                     Paragraph text = Paragraph.of(runs);
-                    items.add(new Item(story.name(), within(places, Item.Place.inTable(++tables)),
+                    items.add(new ComparedBlock(story.name(), within(places, ComparedBlock.Place.inTable(++tables)),
                             text, table));
                 }
             }
@@ -87,8 +87,8 @@ final class Items {
         return paragraphs;
     }
 
-    static List<Item.Place> within(List<Item.Place> places, Item.Place place) {
-        List<Item.Place> inner = new ArrayList<>(places);
+    static List<ComparedBlock.Place> within(List<ComparedBlock.Place> places, ComparedBlock.Place place) {
+        List<ComparedBlock.Place> inner = new ArrayList<>(places);
         inner.add(place);
         return inner;
     }

@@ -21,7 +21,7 @@ package org.jtools.doccomparator.compare;
  */
 
 /** A stretch of a paragraph's text, [start, end), and how it compares with the paragraph it is paired with. */
-public record Span(int start, int end, Kind kind) {
+public record TextSpan(int start, int end, Kind kind) {
 
     public enum Kind {
         /** The same text on the other side. */

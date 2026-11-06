@@ -23,7 +23,7 @@ package org.jtools.doccomparator.report;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.jtools.doccomparator.compare.Item;
+import org.jtools.doccomparator.compare.ComparedBlock;
 import org.jtools.doccomparator.compare.PropertyDifference;
 import org.jtools.doccomparator.compare.Phrase;
 import org.jtools.doccomparator.compare.StoryComparison;
@@ -67,7 +67,7 @@ public final class ComparisonWords {
      * Where a paragraph or a table is, when the body's flow does not say (or always): "Table 2", "Footer, section 2",
      * "Body" itself left unsaid.
      */
-    public static String location(Item item, boolean always) {
+    public static String location(ComparedBlock item, boolean always) {
         boolean inBody = item.story().kind() == Story.Kind.BODY;
         if (inBody && item.places().isEmpty()) {
             return always ? story(item.story()) : null;
@@ -76,7 +76,7 @@ public final class ComparisonWords {
         if (!inBody) {
             parts.add(story(item.story()));
         }
-        for (Item.Place place : item.places()) {
+        for (ComparedBlock.Place place : item.places()) {
             parts.add(place.textBox() ? I18n.text("location.textBox")
                     : place.isTable() ? I18n.text("location.table", place.table())
                     : I18n.text("location.cell", place.row(), place.column()));

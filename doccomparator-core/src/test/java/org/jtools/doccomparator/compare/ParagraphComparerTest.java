@@ -41,7 +41,7 @@ class ParagraphComparerTest {
 
     @Test
     void aReplacedWordIsChangedOnBothSides() {
-        ParagraphDiff diff = compare("the cat sat down", "the dog sat down");
+        ParagraphDifference diff = compare("the cat sat down", "the dog sat down");
         assertEquals("the |{cat}| sat down", marked("the cat sat down", diff.left()));
         assertEquals("the |{dog}| sat down", marked("the dog sat down", diff.right()));
         assertTrue(diff.textDiffers());
@@ -49,7 +49,8 @@ class ParagraphComparerTest {
 
     @Test
     void addedWordsAreOnlyOnTheirSideAndMarkedWhereTheyAreMissing() {
-        ParagraphDiff diff = compare("Restart the pump and check.", "Restart the pump, wait two minutes and check.");
+        ParagraphDifference diff = compare("Restart the pump and check.",
+                "Restart the pump, wait two minutes and check.");
         assertEquals("Restart the pump|^| and check.", marked("Restart the pump and check.", diff.left()));
         assertEquals("Restart the pump|[, wait two minutes]| and check.",
                 marked("Restart the pump, wait two minutes and check.", diff.right()));
@@ -57,7 +58,7 @@ class ParagraphComparerTest {
 
     @Test
     void aWordCloseToTheOtherIsComparedCharacterByCharacter() {
-        ParagraphDiff diff = compare("the oil colour", "the oil color");
+        ParagraphDifference diff = compare("the oil colour", "the oil color");
         assertEquals("the oil colo|[u]|r", marked("the oil colour", diff.left()));
         assertEquals("the oil colo|^|r", marked("the oil color", diff.right()));
     }
@@ -72,7 +73,7 @@ class ParagraphComparerTest {
     void blanksLeftOutDifferWithoutCounting() {
         String left = "covered by this document; they are described";
         String right = "covered by this document;  they are described ";
-        ParagraphDiff diff = compare(left, right);
+        ParagraphDifference diff = compare(left, right);
         assertFalse(diff.textDiffers());
         assertEquals(right, marked(right, diff.right()), "nothing marked");
         assertFalse(compare("foo, bar", "foo,bar").textDiffers(), "a blank added is no difference either");
@@ -90,7 +91,7 @@ class ParagraphComparerTest {
     void theFormattingOfTheSameTextIsComparedWithTheStyles() {
         Paragraph bold = paragraph(null, 0, null, run("A pressure "), run("must", "b"), run(" be reported."));
         Paragraph underlined = paragraph(null, 0, null, run("A pressure "), run("must", "u"), run(" be reported."));
-        ParagraphDiff diff = compare(Paragraphs.FULL, bold, underlined);
+        ParagraphDifference diff = compare(Paragraphs.FULL, bold, underlined);
         assertFalse(diff.textDiffers());
         assertTrue(diff.otherwiseDiffers());
         assertEquals(1, diff.leftFormatting().size());
@@ -109,7 +110,7 @@ class ParagraphComparerTest {
         StyleSheet french = styles("Titre1", "heading 1");
         ParagraphComparer comparer = new ParagraphComparer(Paragraphs.FULL, new Vocabulary(), english, french);
         Vocabulary vocabulary = new Vocabulary();
-        ParagraphDiff diff = comparer.compare(
+        ParagraphDifference diff = comparer.compare(
                 Paragraphs.unit(paragraph("Heading1", 1, null, run("Scope")), false, vocabulary),
                 Paragraphs.unit(paragraph("Titre1", 1, null, run("Scope")), false, vocabulary));
         assertEquals(List.of(), diff.properties());
@@ -120,8 +121,8 @@ class ParagraphComparerTest {
         StyleSheet tight = normal(Map.of("spacing.after", "0"));
         StyleSheet airy = normal(Map.of("spacing.after", "240"));
         Vocabulary vocabulary = new Vocabulary();
-        ParagraphDiff diff = new ParagraphComparer(CompareOptions.TEXT_ONLY.with(Aspect.SPACING, true), vocabulary,
-                tight, airy).compare(Paragraphs.unit(paragraph("Plain text."), false, vocabulary),
+        ParagraphDifference diff = new ParagraphComparer(CompareOptions.TEXT_ONLY.with(Aspect.SPACING, true),
+                vocabulary, tight, airy).compare(Paragraphs.unit(paragraph("Plain text."), false, vocabulary),
                 Paragraphs.unit(paragraph("Plain text."), false, vocabulary));
         assertEquals(List.of("SPACING spacing.after: 0 → 240"), Paragraphs.said(diff.properties()));
     }
@@ -136,12 +137,12 @@ class ParagraphComparerTest {
     void picturesDifferByTheirImages() {
         Paragraph none = paragraph(null, 0, null, run("See the pump."));
         Paragraph one = paragraph(null, 0, null, run("See the pump."), Paragraphs.picture("pump"));
-        ParagraphDiff added = compare(Paragraphs.FULL, none, one);
+        ParagraphDifference added = compare(Paragraphs.FULL, none, one);
         assertEquals("See the pump.|[\uFFFC]", marked(one.text(), added.right()));
 
         Paragraph colour = paragraph(null, 0, null, run("The colour "), Paragraphs.picture("green"));
         Paragraph color = paragraph(null, 0, null, run("The color "), Paragraphs.picture("red"));
-        ParagraphDiff swapped = compare(Paragraphs.FULL, colour, color);
+        ParagraphDifference swapped = compare(Paragraphs.FULL, colour, color);
         int at = color.text().indexOf(Picture.IN_TEXT);
         assertTrue(swapped.right().stream().anyMatch(span -> span.start() <= at && at < span.end() && span.differs()),
                 "the picture swapped is marked, never matched character by character: "
@@ -157,7 +158,7 @@ class ParagraphComparerTest {
     void theStructureIsCompared() {
         Paragraph heading = paragraph(null, 1, null, run("Records"));
         Paragraph item = paragraph(null, 0, new ListItem("4", 0, "decimal", "%1."), run("Records"));
-        ParagraphDiff diff = compare(Paragraphs.FULL.with(Aspect.STYLES, false), heading, item);
+        ParagraphDifference diff = compare(Paragraphs.FULL.with(Aspect.STYLES, false), heading, item);
         assertEquals(List.of("HEADINGS compared.heading: value.heading(1) → value.none",
                 "LISTS compared.list: value.none → value.listLevel(decimal \"%1.\", 1)"), Paragraphs.said(diff.properties()));
         assertFalse(compare(Paragraphs.FULL.with(Aspect.HEADINGS, false).with(Aspect.LISTS, false), heading, item)
@@ -169,23 +170,23 @@ class ParagraphComparerTest {
                 Formatting.NONE, Formatting.NONE);
     }
 
-    private static ParagraphDiff compare(String left, String right) {
+    private static ParagraphDifference compare(String left, String right) {
         return compare(Paragraphs.FULL, paragraph(left), paragraph(right));
     }
 
-    private static ParagraphDiff compare(CompareOptions options, Paragraph left, Paragraph right) {
+    private static ParagraphDifference compare(CompareOptions options, Paragraph left, Paragraph right) {
         Vocabulary vocabulary = new Vocabulary();
         return new ParagraphComparer(options, vocabulary, StyleSheet.NONE, StyleSheet.NONE).compare(
                 Paragraphs.unit(left, options.blanks(), vocabulary), Paragraphs.unit(right, options.blanks(), vocabulary));
     }
 
     /** The text with its differences marked: {changed}, [only here], ^ absent, | between spans. */
-    static String marked(String text, List<Span> spans) {
+    static String marked(String text, List<TextSpan> spans) {
         StringBuilder marked = new StringBuilder();
-        Span.Kind previous = null;
-        for (Span span : spans) {
+        TextSpan.Kind previous = null;
+        for (TextSpan span : spans) {
             String part = text.substring(span.start(), span.end());
-            if (previous != null && (previous != Span.Kind.SAME || span.kind() != Span.Kind.SAME)) {
+            if (previous != null && (previous != TextSpan.Kind.SAME || span.kind() != TextSpan.Kind.SAME)) {
                 marked.append('|');
             }
             marked.append(switch (span.kind()) {

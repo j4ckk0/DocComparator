@@ -183,7 +183,7 @@ public final class ComparatorPanel extends JPanel {
      * own, the view puts it into words as it shows it: nothing is read or compared again.
      */
     public void languageChanged() {
-        labels.apply();
+        labels.relabel();
         namesListener.accept(documentNames());
         if (comparison != null) {
             show(comparison);

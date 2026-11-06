@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.List;
-import org.jtools.doccomparator.compare.Item;
+import org.jtools.doccomparator.compare.ComparedBlock;
 import org.jtools.doccomparator.compare.StoryComparison;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Story;
@@ -49,10 +49,12 @@ class ComparisonWordsTest {
     /** In the body's flow, nothing to say; elsewhere, the story then the places, the body's own name left unsaid. */
     @Test
     void aLocationSaysTheStoryThenThePlaces() {
-        assertNull(ComparisonWords.location(new Item(Story.Name.BODY, List.of(), EMPTY, null), false));
-        Item inTable = new Item(Story.Name.BODY, List.of(new Item.Place(false, 2, 0, 0)), EMPTY, null);
+        assertNull(ComparisonWords.location(new ComparedBlock(Story.Name.BODY, List.of(), EMPTY, null), false));
+        ComparedBlock inTable = new ComparedBlock(Story.Name.BODY, List.of(new ComparedBlock.Place(false, 2, 0, 0)),
+                EMPTY, null);
         assertEquals("Table 2", ComparisonWords.location(inTable, false));
-        Item inFooter = new Item(Story.Name.headerOrFooter(Story.Kind.FOOTER, "default", 2), List.of(), EMPTY, null);
+        ComparedBlock inFooter = new ComparedBlock(Story.Name.headerOrFooter(Story.Kind.FOOTER, "default", 2),
+                List.of(), EMPTY, null);
         assertEquals("Footer, section 2", ComparisonWords.location(inFooter, false));
     }
 

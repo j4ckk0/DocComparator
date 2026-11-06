@@ -102,7 +102,7 @@ final class TableComparer {
     }
 
     /** The properties of two tables, as the options compare them: their size, their place, their style, their own. */
-    ParagraphDiff properties(Unit a, Unit b) {
+    ParagraphDifference properties(Unit a, Unit b) {
         Differences differences = new Differences(options);
         differences.add(Aspect.TABLE_LAYOUT, Phrase.of("compared.rows"), String.valueOf(a.cells().length),
                 String.valueOf(b.cells().length));
@@ -116,11 +116,11 @@ final class TableComparer {
                 rightStyles.nameOf(y.styleId()));
         differences.formatting(Aspects.Source.TABLE, name -> Phrase.of("compared.ofTable", name), x.formatting(),
                 y.formatting());
-        return new ParagraphDiff(List.of(), List.of(), List.of(), List.of(), differences.list());
+        return new ParagraphDifference(List.of(), List.of(), List.of(), List.of(), differences.list());
     }
 
     /** How two tables compare: rows and columns added, removed or moved count with the table layout only. */
-    Pairing.Status status(TableComparison table, ParagraphDiff properties) {
+    Pairing.Status status(TableComparison table, ParagraphDifference properties) {
         return table.status(properties, options.has(Aspect.TABLE_LAYOUT));
     }
 
@@ -149,14 +149,14 @@ final class TableComparer {
 
     /** Two cells: their text as two paragraphs, and their own properties (shading, borders…). */
     private Pairing pair(Unit x, Unit y) {
-        ParagraphDiff text = paragraphs.compare(x, y);
+        ParagraphDifference text = paragraphs.compare(x, y);
         Differences differences = new Differences(options);
         differences.formatting(Aspects.Source.CELL, name -> Phrase.of("compared.ofCell", name), x.item().cell(),
                 y.item().cell());
         List<PropertyDifference> properties = new ArrayList<>(text.properties());
         properties.addAll(differences.list());
-        ParagraphDiff diff = new ParagraphDiff(text.left(), text.right(), text.leftFormatting(), text.rightFormatting(),
-                properties);
+        ParagraphDifference diff = new ParagraphDifference(text.left(), text.right(), text.leftFormatting(),
+                text.rightFormatting(), properties);
         return new Pairing(x.item(), y.item(), Pairing.statusOf(diff), -1, diff, null);
     }
 
@@ -165,11 +165,11 @@ final class TableComparer {
     }
 
     private static Pairing withoutRight(Pairing pair) {
-        return new Pairing(pair.left(), null, pair.status(), -1, pair.diff(), null);
+        return new Pairing(pair.left(), null, pair.status(), -1, pair.difference(), null);
     }
 
     private static Pairing withoutLeft(Pairing pair) {
-        return new Pairing(null, pair.right(), pair.status(), -1, pair.diff(), null);
+        return new Pairing(null, pair.right(), pair.status(), -1, pair.difference(), null);
     }
 
     /** A cell alone, in a row or a column the other table has not got: text added or removed, if the text counts. */
@@ -177,7 +177,7 @@ final class TableComparer {
         Pairing.Status status = !options.text() ? Pairing.Status.SAME
                 : onLeft ? Pairing.Status.LEFT_ONLY : Pairing.Status.RIGHT_ONLY;
         return new Pairing(onLeft ? cell.item() : null, onLeft ? null : cell.item(), status, -1,
-                ParagraphDiff.alone(cell.text(), onLeft, options.text()), null);
+                ParagraphDifference.alone(cell.text(), onLeft, options.text()), null);
     }
 
     private static int partner(int[] partners, int index) {
@@ -222,10 +222,11 @@ final class TableComparer {
     }
 
     /** The item standing for a row (column 0) or a column (row 0) of a table: where it is, which pairing prefers. */
-    private static Item part(Unit table, int row, int column) {
-        Item item = table.item();
-        return new Item(item.story(), Items.within(item.places(), Item.Place.inCell(0, row, column)),
-                item.paragraph(), null);
+    private static ComparedBlock part(Unit table, int row, int column) {
+        ComparedBlock item = table.item();
+        return new ComparedBlock(item.story(),
+                ComparedBlocks.within(item.places(), ComparedBlock.Place.inCell(0, row, column)), item.paragraph(),
+                null);
     }
 
     /**

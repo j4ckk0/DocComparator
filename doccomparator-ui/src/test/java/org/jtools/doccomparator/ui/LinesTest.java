@@ -36,7 +36,7 @@ import java.util.List;
 import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.Comparison;
 import org.jtools.doccomparator.compare.DocumentComparer;
-import org.jtools.doccomparator.compare.Span;
+import org.jtools.doccomparator.compare.TextSpan;
 import org.jtools.doccomparator.docx.DocxReader;
 import org.jtools.doccomparator.ui.Lines.Shown;
 import org.junit.jupiter.api.Test;
@@ -161,8 +161,9 @@ class LinesTest {
             for (LineSide side : new LineSide[] {line.left, line.right}) {
                 if (side != null && side.text != null) {
                     assertNull(side.link(), "no move said: " + side.text.text());
-                    assertTrue(side.pairing == null || (side.pairing.left() == null ? List.<Span>of() : side.pairing.diff().left())
-                            .stream().noneMatch(Span::differs), side.text.text());
+                    assertTrue(side.pairing == null
+                            || (side.pairing.left() == null ? List.<TextSpan>of() : side.pairing.difference().left())
+                                    .stream().noneMatch(TextSpan::differs), side.text.text());
                 }
             }
         }

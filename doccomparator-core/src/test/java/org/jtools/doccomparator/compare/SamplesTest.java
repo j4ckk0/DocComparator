@@ -61,7 +61,8 @@ class SamplesTest {
 
         Pairing edited = rowOnRight(body, "This procedure describes");
         assertEquals("This procedure describes the periodic maintenance of the KP-40 hydraulic pump installed on the "
-                + "test benches of building|[s]| C|[ and D]|.", marked(edited.right().text(), edited.diff().right()));
+                + "test benches of building|[s]| C|[ and D]|.",
+                marked(edited.right().text(), edited.difference().right()));
 
         Pairing rewritten = rowOnRight(body, "Unscrew the filter cover");
         assertEquals(Pairing.Status.CHANGED, rewritten.status());
@@ -69,30 +70,30 @@ class SamplesTest {
 
         Pairing tracked = rowOnRight(body, "Fit a new element");
         assertEquals("Fit a new element, reference KP-F-110, and screw the cover back|[ and tighten it to 25 N·m]|.",
-                marked(tracked.right().text(), tracked.diff().right()));
+                marked(tracked.right().text(), tracked.difference().right()));
 
         Pairing blanks = rowOnRight(body, "Repairs of the motor");
         assertEquals(Pairing.Status.SAME, blanks.status(), "blanks alone, left out");
 
         Pairing heading = rowOnRight(body, "Records");
         assertEquals(Pairing.Status.OTHERWISE, heading.status());
-        assertTrue(Paragraphs.said(heading.diff().properties()).contains("HEADINGS compared.heading: value.heading(1) → value.heading(2)"));
+        assertTrue(Paragraphs.said(heading.difference().properties()).contains("HEADINGS compared.heading: value.heading(1) → value.heading(2)"));
 
         Pairing underlined = rowOnRight(body, "Record the date");
         assertEquals(Pairing.Status.CHANGED, underlined.status());
         assertEquals(List.of("CHARACTERS b: true → value.none", "CHARACTERS u: value.none → single"),
-                Paragraphs.said(underlined.diff().rightFormatting().getFirst().differences()));
+                Paragraphs.said(underlined.difference().rightFormatting().getFirst().differences()));
 
         Pairing table = body.stream().filter(r -> r.table() != null).findFirst().orElseThrow();
         assertEquals(Pairing.Status.CHANGED, table.status());
-        assertTrue(Paragraphs.said(table.diff().properties()).contains("TABLE_LAYOUT compared.rows: 4 → 5"));
+        assertTrue(Paragraphs.said(table.difference().properties()).contains("TABLE_LAYOUT compared.rows: 4 → 5"));
         TableComparison cells = table.table();
         assertEquals(List.of(new Slot(0, 0, -1), new Slot(1, 1, -1), new Slot(2, 2, -1)), cells.columns());
         assertEquals(new Slot(-1, 3, -1), cells.rows().get(3), "a row added");
         assertEquals("Drain valve seal", cells.cell(3, 0).right().text());
         assertEquals(Pairing.Status.RIGHT_ONLY, cells.cell(3, 0).status());
         Pairing quantity = cells.cell(4, 2);
-        assertEquals("{2} litres", marked(quantity.left().text(), quantity.diff().left()).replace("|", ""));
+        assertEquals("{2} litres", marked(quantity.left().text(), quantity.difference().left()).replace("|", ""));
         assertEquals(Pairing.Status.SAME, cells.cell(4, 0).status(), "the rows after the one added are in place");
 
         assertTrue(Paragraphs.said(comparison.documentDifferences()).contains("TEMPLATE compared.template: Keldar-Procedure.dotx → Keldar-Procedure-2026.dotx"));
@@ -109,7 +110,7 @@ class SamplesTest {
         Pairing figure = body.stream().filter(pairing -> pairing.left() != null && pairing.right() != null
                 && pairing.left().text().equals("\uFFFC")).findFirst().orElseThrow();
         assertEquals(Pairing.Status.CHANGED, figure.status());
-        assertEquals("{\uFFFC}", marked(figure.right().text(), figure.diff().right()));
+        assertEquals("{\uFFFC}", marked(figure.right().text(), figure.difference().right()));
         assertEquals(Pairing.Status.SAME, rowOnRight(body, "Figure 1").status(), "its caption");
 
         List<Pairing> handbook = DocumentComparer.compare(REVISION_A, HANDBOOK, CompareOptions.DEFAULT).stories().getFirst()
@@ -132,11 +133,11 @@ class SamplesTest {
         Pairing italic = rowOnRight(body, "Wear safety glasses");
         assertEquals(Pairing.Status.OTHERWISE, italic.status());
         assertEquals(List.of("CHARACTERS i: value.none → true"),
-                Paragraphs.said(italic.diff().rightFormatting().getFirst().differences()));
+                Paragraphs.said(italic.difference().rightFormatting().getFirst().differences()));
         Pairing pressure = rowOnRight(body, "The residual pressure");
         assertEquals("The residual pressure in the circuit can reach |{15}| bar for several minutes after the stop; "
                 + "wait at least |{fifteen}| minutes before opening any connection.",
-                marked(pressure.right().text(), pressure.diff().right()));
+                marked(pressure.right().text(), pressure.difference().right()));
     }
 
     @Test
@@ -177,7 +178,7 @@ class SamplesTest {
 
         Pairing padlock = rowOnRight(body, "Before any operation");
         assertEquals("Before any operation, the pump must be stopped, isolated and locked out with |{your own}| padlock.",
-                marked(padlock.right().text(), padlock.diff().right()));
+                marked(padlock.right().text(), padlock.difference().right()));
         assertEquals(Pairing.Status.MOVED, rowOnRight(body, "Wear safety glasses").status());
         for (String own : List.of("Why it matters", "A clogged filter", "Follow the steps below",
                 "Why must you wait", "Where do you record", "Which reference")) {

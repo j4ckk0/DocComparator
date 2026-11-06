@@ -31,25 +31,25 @@ import org.jtools.doccomparator.i18n.I18n;
 
 /**
  * The labels of a part of the window, each bound to its key: set as they are bound, and set again, in the language
- * then in use, by apply() — which the program calls on each of its own when the language changes; the panel's, by
+ * then in use, by relabel() — which the program calls on each of its own when the language changes; the panel's, by
  * ComparatorPanel.languageChanged().
  */
 public final class I18nLabels {
 
     private final List<Runnable> labels = new ArrayList<>();
 
-    /** Sets a label with this text, now and at each apply(). */
+    /** Sets a label with this text, now and at each relabel(). */
     public void bind(Consumer<String> label, String key) {
         on(() -> label.accept(I18n.text(key)));
     }
 
-    /** Runs this now and at each apply(): for a label made of several texts, or of arguments. */
+    /** Runs this now and at each relabel(): for a label made of several texts, or of arguments. */
     public void on(Runnable label) {
         labels.add(label);
         label.run();
     }
 
-    /** A button's text, now and at each apply(); the button returned. */
+    /** A button's text, now and at each relabel(); the button returned. */
     public <B extends AbstractButton> B text(B button, String key) {
         bind(button::setText, key);
         return button;
@@ -65,13 +65,13 @@ public final class I18nLabels {
         return item;
     }
 
-    /** A label's text, now and at each apply(); the label returned. */
+    /** A label's text, now and at each relabel(); the label returned. */
     public JLabel text(JLabel label, String key) {
         bind(label::setText, key);
         return label;
     }
 
-    /** A component's tooltip, now and at each apply(); the component returned. */
+    /** A component's tooltip, now and at each relabel(); the component returned. */
     public <C extends JComponent> C tip(C component, String key) {
         bind(component::setToolTipText, key);
         return component;
@@ -87,7 +87,7 @@ public final class I18nLabels {
     }
 
     /** Sets every label again, in the language in use. */
-    public void apply() {
+    public void relabel() {
         labels.forEach(Runnable::run);
     }
 }

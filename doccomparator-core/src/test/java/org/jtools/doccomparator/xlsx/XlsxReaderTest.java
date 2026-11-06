@@ -263,7 +263,7 @@ class XlsxReaderTest {
                 .stream().filter(p -> p.table() != null).findFirst().orElseThrow();
         Pairing formula = table.table().cell(0, 1);
         assertEquals(Pairing.Status.OTHERWISE, formula.status(), "the same value, another formula");
-        PropertyDifference difference = formula.diff().properties().getFirst();
+        PropertyDifference difference = formula.difference().properties().getFirst();
         assertEquals(Aspect.CELLS, difference.aspect());
         assertEquals("compared.ofCell(formula): A1*2 → A1+A1", difference.toString());
         assertEquals(Pairing.Status.CHANGED, table.table().cell(0, 2).status(), "7 → 8, its column paired by 9");

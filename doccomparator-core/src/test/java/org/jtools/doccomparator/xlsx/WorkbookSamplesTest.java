@@ -53,7 +53,7 @@ class WorkbookSamplesTest {
                     if (cell != null && cell.differs()) {
                         said.add(cell.status() + ": " + (cell.left() == null ? "" : cell.left().text()) + " | "
                                 + (cell.right() == null ? "" : cell.right().text()) + " "
-                                + cell.diff().properties());
+                                + cell.difference().properties());
                     }
                 }
             }

@@ -27,9 +27,10 @@ import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.Story;
 
 /**
- * What the comparison pairs, one against one: a paragraph, or a whole table, compared row by row and column by column
- * (TableComparer). Text boxes are opened into their paragraphs and tables, each knowing where it was. A cell of a table
- * is an item too, its paragraphs one text, its paragraph the first's properties.
+ * A block of a document as the comparison pairs it, one against one, and where it is: a paragraph, or a whole table,
+ * compared row by row and column by column (TableComparer). Text boxes are opened into their paragraphs and tables,
+ * each knowing where it was. A cell of a table is one too, its paragraphs one text, its paragraph the first's
+ * properties.
  *
  * @param story     the story it is in
  * @param places    the text boxes, the table and the cell it is in, the outermost first; empty in the flow of the story
@@ -37,13 +38,13 @@ import org.jtools.doccomparator.document.Story;
  * @param table     the table, null for a paragraph or a cell
  * @param cell      a cell's own properties (w:tcPr); none for a paragraph or a table
  */
-public record Item(Story.Name story, List<Place> places, Paragraph paragraph, Table table, Formatting cell) {
+public record ComparedBlock(Story.Name story, List<Place> places, Paragraph paragraph, Table table, Formatting cell) {
 
-    public Item {
+    public ComparedBlock {
         places = List.copyOf(places);
     }
 
-    public Item(Story.Name story, List<Place> places, Paragraph paragraph, Table table) {
+    public ComparedBlock(Story.Name story, List<Place> places, Paragraph paragraph, Table table) {
         this(story, places, paragraph, table, Formatting.NONE);
     }
 

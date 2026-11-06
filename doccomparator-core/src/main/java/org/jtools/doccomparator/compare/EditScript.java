@@ -25,11 +25,11 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * The differences between two sequences of codes (words, characters…), by Myers' algorithm: the fewest elements to
- * remove and add, so the most kept in order. The same algorithm tells how much two sequences have in common, stopping
- * as soon as they differ too much for it to matter.
+ * The edit script from one sequence of codes to another (words, characters…), by Myers' algorithm: the fewest
+ * elements to remove and add, so the most kept in order. The same algorithm tells how much two sequences have in
+ * common, stopping as soon as they differ too much for it to matter.
  */
-final class Diff {
+final class EditScript {
 
     /**
      * A stretch of the edit script: a[fromA, toA) and b[fromB, toB) are the same (equal) or what replaces one with the
@@ -44,7 +44,7 @@ final class Diff {
      */
     static final int MOST_DIFFERENCES = 4000;
 
-    private Diff() {
+    private EditScript() {
     }
 
     /** The edit script from a to b, in order, its stretches alternating between equal and changed. */

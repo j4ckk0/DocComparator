@@ -40,7 +40,7 @@ import org.jtools.doccomparator.document.Run;
  * @param cells    for a table, its cells by row and column on its grid, null where none starts; null otherwise
  * @param pictures its pictures' digests, by their offset in its text: a picture is compared by its image
  */
-record Unit(Item item, String text, List<Token> tokens, String key, int[] words, int[] bag, int[] runEnds,
+record Unit(ComparedBlock item, String text, List<Token> tokens, String key, int[] words, int[] bag, int[] runEnds,
             Unit[][] cells, Map<Integer, String> pictures) {
 
     /** Starts the key of a table, a row or a column: never the same as a paragraph's. */
@@ -48,7 +48,7 @@ record Unit(Item item, String text, List<Token> tokens, String key, int[] words,
     /** Between the keys of cells. */
     private static final char BETWEEN_CELLS = '\u0001';
 
-    static Unit of(Item item, boolean blanks, Vocabulary vocabulary) {
+    static Unit of(ComparedBlock item, boolean blanks, Vocabulary vocabulary) {
         if (item.isTable()) {
             return table(item, blanks, vocabulary);
         }
@@ -84,7 +84,7 @@ record Unit(Item item, String text, List<Token> tokens, String key, int[] words,
         return new Unit(item, text, tokens, key.toString(), words, sorted(words), runEnds, null, pictures);
     }
 
-    private static Unit table(Item item, boolean blanks, Vocabulary vocabulary) {
+    private static Unit table(ComparedBlock item, boolean blanks, Vocabulary vocabulary) {
         TableGrid grid = TableGrid.of(item);
         Unit[][] cells = new Unit[grid.cells.length][grid.columns];
         List<Unit> all = new ArrayList<>();
@@ -102,7 +102,7 @@ record Unit(Item item, String text, List<Token> tokens, String key, int[] words,
     }
 
     /** A unit made of others — a table, a row, a column — and standing for this item. */
-    static Unit composite(Item item, List<Unit> parts) {
+    static Unit composite(ComparedBlock item, List<Unit> parts) {
         StringBuilder text = new StringBuilder();
         StringBuilder key = new StringBuilder().append(COMPOSITE);
         int[] words = new int[parts.stream().mapToInt(part -> part.words.length).sum()];

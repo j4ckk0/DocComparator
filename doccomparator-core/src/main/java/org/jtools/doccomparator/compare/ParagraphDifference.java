@@ -28,10 +28,10 @@ import java.util.List;
  * or the characters compared); their own properties — heading, list, place, style, indents… — where they differ, as
  * the options compare them.
  */
-public record ParagraphDiff(List<Span> left, List<Span> right, List<FormatSpan> leftFormatting,
+public record ParagraphDifference(List<TextSpan> left, List<TextSpan> right, List<FormatSpan> leftFormatting,
                             List<FormatSpan> rightFormatting, List<PropertyDifference> properties) {
 
-    public ParagraphDiff {
+    public ParagraphDifference {
         left = List.copyOf(left);
         right = List.copyOf(right);
         leftFormatting = List.copyOf(leftFormatting);
@@ -43,16 +43,16 @@ public record ParagraphDiff(List<Span> left, List<Span> right, List<FormatSpan> 
      * A paragraph with no counterpart, on the left side or the right: its whole text is only there — no difference
      * when the text is not compared.
      */
-    static ParagraphDiff alone(String text, boolean onLeft, boolean counted) {
-        List<Span> spans = text.isEmpty() ? List.of()
-                : List.of(new Span(0, text.length(), counted ? Span.Kind.ONLY_HERE : Span.Kind.SAME));
-        return onLeft ? new ParagraphDiff(spans, List.of(), List.of(), List.of(), List.of())
-                : new ParagraphDiff(List.of(), spans, List.of(), List.of(), List.of());
+    static ParagraphDifference alone(String text, boolean onLeft, boolean counted) {
+        List<TextSpan> spans = text.isEmpty() ? List.of()
+                : List.of(new TextSpan(0, text.length(), counted ? TextSpan.Kind.ONLY_HERE : TextSpan.Kind.SAME));
+        return onLeft ? new ParagraphDifference(spans, List.of(), List.of(), List.of(), List.of())
+                : new ParagraphDifference(List.of(), spans, List.of(), List.of(), List.of());
     }
 
     /** Whether their text differs, blanks aside when they are left out. */
     public boolean textDiffers() {
-        return left.stream().anyMatch(Span::differs) || right.stream().anyMatch(Span::differs);
+        return left.stream().anyMatch(TextSpan::differs) || right.stream().anyMatch(TextSpan::differs);
     }
 
     /** Whether anything else compared differs: formatting, properties. */

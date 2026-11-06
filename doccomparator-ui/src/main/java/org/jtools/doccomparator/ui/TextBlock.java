@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Map;
 import org.jtools.doccomparator.compare.FormatSpan;
 import org.jtools.doccomparator.compare.PropertyDifference;
-import org.jtools.doccomparator.compare.Span;
+import org.jtools.doccomparator.compare.TextSpan;
 import org.jtools.doccomparator.document.Picture;
 
 /**
@@ -61,7 +61,7 @@ final class TextBlock {
     private final String text;
     private final Font font;
     private final Color color;
-    private final List<Span> spans;
+    private final List<TextSpan> spans;
     private final List<FormatSpan> formatting;
     private final String placeholder;
     private final DocumentLook look;
@@ -92,13 +92,13 @@ final class TextBlock {
     private float numberX;
 
     /** A text and its differences; placeholder: what is shown, faint, for an empty text. */
-    TextBlock(String text, Font font, Color color, Palette palette, List<Span> spans, List<FormatSpan> formatting,
+    TextBlock(String text, Font font, Color color, Palette palette, List<TextSpan> spans, List<FormatSpan> formatting,
               String placeholder) {
         this(text, font, color, palette, spans, formatting, placeholder, null);
     }
 
     /** The same, as the document lays it out (look), or plainly (null). */
-    TextBlock(String text, Font font, Color color, Palette palette, List<Span> spans, List<FormatSpan> formatting,
+    TextBlock(String text, Font font, Color color, Palette palette, List<TextSpan> spans, List<FormatSpan> formatting,
               String placeholder, DocumentLook look) {
         this.text = text;
         this.font = font;
@@ -340,7 +340,7 @@ final class TextBlock {
 
     private void paintBehind(Graphics2D g, TextLayout layout, int start, int end, float x, float baseline) {
         AffineTransform at = AffineTransform.getTranslateInstance(x, baseline);
-        for (Span span : spans) {
+        for (TextSpan span : spans) {
             Color behind = switch (span.kind()) {
                 case CHANGED, ONLY_HERE -> palette.changedText;
                 default -> null;
@@ -358,16 +358,16 @@ final class TextBlock {
                             boolean last) {
         AffineTransform at = AffineTransform.getTranslateInstance(x, baseline);
         int lineHeight = (int) Math.ceil(layout.getAscent() + layout.getDescent());
-        for (Span span : spans) {
+        for (TextSpan span : spans) {
             int at0 = span.start();
-            if (span.kind() == Span.Kind.ABSENT && at0 >= start && (at0 < end || last && at0 == end)) {
+            if (span.kind() == TextSpan.Kind.ABSENT && at0 >= start && (at0 < end || last && at0 == end)) {
                 Rectangle caret = at.createTransformedShape(layout.getCaretShape(TextHitInfo.leading(at0 - start)))
                         .getBounds();
                 g.setColor(palette.absentMark);
                 g.fillRect(caret.x - 1, (int) (baseline - layout.getAscent()), 3, lineHeight);
             }
         }
-        for (Span span : spans) {   // a picture that differs: framed in red, its image covering what is behind it
+        for (TextSpan span : spans) {   // a picture that differs: framed in red, its image covering what is behind it
             if (span.differs()) {
                 for (int offset : pictures.keySet()) {
                     if (offset >= span.start() && offset < span.end() && offset >= start && offset < end) {

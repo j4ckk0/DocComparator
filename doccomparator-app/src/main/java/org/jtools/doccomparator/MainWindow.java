@@ -82,7 +82,7 @@ final class MainWindow extends JFrame {
      */
     void languageChanged() {
         useSwingLocale();
-        labels.apply();
+        labels.relabel();
         language.show(I18n.language());
         panel.languageChanged();
     }

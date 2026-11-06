@@ -56,7 +56,7 @@ public record TableComparison(List<Slot> columns, List<Slot> rows, List<List<Pai
     }
 
     /** How the tables compare, as a paragraph would: their text first, then the rest; the layout if it counts. */
-    Pairing.Status status(ParagraphDiff properties, boolean layoutCounts) {
+    Pairing.Status status(ParagraphDifference properties, boolean layoutCounts) {
         boolean textDiffers = false;
         boolean otherwise = !properties.properties().isEmpty()
                 || rowProperties.stream().anyMatch(row -> !row.isEmpty());

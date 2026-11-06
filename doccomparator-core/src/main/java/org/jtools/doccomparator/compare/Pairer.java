@@ -201,7 +201,7 @@ final class Pairer {
         if (2.0 * common(a.bag(), b.bag()) < enough) {
             return 0;   // not enough words in common, in any order
         }
-        int common = Diff.commonLength(a.words(), b.words(), (int) Math.floor((1 - least) * (n + m) + 1e-9));
+        int common = EditScript.commonLength(a.words(), b.words(), (int) Math.floor((1 - least) * (n + m) + 1e-9));
         return common < 0 || 2.0 * common < enough ? 0 : 2.0 * common / (n + m);
     }
 

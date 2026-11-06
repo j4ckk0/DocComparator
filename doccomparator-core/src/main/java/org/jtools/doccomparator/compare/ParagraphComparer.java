@@ -65,20 +65,20 @@ final class ParagraphComparer {
         this.rightStyles = rightStyles;
     }
 
-    ParagraphDiff compare(Unit a, Unit b) {
+    ParagraphDifference compare(Unit a, Unit b) {
         TextComparison comparison = new TextComparison(a, b);
         comparison.compareText();
-        return new ParagraphDiff(counted(comparison.left.spans), counted(comparison.right.spans),
+        return new ParagraphDifference(counted(comparison.left.spans), counted(comparison.right.spans),
                 comparison.left.formatting, comparison.right.formatting,
                 properties(a.item().paragraph(), b.item().paragraph(), a.item(), b.item()));
     }
 
     /** The spans as the options compare them: the text left out, nothing in it differs — the whole of it the same. */
-    private List<Span> counted(List<Span> spans) {
+    private List<TextSpan> counted(List<TextSpan> spans) {
         if (options.text() || spans.isEmpty()) {
             return spans;
         }
-        return List.of(new Span(0, spans.getLast().end(), Span.Kind.SAME));
+        return List.of(new TextSpan(0, spans.getLast().end(), TextSpan.Kind.SAME));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -86,21 +86,21 @@ final class ParagraphComparer {
 
     /** The spans of one side as they are found, in order, those alike joined. */
     private static final class Side {
-        final List<Span> spans = new ArrayList<>();
+        final List<TextSpan> spans = new ArrayList<>();
         final List<FormatSpan> formatting = new ArrayList<>();
 
-        void add(int start, int end, Span.Kind kind) {
-            if (start == end && kind != Span.Kind.ABSENT) {
+        void add(int start, int end, TextSpan.Kind kind) {
+            if (start == end && kind != TextSpan.Kind.ABSENT) {
                 return;
             }
             if (!spans.isEmpty()) {
-                Span last = spans.getLast();
-                if (last.kind() == kind && last.end() == start && kind != Span.Kind.ABSENT) {
-                    spans.set(spans.size() - 1, new Span(last.start(), end, kind));
+                TextSpan last = spans.getLast();
+                if (last.kind() == kind && last.end() == start && kind != TextSpan.Kind.ABSENT) {
+                    spans.set(spans.size() - 1, new TextSpan(last.start(), end, kind));
                     return;
                 }
             }
-            spans.add(new Span(start, end, kind));
+            spans.add(new TextSpan(start, end, kind));
         }
 
         void addFormatting(int start, int end, List<PropertyDifference> differences) {
@@ -139,9 +139,9 @@ final class ParagraphComparer {
             edge(position(ta, 0, a.text()), position(ta, rangeA[0], a.text()),
                     position(tb, 0, b.text()), position(tb, rangeB[0], b.text()));
 
-            List<Diff.Edit> edits = absorbSmallEqualities(
-                    Diff.of(codes(ta, rangeA, a), codes(tb, rangeB, b)), ta, rangeA[0], a.text());
-            for (Diff.Edit edit : edits) {
+            List<EditScript.Edit> edits = absorbSmallEqualities(
+                    EditScript.of(codes(ta, rangeA, a), codes(tb, rangeB, b)), ta, rangeA[0], a.text());
+            for (EditScript.Edit edit : edits) {
                 int fromA = rangeA[0] + edit.fromA();
                 int toA = rangeA[0] + edit.toA();
                 int fromB = rangeB[0] + edit.fromB();
@@ -153,8 +153,8 @@ final class ParagraphComparer {
                         if (x.text(a.text()).equals(y.text(b.text()))) {
                             same(x.start(), x.end(), y.start(), y.end());
                         } else {   // two different blanks, coded alike: the blanks are left out
-                            left.add(x.start(), x.end(), Span.Kind.SAME);
-                            right.add(y.start(), y.end(), Span.Kind.SAME);
+                            left.add(x.start(), x.end(), TextSpan.Kind.SAME);
+                            right.add(y.start(), y.end(), TextSpan.Kind.SAME);
                         }
                     }
                 } else {
@@ -201,8 +201,8 @@ final class ParagraphComparer {
 
         /** Blanks before the first token compared, or after the last: left out of the comparison, the same. */
         private void edge(int startA, int endA, int startB, int endB) {
-            left.add(startA, endA, Span.Kind.SAME);
-            right.add(startB, endB, Span.Kind.SAME);
+            left.add(startA, endA, TextSpan.Kind.SAME);
+            right.add(startB, endB, TextSpan.Kind.SAME);
         }
 
         /**
@@ -214,17 +214,17 @@ final class ParagraphComparer {
             String y = b.text().substring(startB, endB);
             boolean blanksOnly = !options.blanks() && isBlank(x) && isBlank(y);
             if (blanksOnly) {   // blanks left out: no difference
-                left.add(startA, endA, Span.Kind.SAME);
-                right.add(startB, endB, Span.Kind.SAME);
+                left.add(startA, endA, TextSpan.Kind.SAME);
+                right.add(startB, endB, TextSpan.Kind.SAME);
             } else if (x.isEmpty()) {
-                left.add(startA, startA, Span.Kind.ABSENT);
-                right.add(startB, endB, Span.Kind.ONLY_HERE);
+                left.add(startA, startA, TextSpan.Kind.ABSENT);
+                right.add(startB, endB, TextSpan.Kind.ONLY_HERE);
             } else if (y.isEmpty()) {
-                left.add(startA, endA, Span.Kind.ONLY_HERE);
-                right.add(startB, startB, Span.Kind.ABSENT);
+                left.add(startA, endA, TextSpan.Kind.ONLY_HERE);
+                right.add(startB, startB, TextSpan.Kind.ABSENT);
             } else if (!refine || !refined(x, startA, y, startB)) {
-                left.add(startA, endA, Span.Kind.CHANGED);
-                right.add(startB, endB, Span.Kind.CHANGED);
+                left.add(startA, endA, TextSpan.Kind.CHANGED);
+                right.add(startB, endB, TextSpan.Kind.CHANGED);
             }
         }
 
@@ -237,10 +237,10 @@ final class ParagraphComparer {
             }
             int[] cx = x.codePoints().toArray();
             int[] cy = y.codePoints().toArray();
-            List<Diff.Edit> edits = Diff.of(cx, cy);
+            List<EditScript.Edit> edits = EditScript.of(cx, cy);
             int kept = 0;
             int pieces = 0;
-            for (Diff.Edit edit : edits) {
+            for (EditScript.Edit edit : edits) {
                 if (edit.equal()) {
                     kept += edit.toA() - edit.fromA();
                 } else {
@@ -252,7 +252,7 @@ final class ParagraphComparer {
             }
             int[] offsetsX = offsets(x, cx.length);
             int[] offsetsY = offsets(y, cy.length);
-            for (Diff.Edit edit : edits) {
+            for (EditScript.Edit edit : edits) {
                 int fromA = startA + offsetsX[edit.fromA()];
                 int toA = startA + offsetsX[edit.toA()];
                 int fromB = startB + offsetsY[edit.fromB()];
@@ -268,8 +268,8 @@ final class ParagraphComparer {
 
         /** The same text on both sides: then, with the styles compared, its formatting, character by character. */
         private void same(int startA, int endA, int startB, int endB) {
-            left.add(startA, endA, Span.Kind.SAME);
-            right.add(startB, endB, Span.Kind.SAME);
+            left.add(startA, endA, TextSpan.Kind.SAME);
+            right.add(startB, endB, TextSpan.Kind.SAME);
             if (!options.has(Aspect.STYLES) && !options.has(Aspect.CHARACTERS) || endA - startA != endB - startB) {
                 return;
             }
@@ -291,21 +291,22 @@ final class ParagraphComparer {
      * Between two changes, a stretch of a blank or a mark or two is taken into the change: "housing and hoses" →
      * "housing, hoses" reads better as one change than as pieces around a shared space.
      */
-    private static List<Diff.Edit> absorbSmallEqualities(List<Diff.Edit> edits, List<Token> tokensA, int offsetA,
-                                                         String textA) {
-        List<Diff.Edit> result = new ArrayList<>(edits);
+    private static List<EditScript.Edit> absorbSmallEqualities(List<EditScript.Edit> edits, List<Token> tokensA,
+                                                               int offsetA, String textA) {
+        List<EditScript.Edit> result = new ArrayList<>(edits);
         boolean absorbed = true;
         while (absorbed) {
             absorbed = false;
             for (int i = 1; i < result.size() - 1; i++) {
-                Diff.Edit edit = result.get(i);
+                EditScript.Edit edit = result.get(i);
                 if (edit.equal() && edit.toA() - edit.fromA() <= ABSORBED_TOKENS
                         && tokensA.subList(offsetA + edit.fromA(), offsetA + edit.toA()).stream()
                                 .noneMatch(token -> token.type() == Token.Type.WORD || isPicture(token, textA))) {
-                    Diff.Edit before = result.get(i - 1);
-                    Diff.Edit after = result.get(i + 1);
+                    EditScript.Edit before = result.get(i - 1);
+                    EditScript.Edit after = result.get(i + 1);
                     result.subList(i - 1, i + 2).clear();
-                    result.add(i - 1, new Diff.Edit(false, before.fromA(), after.toA(), before.fromB(), after.toB()));
+                    result.add(i - 1,
+                            new EditScript.Edit(false, before.fromA(), after.toA(), before.fromB(), after.toB()));
                     absorbed = true;
                     break;
                 }
@@ -359,7 +360,7 @@ final class ParagraphComparer {
      * What else than their text differs between two paragraphs, as the options compare it. Indentation, spacing and
      * alignment as they apply, through the styles; the rest of the paragraph's formatting as it sets it itself.
      */
-    private List<PropertyDifference> properties(Paragraph a, Paragraph b, Item itemA, Item itemB) {
+    private List<PropertyDifference> properties(Paragraph a, Paragraph b, ComparedBlock itemA, ComparedBlock itemB) {
         Differences differences = new Differences(options);
         differences.add(Aspect.SECTIONS, Phrase.of("compared.story"),
                 Phrase.of("value.story." + itemA.story().kind().name()),

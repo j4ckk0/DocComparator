@@ -135,9 +135,9 @@ class PairerTest {
 
     @Test
     void ofTheSameTextsInATableTheSameCellIsPreferred() {
-        Item.Place row2 = Item.Place.inCell(1, 2, 2);
-        Item.Place row3 = Item.Place.inCell(1, 3, 2);
-        Item.Place row4 = Item.Place.inCell(1, 4, 2);
+        ComparedBlock.Place row2 = ComparedBlock.Place.inCell(1, 2, 2);
+        ComparedBlock.Place row3 = ComparedBlock.Place.inCell(1, 3, 2);
+        ComparedBlock.Place row4 = ComparedBlock.Place.inCell(1, 4, 2);
         List<Unit> left = List.of(cell("1", row2), cell("1", row3));
         List<Unit> right = List.of(cell("1", row2), cell("1", row3), cell("1", row4));
         List<Pairer.Match> matches = Pairer.pair(left, right);
@@ -146,8 +146,8 @@ class PairerTest {
         assertEquals(List.of(new Pairer.Match(0, 0, 1, false), new Pairer.Match(1, 2, 1, false)), matches);
     }
 
-    private Unit cell(String text, Item.Place place) {
-        return Unit.of(new Item(org.jtools.doccomparator.document.Story.Name.BODY, List.of(place),
+    private Unit cell(String text, ComparedBlock.Place place) {
+        return Unit.of(new ComparedBlock(org.jtools.doccomparator.document.Story.Name.BODY, List.of(place),
                 Paragraphs.paragraph(text), null), false, vocabulary);
     }
 }
