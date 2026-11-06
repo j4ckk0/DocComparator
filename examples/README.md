@@ -1,26 +1,38 @@
 # Using DocComparator's libraries
 
-Three small programs, each a single Java file that Java 25 runs as it is, no build needed:
+Three small programs, in [`src/main/java/org/jtools/doccomparator/examples/`](src/main/java/org/jtools/doccomparator/examples/).
+This folder is a module of the build (`doccomparator-examples`, never published): the programs compile with every
+build, and `ExamplesTest` runs `CompareFiles` and `CsvReader` on the samples.
 
 | Example | Jar it needs | What it shows |
 |---|---|---|
-| [`CompareFiles.java`](CompareFiles.java) | `doccomparator-core` | compare two files without a window, and print what differs, in words |
-| [`CsvReader.java`](CsvReader.java) | `doccomparator-core` | add a format: CSV files, read as a table and compared row by row and column by column |
-| [`EmbedPanel.java`](EmbedPanel.java) | `doccomparator-core`, `doccomparator-ui` | show the comparison view in a window of your own, one side a file, the other a document held in memory |
+| [`CompareFiles`](src/main/java/org/jtools/doccomparator/examples/CompareFiles.java) | `doccomparator-core` | compare two files without a window, and print what differs, in words |
+| [`CsvReader`](src/main/java/org/jtools/doccomparator/examples/CsvReader.java) | `doccomparator-core` | add a format: CSV files, read as a table and compared row by row and column by column |
+| [`EmbedPanel`](src/main/java/org/jtools/doccomparator/examples/EmbedPanel.java) | `doccomparator-core`, `doccomparator-ui` | show the comparison view in a window of your own, one side a file, the other a document held in memory |
 
 ## Running them
 
-Build the jars once, from the project's root (`scripts/build.sh`, or `mvn package`), then:
+Build once, from the project's root (`scripts/build.sh`, or `mvn package`), then, from the root:
 
 ```bash
 CORE=doccomparator-core/target/doccomparator-core.jar
 UI=doccomparator-ui/target/doccomparator-ui.jar
+EXAMPLES=examples/target/doccomparator-examples.jar
 
-java -cp $CORE examples/CompareFiles.java samples/procedure-revA.docx samples/procedure-revB.docx
-java -cp $CORE examples/CompareFiles.java samples/budget-revA.xlsx samples/budget-revB.xlsx --all
-java -cp $CORE examples/CsvReader.java old.csv new.csv
-java -cp $CORE:$UI examples/EmbedPanel.java samples/procedure-revA.docx
+java -cp $CORE:$EXAMPLES org.jtools.doccomparator.examples.CompareFiles samples/procedure-revA.docx samples/procedure-revB.docx
+java -cp $CORE:$EXAMPLES org.jtools.doccomparator.examples.CompareFiles samples/budget-revA.xlsx samples/budget-revB.xlsx --all
+java -cp $CORE:$EXAMPLES org.jtools.doccomparator.examples.CsvReader old.csv new.csv
+java -cp $CORE:$UI:$EXAMPLES org.jtools.doccomparator.examples.EmbedPanel samples/procedure-revA.docx
 ```
+
+Each is a single file, so Java can also run it from its source, with only the libraries' jars:
+
+```bash
+java -cp $CORE examples/src/main/java/org/jtools/doccomparator/examples/CompareFiles.java samples/procedure-revA.docx samples/procedure-revB.docx
+```
+
+In IntelliJ IDEA or another IDE that imports the Maven build, run them from their `main`, the project's root as the
+working directory.
 
 On Windows, the class path's separator is `;` rather than `:`.
 

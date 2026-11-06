@@ -503,6 +503,9 @@ version, once, as `<revision>`):
 | `doccomparator-ui/` | `doccomparator-ui`, `org.jtools.doccomparator.ui` | the comparison view, a Swing component another program can show (`ComparatorPanel`); core and `java.desktop`, no look of its own |
 | `doccomparator-app/` | `doccomparator`, `org.jtools.doccomparator` | the program: its window, menus, settings and looks (FlatLaf); its distributions (`-Pdist`) |
 
+A fourth module, `examples/` (`doccomparator-examples`, built last, never published), holds the programs showing a
+developer how the libraries are used, so they compile and run with every build.
+
 What each exports, and so offers another program: core `document`, `reader`, `compare`, `report`, `i18n` and each
 format's reader (`docx`, `xlsx`, `pdf`, `text`); ui `ui`. What they share inside stays hidden: core's `ooxml`, each
 module's texts.
@@ -528,7 +531,7 @@ module's texts.
 | `doccomparator-ui/src/test/` | `ui/LinesTest`, the view, drawn without a screen; `ComparatorPanelTest` and the rest of the view's |
 | `doccomparator-app/src/test/` | `NoNetworkTest` (all three modules' classes and FlatLaf's), `NoNetworkResolverTest` (see "No network"); the window's |
 | `samples/` | the sample documents, and the scripts that write them (see "Samples") |
-| `examples/` | three programs using the libraries: comparing without a window, a format added, the view in a window of one's own |
+| `examples/` | three programs using the libraries: comparing without a window, a format added, the view in a window of one's own; `ExamplesTest` runs the first two on the samples |
 | `scripts/` | the scripts above, and `standard-widths.py` (the standard PDF fonts' widths, from their URW clones) |
 | `.github/workflows/` | `build.yml`, the build and the tests on every push; `release.yml`, the release on a tag `vX.Y` |
 

@@ -51,11 +51,14 @@
     <url>https://github.com/j4ckk0/DocComparator/issues</url>
   </issueManagement>
 
-  <!-- Built in this order, each a jar and a Java module: the comparison, its view, the program (README, "Layout"). -->
+  <!-- Built in this order, each a jar and a Java module: the comparison, its view, the program (README, "Layout");
+       then the examples, programs showing a developer how the libraries are used, built with the rest so they never
+       go stale, and never published. -->
   <modules>
     <module>doccomparator-core</module>
     <module>doccomparator-ui</module>
     <module>doccomparator-app</module>
+    <module>examples</module>
   </modules>
 
   <properties>
@@ -359,6 +362,10 @@
             <configuration>
               <publishingServerId>central</publishingServerId>
               <autoPublish>false</autoPublish>
+              <!-- the examples are read and run from the repository, not taken from Maven Central -->
+              <excludeArtifacts>
+                <excludeArtifact>doccomparator-examples</excludeArtifact>
+              </excludeArtifacts>
             </configuration>
           </plugin>
         </plugins>

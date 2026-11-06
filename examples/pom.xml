@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.jtools</groupId>
+    <artifactId>doccomparator-parent</artifactId>
+    <version>${revision}</version>
+  </parent>
+
+  <artifactId>doccomparator-examples</artifactId>
+  <name>DocComparator examples</name>
+  <description>Programs showing a developer how doccomparator-core and doccomparator-ui are used: comparing two files without a window, a format added, the comparison view in a window of one's own. Built with the rest so they never go stale; never published.</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.jtools</groupId>
+      <artifactId>doccomparator-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jtools</groupId>
+      <artifactId>doccomparator-ui</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>doccomparator-examples</finalName>
+  </build>
+</project>

@@ -1,8 +1,30 @@
+package org.jtools.doccomparator.examples;
+
+/*-
+ * #%L
+ * DocComparator
+ * %%
+ * Copyright (C) 2026 jtools.org
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
+
 /*
  * Shows doccomparator-ui's comparison view in a window of one's own: two documents side by side, the ribbon of what
  * is compared, the differences marked — the left one a file, the right one text held in memory.
  *
- *   java -cp doccomparator-core.jar:doccomparator-ui.jar examples/EmbedPanel.java samples/procedure-revA.docx
+ *   java -cp doccomparator-core.jar:doccomparator-ui.jar:doccomparator-examples.jar org.jtools.doccomparator.examples.EmbedPanel samples/procedure-revA.docx
  *
  * The view takes the look and feel in use (FlatLaf or another, or Swing's own) and the language I18n speaks.
  */
