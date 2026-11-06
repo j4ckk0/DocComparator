@@ -43,15 +43,10 @@ import org.jtools.doccomparator.compare.Comparison;
 import org.jtools.doccomparator.compare.DocumentComparer;
 import org.jtools.doccomparator.compare.Pairing;
 import org.jtools.doccomparator.compare.TableComparison;
-import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.Paragraph;
-import org.jtools.doccomparator.document.Run;
-import org.jtools.doccomparator.document.Story;
-import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
-import org.jtools.doccomparator.document.Template;
 import org.jtools.doccomparator.reader.AbstractDocumentReader;
 
 public class CsvReader extends AbstractDocumentReader {
@@ -81,21 +76,14 @@ public class CsvReader extends AbstractDocumentReader {
             }
             List<Table.Cell> cells = new ArrayList<>();
             for (String value : line.split(",", -1)) {
-                cells.add(new Table.Cell(Formatting.NONE, List.of(paragraph(value.strip()))));
+                cells.add(new Table.Cell(Formatting.NONE, List.of(Paragraph.of(value.strip()))));
             }
             rows.add(new Table.Row(cells));
         }
         if (rows.isEmpty()) {
             throw new IOException("it holds no row");
         }
-        List<Block> body = List.of(new Table(null, Formatting.NONE, rows));
-        return new Document(String.valueOf(file.getFileName()), new Story(Story.Name.BODY, body), List.of(),
-                List.of(), StyleSheet.NONE, Template.NONE, false);
-    }
-
-    private static Paragraph paragraph(String text) {
-        List<Run> runs = text.isEmpty() ? List.of() : List.of(new Run(text, null, Formatting.NONE));
-        return new Paragraph(null, Formatting.NONE, 0, null, false, runs);
+        return Document.of(String.valueOf(file.getFileName()), List.of(new Table(null, Formatting.NONE, rows)));
     }
 
     /** Compares two CSV files and says which cells changed. */

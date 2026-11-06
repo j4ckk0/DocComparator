@@ -32,10 +32,7 @@ import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Run;
-import org.jtools.doccomparator.document.Story;
-import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
-import org.jtools.doccomparator.document.Template;
 import org.jtools.doccomparator.document.Document;
 import org.junit.jupiter.api.Test;
 
@@ -166,8 +163,7 @@ class TableComparerTest {
     }
 
     private static Document document(Block... blocks) {
-        return new Document("test.docx", new Story(Story.Name.BODY, List.of(blocks)), List.of(), List.of(),
-                StyleSheet.NONE, Template.NONE, false);
+        return Document.of("test.docx", List.of(blocks));
     }
 
     static Table table(String[][] cells) {
@@ -191,6 +187,6 @@ class TableComparerTest {
     }
 
     private static Paragraph paragraph(String text) {
-        return new Paragraph(null, Formatting.NONE, 0, null, false, List.of(new Run(text, null, Formatting.NONE)));
+        return Paragraph.of(List.of(Run.of(text)));
     }
 }

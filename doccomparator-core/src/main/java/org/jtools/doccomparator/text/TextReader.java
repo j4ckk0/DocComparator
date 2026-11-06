@@ -31,12 +31,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.jtools.doccomparator.document.Block;
-import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.Paragraph;
-import org.jtools.doccomparator.document.Run;
-import org.jtools.doccomparator.document.Story;
-import org.jtools.doccomparator.document.StyleSheet;
-import org.jtools.doccomparator.document.Template;
 import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.reader.AbstractDocumentReader;
@@ -116,10 +111,8 @@ public final class TextReader extends AbstractDocumentReader {
         int count = lines.length > 1 && lines[lines.length - 1].isEmpty() ? lines.length - 1 : lines.length;
         List<Block> paragraphs = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            List<Run> runs = lines[i].isEmpty() ? List.of() : List.of(new Run(lines[i], null, Formatting.NONE));
-            paragraphs.add(new Paragraph(null, Formatting.NONE, 0, null, false, runs));
+            paragraphs.add(Paragraph.of(lines[i]));
         }
-        return new Document(name, new Story(Story.Name.BODY, paragraphs), List.of(),
-                List.of(), StyleSheet.NONE, Template.NONE, false);
+        return Document.of(name, paragraphs);
     }
 }

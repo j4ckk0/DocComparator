@@ -35,4 +35,13 @@ public record Document(String fileName, Story body, List<Story> headersAndFooter
         headersAndFooters = List.copyOf(headersAndFooters);
         notes = List.copyOf(notes);
     }
+
+    /**
+     * A document that is its body alone: no header, footer or note, no style, no template, no tracked change — what a
+     * format without them reads (text, a workbook, a reader of one's own).
+     */
+    public static Document of(String fileName, List<? extends Block> body) {
+        return new Document(fileName, new Story(Story.Name.BODY, List.copyOf(body)), List.of(), List.of(),
+                StyleSheet.NONE, Template.NONE, false);
+    }
 }

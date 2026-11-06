@@ -27,14 +27,13 @@ import java.util.List;
 import org.jtools.doccomparator.compare.Item;
 import org.jtools.doccomparator.compare.StoryComparison;
 import org.jtools.doccomparator.document.Paragraph;
-import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.Story;
 import org.junit.jupiter.api.Test;
 
 /** What the comparison holds, said in words: the stories' names, where a paragraph is, the parts' titles. */
 class ComparisonWordsTest {
 
-    private static final Paragraph EMPTY = new Paragraph(null, Formatting.NONE, 0, null, false, List.of());
+    private static final Paragraph EMPTY = Paragraph.of(List.of());
 
     @Test
     void storiesAreNamedAsWordShowsThem() {

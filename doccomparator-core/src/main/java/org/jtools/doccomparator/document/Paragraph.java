@@ -41,6 +41,16 @@ public record Paragraph(String styleId, Formatting formatting, int headingLevel,
         this(styleId, formatting, headingLevel, listItem, endsSection, runs, List.of());
     }
 
+    /** These runs, and nothing else: no style, no formatting of its own, neither a heading nor a list item. */
+    public static Paragraph of(List<Run> runs) {
+        return new Paragraph(null, Formatting.NONE, 0, null, false, runs);
+    }
+
+    /** This text as one plain run (Run.of), no run at all for an empty line; nothing else, as of(runs). */
+    public static Paragraph of(String text) {
+        return of(text.isEmpty() ? List.of() : List.of(Run.of(text)));
+    }
+
     /** The text of its runs, end to end. */
     public String text() {
         StringBuilder text = new StringBuilder();

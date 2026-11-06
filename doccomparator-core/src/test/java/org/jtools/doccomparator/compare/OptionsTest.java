@@ -167,10 +167,7 @@ class OptionsTest {
     }
 
     private static Document document(org.jtools.doccomparator.document.Table table) {
-        return new Document("test.docx", new org.jtools.doccomparator.document.Story(
-                org.jtools.doccomparator.document.Story.Name.BODY, List.of(table)), List.of(), List.of(),
-                org.jtools.doccomparator.document.StyleSheet.NONE, org.jtools.doccomparator.document.Template.NONE,
-                false);
+        return Document.of("test.docx", List.of(table));
     }
 
     private static Document read(String name) {

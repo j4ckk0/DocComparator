@@ -87,12 +87,12 @@ final class TableGrid {
     private static Paragraph paragraph(Table.Cell cell) {
         List<Paragraph> paragraphs = Items.paragraphs(cell.blocks());
         if (paragraphs.isEmpty()) {
-            return new Paragraph(null, Formatting.NONE, 0, null, false, List.of());
+            return Paragraph.of(List.of());
         }
         List<Run> runs = new ArrayList<>();
         for (Paragraph paragraph : paragraphs) {
             if (!runs.isEmpty()) {
-                runs.add(new Run("\n", null, Formatting.NONE));
+                runs.add(Run.of("\n"));
             }
             runs.addAll(paragraph.runs());
         }

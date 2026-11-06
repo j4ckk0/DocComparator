@@ -30,4 +30,9 @@ public record Run(String text, String styleId, Formatting formatting, Picture pi
     public Run(String text, String styleId, Formatting formatting) {
         this(text, styleId, formatting, null);
     }
+
+    /** Text in no style and with no formatting of its own: what a format without either reads. */
+    public static Run of(String text) {
+        return new Run(text, null, Formatting.NONE);
+    }
 }

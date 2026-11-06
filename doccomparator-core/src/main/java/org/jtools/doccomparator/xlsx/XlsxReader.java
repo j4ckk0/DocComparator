@@ -30,10 +30,7 @@ import org.jtools.doccomparator.document.Block;
 import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Run;
-import org.jtools.doccomparator.document.Story;
-import org.jtools.doccomparator.document.StyleSheet;
 import org.jtools.doccomparator.document.Table;
-import org.jtools.doccomparator.document.Template;
 import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.ooxml.OoxmlPackage;
@@ -130,8 +127,7 @@ public final class XlsxReader extends AbstractDocumentReader {
                     }
                 }
             }
-            return new Document(String.valueOf(file.getFileName()), new Story(Story.Name.BODY, blocks),
-                    List.of(), List.of(), StyleSheet.NONE, Template.NONE, false);
+            return Document.of(String.valueOf(file.getFileName()), blocks);
         }
     }
 
@@ -143,6 +139,6 @@ public final class XlsxReader extends AbstractDocumentReader {
     /** A sheet's name, as a heading of the first level. */
     private static Paragraph heading(String name) {
         return new Paragraph(null, Formatting.NONE, 1, null, false,
-                name.isEmpty() ? List.of() : List.of(new Run(name, null, Formatting.NONE)));
+                name.isEmpty() ? List.of() : List.of(Run.of(name)));
     }
 }

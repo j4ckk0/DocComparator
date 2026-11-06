@@ -23,7 +23,6 @@ package org.jtools.doccomparator.compare;
 import java.util.ArrayList;
 import java.util.List;
 import org.jtools.doccomparator.document.Block;
-import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Run;
 import org.jtools.doccomparator.document.Story;
@@ -59,9 +58,9 @@ final class Items {
                 case Table table -> {
                     List<Run> runs = new ArrayList<>();
                     for (Paragraph paragraph : paragraphs(List.of(table))) {
-                        runs.add(new Run((runs.isEmpty() ? "" : "\t") + paragraph.text(), null, Formatting.NONE));
+                        runs.add(Run.of((runs.isEmpty() ? "" : "\t") + paragraph.text()));
                     }
-                    Paragraph text = new Paragraph(null, Formatting.NONE, 0, null, false, runs);
+                    Paragraph text = Paragraph.of(runs);
                     items.add(new Item(story.name(), within(places, Item.Place.inTable(++tables)),
                             text, table));
                 }
