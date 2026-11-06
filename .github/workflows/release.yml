@@ -18,7 +18,7 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: The version, said once, in the pom
         run: echo "VERSION=$(sed -n 's:.*<revision>\(.*\)</revision>.*:\1:p' pom.xml | head -1)" >> "$GITHUB_ENV"
@@ -31,7 +31,7 @@ jobs:
           scripts/changelog-section.py "$VERSION" > /dev/null
 
       - name: Keep the externals' downloads from one release to the next
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: external/downloads
           key: externals-linux-${{ hashFiles('externals.conf') }}
@@ -50,7 +50,7 @@ jobs:
           tar tzf "releases/doccomparator-$VERSION-linux.tar.gz" | grep -q '/doccomparator.aot$' \
             || echo "::warning::the Linux archive goes without its AOT cache: see the package step's log"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: linux
           path: releases/doccomparator-*-linux.tar.gz
@@ -59,7 +59,7 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: The version, said once, in the pom
         shell: pwsh
@@ -68,7 +68,7 @@ jobs:
           "VERSION=$($found.Matches[0].Groups[1].Value)" >> $env:GITHUB_ENV
 
       - name: Keep the externals' downloads from one release to the next
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: external/downloads
           key: externals-windows-${{ hashFiles('externals.conf') }}
@@ -121,7 +121,7 @@ jobs:
             }
           }
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: windows
           path: releases/doccomparator-*-windows.zip
@@ -132,9 +132,9 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: releases
           merge-multiple: true
