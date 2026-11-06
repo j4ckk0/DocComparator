@@ -44,7 +44,7 @@ Once on Maven Central (see [PUBLISHING.md](../PUBLISHING.md)), with Maven:
 <dependency>
   <groupId>org.jtools</groupId>
   <artifactId>doccomparator-core</artifactId>   <!-- or doccomparator-ui, which brings core -->
-  <version>2.1</version>
+  <version>3.0</version>
 </dependency>
 ```
 

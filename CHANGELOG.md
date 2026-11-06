@@ -3,6 +3,17 @@
 What each version brought, newest first. The GitHub Releases carry the same notes with the downloads and their
 checksums.
 
+## 3.0 — 2026-11-06
+
+- **The libraries' names, settled before Maven Central** (`doccomparator-core`, `doccomparator-ui`): what the
+  comparison pairs is a `ComparedBlock`; "difference" throughout, `ParagraphDifference` and `Pairing.difference()`;
+  `TextSpan` beside `FormatSpan`; `I18nLabels.relabel()`. A program written against 2.1 takes the new names.
+- **A reader of one's own, simpler to write**: `Document.of`, `Paragraph.of` and `Run.of` build a document in a line;
+  `WordProperties` lists the names its formatting is set under, with their units, so that it is compared as Word's.
+- **The examples, a module of the build** ([examples/](examples/README.md)): compiled and run on the samples at every
+  build, never published.
+- The program itself works as in 2.1.
+
 ## 2.1 — 2026-11-05
 
 - **Examples** ([examples/](examples/README.md)): comparing two files without a window, a reader of CSV files of

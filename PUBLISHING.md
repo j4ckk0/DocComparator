@@ -80,13 +80,13 @@ What a user downloads: the two self-contained distributions, each with its Java 
 the repository's Releases page, with the version's notes from `CHANGELOG.md` and the archives' SHA-256. A release is
 public as soon as it is made: it is made when asked for, never as a side effect of a push.
 
-1. Bump the version in the parent `pom.xml`: `<revision>` (`2.1`) and `<windowsVersion>` (`2.1.0.0`, the four parts
+1. Bump the version in the parent `pom.xml`: `<revision>` (`3.0`) and `<windowsVersion>` (`3.0.0.0`, the four parts
    launch4j wants).
-2. Give `CHANGELOG.md` its section, `## 2.1 — <date>`: what the version brings, a bullet list, for a user.
+2. Give `CHANGELOG.md` its section, `## 3.0 — <date>`: what the version brings, a bullet list, for a user.
 3. Commit, tag and push the tag:
 
-       git tag -a v2.1 -m "2.1"
-       git push origin main v2.1
+       git tag -a v3.0 -m "3.0"
+       git push origin main v3.0
 
 The tag starts `.github/workflows/release.yml` on GitHub: it checks that the tag, the pom and the changelog agree,
 then on Linux and on Windows deploys the externals (`scripts/setup.sh`, `scripts\setup.bat`), builds and tests the
@@ -99,7 +99,7 @@ the two distributions of the version `pom.xml` names, built and checked on Linux
 run's artefacts, to download and try; nothing is published, and neither the tag nor the changelog is checked.
 
 By hand, should the workflow be unavailable: `scripts/package.sh` on Linux and `scripts\package.bat` on Windows, the
-Windows archive copied into `releases/` beside the Linux one, then `scripts/release.sh 2.1`, which creates the
+Windows archive copied into `releases/` beside the Linux one, then `scripts/release.sh 3.0`, which creates the
 release from the pushed tag and uploads the archives — with a fine-grained token for this repository only (*Contents:
 read and write*), in `$GITHUB_TOKEN` or `~/.config/github/doccomparator-release-token`. `scripts/release.sh --dry-run
-2.1` prints the notes and calls nothing.
+3.0` prints the notes and calls nothing.

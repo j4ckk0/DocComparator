@@ -62,9 +62,9 @@
   </modules>
 
   <properties>
-    <revision>2.1</revision>
+    <revision>3.0</revision>
     <!-- The same version in the four parts Windows wants of an .exe (launch4j refuses anything else). -->
-    <windowsVersion>2.1.0.0</windowsVersion>
+    <windowsVersion>3.0.0.0</windowsVersion>
     <!-- The one library shipped, a decision taken knowingly (README, "No network"): its classes read by
          NoNetworkTest at each build. Another version is another decision: the enforcer rule names this one. -->
     <flatlaf.version>3.7.2</flatlaf.version>
