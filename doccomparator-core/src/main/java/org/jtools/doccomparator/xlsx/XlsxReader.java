@@ -32,6 +32,7 @@ import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Run;
 import org.jtools.doccomparator.document.Table;
 import org.jtools.doccomparator.document.Document;
+import org.jtools.doccomparator.document.WordProperties;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.ooxml.OoxmlPackage;
 import org.jtools.doccomparator.ooxml.Relationship;
@@ -132,7 +133,7 @@ public final class XlsxReader extends AbstractDocumentReader {
     }
 
     private static int span(Table.Cell cell) {
-        Integer across = Styles.number(cell.formatting().get("gridSpan"));
+        Integer across = Styles.number(cell.formatting().get(WordProperties.GRID_SPAN));
         return across == null ? 1 : across;
     }
 

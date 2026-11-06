@@ -31,6 +31,7 @@ import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Run;
 import org.jtools.doccomparator.document.Table;
+import org.jtools.doccomparator.document.WordProperties;
 import org.jtools.doccomparator.i18n.I18n;
 import org.jtools.doccomparator.ooxml.OoxmlException;
 import org.jtools.doccomparator.ooxml.XmlCursor;
@@ -144,14 +145,15 @@ final class SheetReader {
         String height = row.plainAttribute("ht");
         if (height != null && "1".equals(row.plainAttribute("customHeight"))) {
             try {
-                properties.put("trHeight.val", String.valueOf(Math.round(Double.parseDouble(height) * 20)));   // twips
-                properties.put("trHeight.hRule", "exact");
+                // points → twentieths of a point
+                properties.put(WordProperties.ROW_HEIGHT, String.valueOf(Math.round(Double.parseDouble(height) * 20)));
+                properties.put(WordProperties.ROW_HEIGHT_RULE, "exact");
             } catch (NumberFormatException _) {
                 // a height Excel would not write: the row's default
             }
         }
         if ("1".equals(row.plainAttribute("hidden")) || "true".equals(row.plainAttribute("hidden"))) {
-            properties.put("hidden", "true");
+            properties.put(WordProperties.HIDDEN, "true");
         }
         if (!properties.isEmpty()) {
             rowProperties.put(r, properties);
@@ -345,23 +347,24 @@ final class SheetReader {
         Styles.CellStyle style = styles.of(cell == null ? 0 : cell.style());
         SortedMap<String, String> properties = new TreeMap<>(style.cell());
         if (cell != null && cell.formula() != null) {
-            properties.put("formula", cell.formula());
+            properties.put(WordProperties.FORMULA, cell.formula());
         }
         double width = 0;
         for (int c = column; c < column + across; c++) {
             width += widths.getOrDefault(c, 0.0);
         }
         if (width > 0) {
-            properties.put("tcW.w", String.valueOf(Math.round(width * 7) * 15));   // characters → pixels → twips
-            properties.put("tcW.type", "dxa");
+            // characters → pixels → twentieths of a point
+            properties.put(WordProperties.CELL_WIDTH, String.valueOf(Math.round(width * 7) * 15));
+            properties.put(WordProperties.CELL_WIDTH_TYPE, "dxa");
         }
         if (across > 1) {
-            properties.put("gridSpan", String.valueOf(across));
+            properties.put(WordProperties.GRID_SPAN, String.valueOf(across));
         }
         if (mergesDown) {
-            properties.put("vMerge", "restart");
+            properties.put(WordProperties.VERTICAL_MERGE, WordProperties.MERGE_STARTS);
         } else if (continuesMerge) {
-            properties.put("vMerge", "continue");
+            properties.put(WordProperties.VERTICAL_MERGE, WordProperties.MERGE_CONTINUES);
         }
         List<Run> runs = new ArrayList<>();
         if (cell != null && !continuesMerge) {

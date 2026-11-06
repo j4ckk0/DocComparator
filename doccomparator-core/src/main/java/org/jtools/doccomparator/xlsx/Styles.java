@@ -31,6 +31,7 @@ import java.util.TreeMap;
 import org.jtools.doccomparator.ooxml.OoxmlException;
 import org.jtools.doccomparator.ooxml.OoxmlPackage;
 import org.jtools.doccomparator.ooxml.XmlCursor;
+import org.jtools.doccomparator.document.WordProperties;
 
 /**
  * A workbook's cell styles (xl/styles.xml) as Word's properties, so that a cell's look compares and shows as a table
@@ -155,32 +156,33 @@ final class Styles {
                 case "u" -> {
                     String underline = value == null ? "single" : value;
                     if (!underline.equals("none")) {
-                        run.put("u", underline.startsWith("double") ? "double" : "single");
+                        run.put(WordProperties.UNDERLINE, underline.startsWith("double") ? "double" : "single");
                     }
                 }
                 case "sz" -> {
                     if (value != null) {
                         try {
-                            run.put("sz", String.valueOf(Math.round(Double.parseDouble(value) * 2)));   // half-points
+                            // points → half-points
+                            run.put(WordProperties.SIZE, String.valueOf(Math.round(Double.parseDouble(value) * 2)));
                         } catch (NumberFormatException _) {
-                            run.put("sz", value);
+                            run.put(WordProperties.SIZE, value);
                         }
                     }
                 }
                 case "name", "rFont" -> {
                     if (value != null) {
-                        run.put("rFonts.ascii", value);
+                        run.put(WordProperties.FONT, value);
                     }
                 }
                 case "color" -> {
                     String colour = colors.of(xml);
                     if (colour != null) {
-                        run.put("color", colour);
+                        run.put(WordProperties.COLOR, colour);
                     }
                 }
                 case "vertAlign" -> {
                     if (value != null && !value.equals("baseline")) {
-                        run.put("vertAlign", value);
+                        run.put(WordProperties.VERTICAL_ALIGNMENT, value);
                     }
                 }
                 default -> {
@@ -213,16 +215,16 @@ final class Styles {
                     xml.skip();
                 }
                 if ("solid".equals(pattern)) {
-                    cell.put("shd.val", "clear");
-                    cell.put("shd.color", "auto");
-                    cell.put("shd.fill", foreground == null ? "auto" : foreground);
+                    cell.put(WordProperties.SHADING_PATTERN, "clear");
+                    cell.put(WordProperties.SHADING_COLOR, "auto");
+                    cell.put(WordProperties.SHADING_FILL, foreground == null ? "auto" : foreground);
                 } else if (pattern != null && !pattern.equals("none") && !pattern.equals("gray125")) {
-                    cell.put("shd.val", pattern);
-                    cell.put("shd.color", foreground == null ? "auto" : foreground);
-                    cell.put("shd.fill", background == null ? "auto" : background);
+                    cell.put(WordProperties.SHADING_PATTERN, pattern);
+                    cell.put(WordProperties.SHADING_COLOR, foreground == null ? "auto" : foreground);
+                    cell.put(WordProperties.SHADING_FILL, background == null ? "auto" : background);
                 }
             } else if (xml.isSpreadsheet("gradientFill")) {
-                cell.put("shd.val", "gradient");
+                cell.put(WordProperties.SHADING_PATTERN, "gradient");
                 xml.skip();
             } else {
                 xml.skip();
@@ -251,9 +253,9 @@ final class Styles {
                 xml.skip();
             }
             if (side != null && style != null) {
-                cell.put("tcBorders." + side + ".val", style[0]);
-                cell.put("tcBorders." + side + ".sz", style[1]);
-                cell.put("tcBorders." + side + ".color", colour == null ? "auto" : colour);
+                cell.put(WordProperties.cellBorder(side, "val"), style[0]);
+                cell.put(WordProperties.cellBorder(side, "sz"), style[1]);
+                cell.put(WordProperties.cellBorder(side, "color"), colour == null ? "auto" : colour);
             }
         }
         return cell;
@@ -269,21 +271,21 @@ final class Styles {
         Map<String, String> cell = new TreeMap<>(at(fills, xml.plainAttribute("fillId")));
         cell.putAll(at(borders, xml.plainAttribute("borderId")));
         if (!code.equals(NumberFormats.GENERAL)) {
-            cell.put("numFmt", code);
+            cell.put(WordProperties.NUMBER_FORMAT, code);
         }
         Map<String, String> paragraph = new TreeMap<>();
         while (xml.nextChild()) {
             if (xml.isSpreadsheet("alignment")) {
                 String horizontal = HORIZONTAL.get(String.valueOf(xml.plainAttribute("horizontal")));
                 if (horizontal != null) {
-                    paragraph.put("jc", horizontal);
+                    paragraph.put(WordProperties.ALIGNMENT, horizontal);
                 }
                 String vertical = VERTICAL.get(String.valueOf(xml.plainAttribute("vertical")));
                 if (vertical != null) {
-                    cell.put("vAlign", vertical);
+                    cell.put(WordProperties.CELL_VERTICAL_ALIGNMENT, vertical);
                 }
                 if (on(xml.plainAttribute("wrapText")) && xml.plainAttribute("wrapText") != null) {
-                    cell.put("wrapText", "true");
+                    cell.put(WordProperties.WRAP_TEXT, "true");
                 }
             }
             xml.skip();

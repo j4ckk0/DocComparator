@@ -26,6 +26,7 @@ import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Run;
 import org.jtools.doccomparator.document.Table;
+import org.jtools.doccomparator.document.WordProperties;
 
 /**
  * A table on its grid, as Word lays it out: a cell spanning columns (w:gridSpan) at the first of them, nothing at the
@@ -52,8 +53,8 @@ final class TableGrid {
             List<ComparedBlock> row = new ArrayList<>();
             for (Table.Cell cell : rows.get(r).cells()) {
                 int span = span(cell.formatting());
-                String merge = cell.formatting().get("vMerge");
-                boolean continued = merge != null && !merge.equals("restart");
+                String merge = cell.formatting().get(WordProperties.VERTICAL_MERGE);
+                boolean continued = merge != null && !merge.equals(WordProperties.MERGE_STARTS);
                 if (!continued) {
                     row.add(new ComparedBlock(table.story(),
                             ComparedBlocks.within(table.places(),
@@ -77,8 +78,9 @@ final class TableGrid {
     }
 
     private static int span(Formatting formatting) {
+        String span = formatting.get(WordProperties.GRID_SPAN);
         try {
-            return Math.max(1, Integer.parseInt(formatting.get("gridSpan") == null ? "1" : formatting.get("gridSpan")));
+            return Math.max(1, Integer.parseInt(span == null ? "1" : span));
         } catch (NumberFormatException _) {
             return 1;
         }

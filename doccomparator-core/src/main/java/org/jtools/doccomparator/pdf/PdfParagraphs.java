@@ -34,6 +34,7 @@ import org.jtools.doccomparator.document.Formatting;
 import org.jtools.doccomparator.document.ListItem;
 import org.jtools.doccomparator.document.Paragraph;
 import org.jtools.doccomparator.document.Run;
+import org.jtools.doccomparator.document.WordProperties;
 import org.jtools.doccomparator.pdf.ContentReader.Glyph;
 import org.jtools.doccomparator.pdf.PdfLines.Line;
 
@@ -348,24 +349,24 @@ final class PdfParagraphs {
     private static Formatting formatting(Glyph glyph, Line line, double baseline) {
         Map<String, String> values = new HashMap<>();
         if (!glyph.font().family.isEmpty()) {
-            values.put("rFonts.ascii", glyph.font().family);
+            values.put(WordProperties.FONT, glyph.font().family);
         }
-        values.put("sz", String.valueOf(Math.round(glyph.size() * 2)));
+        values.put(WordProperties.SIZE, String.valueOf(Math.round(glyph.size() * 2)));
         if (PdfLines.bold(glyph)) {
-            values.put("b", "true");
+            values.put(WordProperties.BOLD, "true");
         }
         if (glyph.font().italic || glyph.slanted()) {
-            values.put("i", "true");
+            values.put(WordProperties.ITALIC, "true");
         }
         if (glyph.color() != null) {
-            values.put("color", glyph.color());
+            values.put(WordProperties.COLOR, glyph.color());
         }
         double offset = -glyph.x() * glyph.dy() + glyph.y() * glyph.dx() - baseline;
         if (glyph.size() < 0.85 * line.size) {
             if (offset > 0.15 * line.size) {
-                values.put("vertAlign", "superscript");
+                values.put(WordProperties.VERTICAL_ALIGNMENT, "superscript");
             } else if (offset < -0.08 * line.size) {
-                values.put("vertAlign", "subscript");
+                values.put(WordProperties.VERTICAL_ALIGNMENT, "subscript");
             }
         }
         return new Formatting(values);

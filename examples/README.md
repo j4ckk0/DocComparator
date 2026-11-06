@@ -60,7 +60,10 @@ As Java modules: `requires org.jtools.doccomparator.core;` or `requires org.jtoo
 - **Saying it**: `ComparisonWords` puts any of it into words, in the language `I18n` speaks (`I18n.use(...)`).
 - **A format of your own**: extend `AbstractDocumentReader` and declare it as a service; your jar beside the
   libraries, `DocumentReaders` finds it, and the view's file chooser offers your files too. (The downloads of the
-  program are closed: a reader is added to a program built on the libraries, not to them.)
+  program are closed: a reader is added to a program built on the libraries, not to them.) Its document is built
+  with `Document.of(fileName, blocks)`, `Paragraph.of(text)` and `Run.of(text)` when the format has no more to it;
+  formatting is set under Word's names, which `WordProperties` lists with their units, so that it is compared and
+  said as Word's is.
 - **Your own texts**: implement `I18nTexts` and declare it as a service, its files `messages_en.properties` and
   `messages_fr.properties` beside it; `I18n.text(key)` then finds your keys as well as the program's.
 - **The view**: `ComparatorPanel` is a Swing component: `open(...)` two files or two `DocumentSource`s of your own,

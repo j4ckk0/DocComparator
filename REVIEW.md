@@ -1,120 +1,128 @@
 # Architecture review — DocComparator
 
-Review of 5 November 2026, after the split into three jars (core, ui, app), the Excel and PDF readers, and the
-reader and texts services. The previous review (version 1.6) is in the git history; its findings were all done.
+Review of 6 November 2026, after 2.0 (three jars, ready for Maven Central) and 2.1 (the examples, now a module of
+the build). The previous review (5 November) is in the git history; its six findings were all done.
 
-Reviewed the 122 classes of `doccomparator-*/src/main/java`, about 17,800 lines, every package: sizes, public types,
-dependency edges between packages and modules, method names. Read in full: the four files past 500 lines
-(`TextLayout`, `ContentReader`, `PdfFile`, `ComparatorPanel`), the module descriptors, the reader and texts services
-(`DocumentReader`, `DocumentReaders`, `I18n`, `I18nTexts`), `DocumentSource`. Not read line by line: the algorithms of
-`compare`, `docx` and `xlsx`, unchanged in shape since the last review or reviewed when written. Comments are not
-judged here: a review of them was done at the same time (see the comment review's report).
+Measured: the 128 classes of `doccomparator-*/src/main/java` and `examples/src/main/java`, 18,538 lines — sizes,
+public types per package, the import edges between packages, inbound references within `compare` and `ui`, method
+names. Read in full: `ComparatorPanel`'s fields and public methods, `compare`'s public records (`Item`, `Pairing`,
+`ParagraphDiff`, `Span`, `FormatSpan`, `Slot`, `PropertyDifference`, `Comparison`, `StoryComparison`,
+`TableComparison`), `document`'s `Paragraph`, `Document`, `Story`, `Formatting`, and `Palette`, `I18nLabels`. Read by
+their method lists only: `StoryReader`, `NumberFormats`, `SheetReader`, `ParagraphComparer`. Not read: the bodies of
+`ui`'s drawing classes (`TextBlock`, `Lines`, `ComparisonView`, `OptionControls`, `LinePainter`), the `pdf` package
+(reviewed yesterday, unchanged since), the app's six classes beyond their imports, the tests. Comments are not judged
+here.
 
 ## Verdict
 
-Yes: the shape reads at once. Three modules follow the pipeline — read, compare, show, run — their exports say what
-another program may use, and every arrow points down. What is most in the way is one name: the model every format
-reads into is still called **`WordDocument`**, while an Excel workbook, a PDF and a text file are read into it too —
-and it is about to be published as an API.
+Yes: the shape still reads at once. Read, compare, say, show, run, each a package or a module with every arrow
+pointing down, no file past 535 lines, method names that say what they do. What is most in the way is now the
+**public surface a newcomer meets first**, the one about to go to Maven Central: building a `Document` from a reader of
+one's own takes positional nulls, and the first type of the comparison an API user holds is called `Item`.
 
 ## What's working
 
-- **Layering, one way, no cycle**, now enforced by the modules:
-  - core (`document`, `reader`, the four readers, `compare`, `report`, `i18n`) needs the JDK alone (`java.xml`);
-  - ui needs core and `java.desktop`, no look and feel of its own;
-  - the app needs ui and FlatLaf.
-- **Exports are the API**: core exports its model, readers, comparison, words and languages; `ooxml` and each jar's
-  texts stay inside. Within exported packages, most types are package-private (`pdf`: 2 public of 13; `docx`: 1 of 7).
-- **Two extension seams, the same way**: a format is a `DocumentReader` service, a jar's texts an `I18nTexts` service.
-  A third-party jar adds both without touching the program.
-- **The comparison is data** (`Phrase`, `Pairing`), put into words by `report` — usable without a window.
-- **Each module tests itself**, its texts included (`TextsCheck`); `NoNetworkTest` reads all three modules' classes.
-- **The readers are parallel in shape**: each format a package, its reader the only public class, a file of its own
-  per concern (`SheetReader`, `Styles`, `NumberFormats`; `PdfFile`, `PdfFont`, `CMap`, `ContentReader`).
+- **Layering, one way, no cycle**: `document` depends on nothing; the readers (`docx`, `xlsx`, `pdf`, `text`) on
+  `document`, `ooxml` and `reader`; `compare` on `document` alone; `report` on `compare`; ui on core; the app on ui.
+  The module descriptors enforce it.
+- **No god object**: the most referenced class in `ui`, `Palette` (14 of 34 files), holds colours and nothing else; in
+  `compare`, `PropertyDifference` (8 of 24), a record. Dependencies spread out instead of converging.
+- **`compare` reads as its pipeline**: `Items` (stories into what is paired), `Unit` (ready to compare), `Pairer`,
+  `ParagraphComparer` and `TableComparer` (steps one and two), `Comparison` (the result); the public types are records
+  of the result, the algorithms package-private.
+- **`ComparatorPanel`**, the one file past 500 lines, is one thing: the panel's public face, each method handing off
+  to a part (`OptionControls`, `DocumentHeader`, `BackgroundWork`, `StatusLine`). No split to propose.
+- **Method names**: a search for `handle`, `process`, `run`, `manage`, `…And…`, and `get`/`is`/`find` with side
+  effects finds none, but one (Patterns).
+- **The examples are a module**, compiled and run at every build: the public API's first users are checked.
 
 ## Findings
 
-### 1. `WordDocument` names one format; it holds all four
-**Status:** Done: `Document`.
-**Where:** `doccomparator-core/…/document/WordDocument.java`; 55 references in main sources, more in tests; the
-`DocumentReader.read` contract; README.
-**Why it costs:** a developer reading `PdfReader.read(...)` returns a `WordDocument` guesses wrong — a conversion to
-Word, or a PDF-to-Word export. Once core is on Maven Central, the name is a contract: renaming it later breaks every
-program that uses it. The rest of the model keeps Word's vocabulary on purpose (`Story`, `Run`, `Formatting` under
-Word's property names), and that is fine: it is the comparison's common language, said once in `Formatting`'s doc.
-**Proposed change:** rename `WordDocument` to `Document` (package `document` already says what it is); state in its
-doc that every format is read into it, in Word's terms.
-**Effort / risk:** medium, mechanical (a rename across three modules and the README); low risk now, high after
-publishing. To do before step 3.
+### 1. A reader of one's own builds its `Document` from positional nulls
+**Status:** Done: `Paragraph.of(runs)`, `Paragraph.of(text)` (no run for an empty line), `Run.of(text)`,
+`Document.of(fileName, body)`; used by `TextReader`, `XlsxReader`, `ComparedBlocks`, `TableGrid`, `CsvReader` and three
+tests. `PdfParagraphs` and `PdfReader` keep their constructors: one gives the pages' starts, the other headers.
+**Where:** `document/Paragraph.java`, `document/Document.java`. A plain paragraph is
+`new Paragraph(null, Formatting.NONE, 0, null, false, runs)` in `text/TextReader.java:120`,
+`compare/Items.java:64`, `compare/TableGrid.java:90`, and in
+`examples/…/CsvReader.java:98`; a document of one body is
+`new Document(name, new Story(Story.Name.BODY, blocks), List.of(), List.of(), StyleSheet.NONE, Template.NONE, false)`
+in `text/TextReader.java:122`, `xlsx/XlsxReader.java:133`, `examples/…/CsvReader.java:92`, and nearly in
+`pdf/PdfReader.java:117`.
+**Why it costs:** a format of one's own is the seam the README and the examples advertise, and its author's first
+lines are five arguments whose meaning they must look up (`0` a heading level, `false` "ends a section", the last
+`false` "has tracked changes"). Every reader that is not Word writes the same filler, and a new field on `Document`
+breaks all of them.
+**Proposed change:** two factories, additive: `Paragraph.of(List<Run> runs)` (no style, no formatting, not a heading,
+no list item) and `Document.of(String fileName, List<Block> body)` (no headers, notes, styles or template, no tracked
+change); the seven call sites above use them. A `Run.of(String text)` too if wanted (the same pattern, once in core).
+**Effort / risk:** small · none: new methods, the constructors stay.
 
-### 2. A file that cannot be read has three exception types, one of them hidden
-**Status:** Done: `reader.DocumentReadException`, the file named once by `AbstractDocumentReader.read`; `PdfException` and `OoxmlException` say why only, inside their packages.
-**Where:** `ooxml/OoxmlException` (in a package core does not export, yet thrown by the public `DocxReader` and
-`XlsxReader`), `pdf/PdfException` (exported), `TextReader` (plain `IOException`); the "file: why" message composed in
-three places (`OoxmlException`, `PdfFile.error`, `DocumentSource.File.read`).
-**Why it costs:** a program using core cannot catch "this file is not readable" by type: one type it cannot name, one
-format-specific, one generic. The message prefix, built in three places, is where a doubled "name: name:" creeps in.
-**Proposed change:** one public `reader.DocumentReadException extends IOException` (the file's name and why), which
-`OoxmlException` and `PdfException` extend — or which replaces them; the readers name the file once, and
-`DocumentSource.File` stops wrapping.
-**Effort / risk:** small to medium; the messages' tests pin the exact texts.
+### 2. `compare`'s public vocabulary: `Item`, `Span`, and "diff" beside "difference"
+**Status:** Done, all of it: `ComparedBlock` (and `ComparedBlock.Place`), `ComparedBlocks`, `TextSpan`,
+`ParagraphDifference`, `Pairing.difference()`, `EditScript` (and `EditScriptTest`); README's Layout names them.
+**Where:** `compare/Item.java` (51 references in 14 files: `Pairing`, `Unit`, `Items`, `Pairer`, `TableGrid`,
+`TableComparer`, `ParagraphComparer`, `DocumentComparer`, `ComparisonWords`, ui's `Lines`…); `compare/Items.java`;
+`compare/Span.java` beside `FormatSpan.java`; `ParagraphDiff` and `Pairing.diff()` beside `PropertyDifference` and
+`StoryComparison.differences()`.
+**Why it costs:** `Pairing(Item left, Item right, …)` is the first thing an API user holds
+(`pairing.left().text()` in `CompareFiles`), and `Item` says nothing of what it is: a paragraph, a table or a cell,
+with where it is (`places`). The package that builds them from stories, `Items`, differs from it by one letter, and
+`document` already has a `ListItem`. Next to it, `Span` and `FormatSpan` are two halves of one diff — the text's
+stretches and the formatting's — but only one says what it spans. And the same idea has two words across the public
+types: a reader looks for `ParagraphDifference` and finds `ParagraphDiff`.
+**Proposed change:** before the first upload to Central (PUBLISHING.md: "Not published yet"), after which each is a
+breaking change:
+- `Item` → `ComparedBlock` (a block of a document as the comparison pairs it, and where it is), `Item.Place` →
+  `ComparedBlock.Place`; `Items` → `ComparedBlocks`;
+- `Span` → `TextSpan`, to pair with `FormatSpan`;
+- optional, the larger one: `ParagraphDiff` → `ParagraphDifference` and `Pairing.diff()` → `difference()`, so that the
+  public API says "difference" throughout. The internal `Diff` (Myers' edit script) may keep its name, or become
+  `EditScript`, which says what `Diff.of` returns.
+**Effort / risk:** medium · mechanical, the compiler finds every site; public API, so now or at a major version. No
+README names them (checked); the examples do (`CompareFiles`).
 
-### 3. `TextLayout` holds four jobs, and one of its predicates changes what it looks at
-**Status:** Done: `TextLayout` (the entry point), `PdfLines`, `RunningLines.takeOut`, `PdfParagraphs`; `join` returns a `Join` (space, nothing, hyphen dropped), the caller dropping the glyph.
-**Where:** `doccomparator-core/…/pdf/TextLayout.java` (603 lines): glyphs into lines (140–245), running header and
-footer (245–295), lines into paragraphs (295–440), paragraphs into runs, list marks and hyphenated words (440–603);
-`joinedBySpace` (549) removes the previous line's last glyph while its name promises a yes/no answer.
-**Why it costs:** a fix to the header detection means scrolling through paragraph heuristics; a caller of
-`joinedBySpace` would not expect it to edit a line.
-**Proposed change:** keep `TextLayout.of(pages)` as the entry point; move the sections to `PdfLines` (glyphs into
-`Line`s), `RunningLines` (header and footer), `PdfParagraphs` (lines into paragraphs, runs, list marks). Rename
-`joinedBySpace` to `join(previous, line)` returning how they join (a space, nothing, the hyphen dropped), the glyph
-dropped by the caller.
-**Effort / risk:** medium; the PDF tests (`PdfReaderTest`, `PdfSamplesTest`) cover the behaviour.
-
-### 4. `PdfFile` is the object store and the cross-reference parser
-**Status:** Done: `CrossReferences` (read and rebuilt); `PdfFile` resolves the objects.
-**Where:** `doccomparator-core/…/pdf/PdfFile.java` (546 lines): finding objects — tables, streams, `/Prev` chains, the
-rebuild by scanning — (305–515) beside resolving, decrypting and decoding them (130–305).
-**Why it costs:** the two change for different reasons (a damaged file's layout; a new encryption or filter), and the
-reader of one has to skip the other.
-**Proposed change:** extract `CrossReferences` (the places of the objects and the trailer, read or rebuilt); `PdfFile`
-keeps resolving them.
-**Effort / risk:** small to medium; covered by the rebuilt-file, object-stream and encryption tests.
-
-### 5. The colour spaces sit inside the content interpreter
-**Status:** Done: `FillColors`.
-**Where:** `doccomparator-core/…/pdf/ContentReader.java` (562 lines): `color`, `hex`, `channel`, `resolveSpace`,
-`components` (417–510), a self-contained subject inside the operator loop.
-**Proposed change:** extract `FillColors` (a colour space and its operands to RRGGBB, or none); `ContentReader` keeps
-the operators and the text state.
-**Effort / risk:** small.
-
-### 6. "A file of no known extension is a Word document" is decided in the UI
-**Status:** Done: `DocumentReaders.forFile`.
-**Where:** `doccomparator-ui/…/DocumentSource.java:57` (`OTHERWISE = new DocxReader()`), the only reason ui imports
-`docx`.
-**Why it costs:** a program using core alone gets `DocumentReaders.of(path)` empty for a Word file named `.tmp`,
-while the panel opens it: the same question, two answers, depending on the jar.
-**Proposed change:** `DocumentReaders.forFile(Path)`: the reader of its extension, else Word's; `DocumentSource.File`
-calls it, and the ui → docx edge disappears.
-**Effort / risk:** small.
+### 3. The model's formatting speaks Word's XML, in string literals the readers repeat
+**Status:** Done: `document.WordProperties`, the names the Excel and PDF readers set, each with its values and unit
+(`cellBorder(side, part)` for the borders); used by `Styles`, `SheetReader`, `XlsxReader`, `PdfParagraphs`, and by
+`TableGrid`, which reads `gridSpan` and `vMerge` from any reader. `WordPropertiesTest` fails on a name the report cannot
+say (checked: `"szz"` fails it). Not `Aspects`: it, `PropertyNames`, the Word reader and the view's `DocumentLook` read
+Word's whole vocabulary, most of it without a constant, and keep Word's names as Word writes them (the class's doc says
+so). Corrected below: a name no switch claims is compared all the same.
+**Where:** `document/Formatting.java` (its doc: "under Word's own names"); the names written as literals by each
+reader — `xlsx/SheetReader.java:147-364` (`"trHeight.val"`, `"tcW.w"` with `"dxa"`, `"gridSpan"`, `"vMerge"`),
+`xlsx/Styles.java:158` (`"u"`) — and read as literals by `compare/Aspects.java` (`"ind"`, `"jc"`, `"spacing"`…).
+**Why it costs:** the choice is sound and written down — one vocabulary, Word's, so that every format compares
+the same way. But it is learnt by reading `SheetReader`: a reader of one's own whose cells should compare their width
+must know that it is `tcW.w` in twentieths of a point with `tcW.type` `dxa`. A typo in one of these strings is not a
+compile error: the property is still compared (`Aspects.of` gives a name no switch claims its source's default —
+paragraphs, characters or cells), but under that switch rather than its own, and said under its raw name.
+**Proposed change:** name the vocabulary once: the property names a reader may set, as constants grouped by where they
+apply (paragraph, run, table, row, cell), in `document` beside `Formatting` (a `WordProperties` class, or nested in
+`Formatting`), each with its unit; `SheetReader`, `Styles` and `Aspects` use them; `examples/README.md`'s "A format of
+your own" points to it. The model itself does not change.
+**Effort / risk:** medium · behaviour unchanged if each literal is replaced by its constant; the docx reader, which
+copies Word's names as it reads them, needs none.
 
 ## Patterns
 
-- **Generic method names, 2** (done: `interpret`, `RunningLines.takeOut`): `ContentReader.run(content, …)` (it interprets a content stream: `interpret`),
-  `TextLayout.running(…)` (it takes the running lines out of the pages: `takeRunningLines`).
-- **One language for the whole JVM:** `I18n` keeps the language in a static field, which core's readers use for
-  their messages. Right for the program; for a server comparing for several users, one language at a time. Not a
-  change now — a sentence in `I18n`'s doc, so that a library user knows.
-- **Three names for the program** — folder `doccomparator-app`, artifact `doccomparator`, module
-  `org.jtools.doccomparator` — kept for the Maven Central coordinates already published; the README's module table
-  maps them. No change.
+- **One flat package for the view, 34 classes** (`doccomparator-ui/…/ui/`): the panel, the sides' heads, the drawn
+  view, the controls, the labels. A newcomer finds their way through README's Layout table, which groups them, rather
+  than through the folders. Kept: subpackages would make public, and so exported, classes that are package-private
+  today. No change; keep the Layout table up to date when a class is added.
+- **One public verb with no object** (done: `relabel()`): `I18nLabels.apply()` — what it does is set every label
+  bound again, in the language now in use: `relabel()` says it. Public in ui, used by the app (`MainWindow`) and
+  `ComparatorPanel`; with finding 2 if done.
+- **A nested type named after a JDK class**: `DocumentSource.File`, which takes a `Path`, in a package where
+  `java.io.File` is imported too (`ComparatorPanel`). Clear enough written in full (`DocumentSource.File`); worth
+  knowing before it is published, not a change on its own.
+- **`Story.Name` is an identifier** (kind, pages, section, number), not a name; documented as "what tells a story
+  from the others". No change.
 
 ## Suggested order
 
-1. **Finding 1, the rename**, before step 3 publishes core: after that, it is a breaking change.
-2. **Finding 2, one read exception**, for the same reason: it is part of the public contract.
-3. **Finding 6**, small, and it settles a public behaviour of `DocumentReaders`.
-4. **Findings 3, 4, 5 and the two method names**: inside the `pdf` package, nothing public; one at a time, the PDF
-   tests after each.
+1. **Finding 1**: additive, nothing can break, and it shows in the example a reader author copies.
+2. **Finding 2**, before the first `mvn -Ppublish deploy`: one rename a commit (`Item`, then `Span`, then the
+   "difference" pass if wanted), the build after each.
+3. **Finding 3**: inside core, no public name changes but the new constants'; after 1, so that `CsvReader` shows both.
+4. `I18nLabels.apply()` with the renames of 2, being public too.
