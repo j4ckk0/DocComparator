@@ -1,8 +1,8 @@
 # Publishing DocComparator: its licence, Maven Central, GitHub's releases
 
 The licence the program is published under, and how it reaches Maven Central — the parent and three jars under
-`org.jtools` —, the same way as the other jtools projects (XsdViewer). Checked against the tree at version 2.0
-(5 November 2026). **Not published yet.**
+`org.jtools` —, the same way as the other jtools projects (XsdViewer). **On Maven Central since 3.0** (6 November
+2026), its first version there: <https://central.sonatype.com/namespace/org.jtools>.
 
 ## 1. The licence
 

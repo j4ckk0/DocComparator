@@ -38,7 +38,7 @@ On Windows, the class path's separator is `;` rather than `:`.
 
 ## In a project of your own
 
-Once on Maven Central (see [PUBLISHING.md](../PUBLISHING.md)), with Maven:
+From Maven Central (see [PUBLISHING.md](../PUBLISHING.md)), with Maven:
 
 ```xml
 <dependency>
