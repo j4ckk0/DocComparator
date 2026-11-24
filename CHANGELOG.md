@@ -3,6 +3,19 @@
 What each version brought, newest first. The GitHub Releases carry the same notes with the downloads and their
 checksums.
 
+## 3.1 — 2026-11-24
+
+- **Find**: a field under the two documents (Ctrl+F) finds words in both as they are typed, in paragraphs and table
+  cells, every place highlighted and the current one in orange, with "3 of 10" beside it. Enter, ▼ or F3 goes to the
+  next place, Shift+Enter, ▲ or Shift+F3 to the previous, round from the last to the first; the place's line becomes
+  the current one, so F7 goes on from there. *Match case* tells capitals apart; Escape returns to the documents. Also
+  in the *Go* menu.
+- **Recent documents, on each side**: the ▾ beside *Open…* in each side's head, and *File* ▸ *Recent documents on the
+  left* / *on the right*, open again one of the ten documents last read on that side. Kept in
+  `doccomparator.properties` beside the other settings; a file since moved or deleted is said so, and taken out.
+- For other programs (`doccomparator-ui`): `ComparatorPanel.findActions()`, `recentMenu(Side)`, and
+  `recentFiles`, `showRecentFiles` and `onRecentFiles` to keep each side's list where the program wants.
+
 ## 3.0 — 2026-11-06
 
 - **The libraries' names, settled before Maven Central** (`doccomparator-core`, `doccomparator-ui`): what the
