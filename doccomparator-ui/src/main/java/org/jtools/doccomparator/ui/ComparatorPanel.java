@@ -31,22 +31,31 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.JFileChooser;
+import javax.swing.JComponent;
 import javax.swing.JMenu;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import org.jtools.doccomparator.compare.CompareOptions;
 import org.jtools.doccomparator.compare.Comparison;
@@ -59,15 +68,17 @@ import org.jtools.doccomparator.report.ComparisonWords;
 
 /**
  * The comparison of two documents, all of it but the window: the ribbon (OptionControls), the head of each side
- * (DocumentHeader), the two sides, the map of the differences, and the status line (StatusLine). Keeps the
- * documents, reads and compares them away from the window's thread, and goes through the differences. Documents are
- * opened from a side's head, by dropping them on their side, or given at the start; text pasted or dropped on a side
- * is compared as a document.
+ * (DocumentHeader), the two sides, the map of the differences, the search (SearchBar) and the status line
+ * (StatusLine). Keeps the documents, reads and compares them away from the window's thread, and goes through the
+ * differences. Documents are opened from a side's head, by dropping them on their side, again from the side's recent
+ * documents, or given at the start; text pasted or dropped on a side is compared as a document.
  *
  * <p>Another program shows it as any component: open() gives it two files, or two DocumentSource of the program's
- * own; onCompared() tells each comparison; fileActions(), goActions() and the two menus are its commands, to put in the
- * program's own menus and tool bars. The language and the look are the program's: it calls languageChanged() once
- * I18n speaks another, and changes the look when onDarkMode() tells it Dark was ticked.
+ * own; onCompared() tells each comparison; fileActions(), goActions(), findActions(), the two menus and each side's
+ * recentMenu() are its commands, to put in the program's own menus and tool bars. The language and the look are the
+ * program's: it calls languageChanged() once I18n speaks another, and changes the look when onDarkMode() tells it Dark
+ * was ticked. So are the settings: it gives each side's recent documents (showRecentFiles()) and keeps them when
+ * onRecentFiles() tells they changed.
  */
 public final class ComparatorPanel extends JPanel {
 
@@ -82,6 +93,13 @@ public final class ComparatorPanel extends JPanel {
     private final I18nLabels labels = new I18nLabels();
     private final StatusLine statusLine = new StatusLine(labels);
     private final BackgroundWork work = new BackgroundWork(this, statusLine);
+    private final SearchBar search = new SearchBar(view, labels);
+    private final Action find = action("action.find", "action.find.tip",
+            KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK), search::focusWords);
+    private final Action findNext = action("action.findNext", "action.findNext.tip",
+            KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0), () -> search.go(true));
+    private final Action findPrevious = action("action.findPrevious", "action.findPrevious.tip",
+            KeyStroke.getKeyStroke(KeyEvent.VK_F3, InputEvent.SHIFT_DOWN_MASK), () -> search.go(false));
     private final Action openLeft = action("action.openLeft", "action.openLeft.tip",
             KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK), () -> choose(Side.LEFT));
     private final Action openRight = action("action.openRight", "action.openRight.tip",
@@ -128,6 +146,11 @@ public final class ComparatorPanel extends JPanel {
     private final Map<Side, DocumentHeader> heads = new EnumMap<>(Side.class);
     private final Map<Side, SideState> sides = new EnumMap<>(Map.of(Side.LEFT, SideState.EMPTY,
             Side.RIGHT, SideState.EMPTY));
+    private final RecentFiles recent = new RecentFiles();
+    /** The sides given a file since they were last read: the file goes in the side's recent ones once it is read. */
+    private final Set<Side> toRemember = EnumSet.noneOf(Side.class);
+    private final Map<Side, JMenu> recentMenus = new EnumMap<>(Side.class);
+    private BiConsumer<Side, List<Path>> recentListener = (_, _) -> { };
     private Comparison comparison;
     private Consumer<Comparison> comparedListener = _ -> { };
     private Consumer<String> namesListener = _ -> { };
@@ -135,8 +158,10 @@ public final class ComparatorPanel extends JPanel {
 
     public ComparatorPanel() {
         super(new BorderLayout());
-        heads.put(Side.LEFT, new DocumentHeader(Side.LEFT, openLeft, opener, this, labels));
-        heads.put(Side.RIGHT, new DocumentHeader(Side.RIGHT, openRight, opener, this, labels));
+        heads.put(Side.LEFT, new DocumentHeader(Side.LEFT, openLeft, under -> showRecent(Side.LEFT, under), opener,
+                this, labels));
+        heads.put(Side.RIGHT, new DocumentHeader(Side.RIGHT, openRight, under -> showRecent(Side.RIGHT, under), opener,
+                this, labels));
         showEmptySides();
         scroll.getVerticalScrollBar().setUnitIncrement(24);
         scroll.setBorder(BorderFactory.createEmptyBorder());
@@ -160,7 +185,10 @@ public final class ComparatorPanel extends JPanel {
         center.add(scroll, BorderLayout.CENTER);
         center.add(new DifferenceMap(view, scroll, labels), BorderLayout.EAST);
         add(center, BorderLayout.CENTER);
-        add(statusLine, BorderLayout.SOUTH);
+        JPanel bottom = new JPanel(new BorderLayout());
+        bottom.add(search, BorderLayout.NORTH);
+        bottom.add(statusLine, BorderLayout.SOUTH);
+        add(bottom, BorderLayout.SOUTH);
 
         view.addPropertyChangeListener(ComparisonView.CURRENT_LINE, _ -> updatePosition());
         view.addPropertyChangeListener(ComparisonView.CHOSEN_SIDE, _ -> showChosenSide());
@@ -169,7 +197,8 @@ public final class ComparatorPanel extends JPanel {
         TransferHandler drop = new DropHandler(opener, this, null);
         view.setTransferHandler(drop);
         setTransferHandler(drop);
-        for (Action action : List.of(openLeft, openRight, pasteHere, previous, next, controls.ribbonAction())) {
+        for (Action action : List.of(openLeft, openRight, pasteHere, previous, next, find, findNext, findPrevious,
+                controls.ribbonAction())) {
             KeyStroke key = (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);
             getInputMap(WHEN_IN_FOCUSED_WINDOW).put(key, action);
             getActionMap().put(action, action);
@@ -228,6 +257,56 @@ public final class ComparatorPanel extends JPanel {
         return List.of(previous, next);
     }
 
+    /** Find the words typed (Ctrl+F), the next and the previous place they are found at (F3, Shift+F3): for a menu. */
+    public List<Action> findActions() {
+        return List.of(find, findNext, findPrevious);
+    }
+
+    /**
+     * The side's recent documents, as a menu of the window: each opens again on its side. Made anew each time it opens,
+     * so that it lists them as they are then.
+     */
+    public JMenu recentMenu(Side side) {
+        return recentMenus.computeIfAbsent(side, _ -> {
+            JMenu menu = labels.text(new JMenu(), side.of("recent.left", "recent.right"));
+            menu.addMenuListener(new MenuListener() {
+                @Override
+                public void menuSelected(MenuEvent e) {
+                    menu.removeAll();
+                    recentItems(side).forEach(menu::add);
+                }
+
+                @Override
+                public void menuDeselected(MenuEvent e) {
+                }
+
+                @Override
+                public void menuCanceled(MenuEvent e) {
+                }
+            });
+            return menu;
+        });
+    }
+
+    /** The side's recent documents, the latest first. */
+    public List<Path> recentFiles(Side side) {
+        return recent.of(side);
+    }
+
+    /**
+     * Gives a side its recent documents, as the program keeps them, the latest first (the first ten kept), telling no
+     * one; whether they are still there is seen when one is chosen.
+     */
+    public void showRecentFiles(Side side, List<Path> files) {
+        recent.set(side, files);
+        heads.get(side).setRecentAvailable(!recent.of(side).isEmpty());
+    }
+
+    /** Told a side's recent documents, the latest first, each time they change: for the program to keep them. */
+    public void onRecentFiles(BiConsumer<Side, List<Path>> listener) {
+        recentListener = listener;
+    }
+
     /** The views, the ribbon and the dark look, as a menu of the window. */
     public JMenu viewMenu() {
         return controls.viewMenu();
@@ -250,6 +329,8 @@ public final class ComparatorPanel extends JPanel {
     public void open(DocumentSource left, DocumentSource right) {
         sides.put(Side.LEFT, left == null ? SideState.EMPTY : SideState.of(left));
         sides.put(Side.RIGHT, right == null ? SideState.EMPTY : SideState.of(right));
+        rememberWhenRead(Side.LEFT, left);
+        rememberWhenRead(Side.RIGHT, right);
         compare();
     }
 
@@ -280,7 +361,69 @@ public final class ComparatorPanel extends JPanel {
 
     private void put(Side side, DocumentSource source) {
         sides.put(side, SideState.of(source));
+        rememberWhenRead(side, source);
         compare();
+    }
+
+    /** A file given to a side goes in its recent documents once it is read; anything else, nothing. */
+    private void rememberWhenRead(Side side, DocumentSource source) {
+        if (source instanceof DocumentSource.File) {
+            toRemember.add(side);
+        } else {
+            toRemember.remove(side);
+        }
+    }
+
+    /** The side read: its file, given since it was last read, first in its recent documents. */
+    private void remember(Side side, SideState state) {
+        if (toRemember.remove(side) && state.source() instanceof DocumentSource.File file
+                && recent.opened(side, file.path())) {
+            recentChanged(side);
+        }
+    }
+
+    private void recentChanged(Side side) {
+        heads.get(side).setRecentAvailable(!recent.of(side).isEmpty());
+        recentListener.accept(side, recent.of(side));
+    }
+
+    /** The side's recent documents under its head's button: made anew, in the look and the language of the time. */
+    private void showRecent(Side side, JComponent under) {
+        JPopupMenu menu = new JPopupMenu();
+        recentItems(side).forEach(menu::add);
+        menu.show(under, 0, under.getHeight());
+    }
+
+    /** An item for each of the side's recent documents, its name then its folder; or one saying there are none. */
+    private List<JMenuItem> recentItems(Side side) {
+        List<JMenuItem> items = new ArrayList<>();
+        for (Path path : recent.of(side)) {
+            Path folder = path.getParent();
+            JMenuItem item = new JMenuItem(I18n.text("recent.item", path.getFileName(),
+                    folder == null ? "" : folder.toString()));
+            item.setToolTipText(path.toString());
+            item.addActionListener(_ -> openRecent(side, path));
+            items.add(item);
+        }
+        if (items.isEmpty()) {
+            JMenuItem none = new JMenuItem(I18n.text("recent.none"));
+            none.setEnabled(false);
+            items.add(none);
+        }
+        return items;
+    }
+
+    /** Opens a recent document again on its side; one no longer there, said so and taken out of the list. */
+    private void openRecent(Side side, Path path) {
+        if (!Files.isRegularFile(path)) {
+            statusLine.say(I18n.text("header.noSuchDocument", path));
+            Toolkit.getDefaultToolkit().beep();
+            if (recent.gone(side, path)) {
+                recentChanged(side);
+            }
+            return;
+        }
+        open(side, path);
     }
 
     /** What the clipboard holds, on a side: text compared as a document, documents opened as dropped ones are. */
@@ -325,6 +468,16 @@ public final class ComparatorPanel extends JPanel {
         SideState left = sides.get(Side.LEFT);
         sides.put(Side.LEFT, sides.get(Side.RIGHT));
         sides.put(Side.RIGHT, left);
+        // a file not read yet goes with its document: remembered on the side it is read on
+        boolean leftWaits = toRemember.contains(Side.LEFT);
+        boolean rightWaits = toRemember.contains(Side.RIGHT);
+        toRemember.clear();
+        if (leftWaits) {
+            toRemember.add(Side.RIGHT);
+        }
+        if (rightWaits) {
+            toRemember.add(Side.LEFT);
+        }
         compare();
     }
 
@@ -360,6 +513,8 @@ public final class ComparatorPanel extends JPanel {
         }, result -> {
             sides.put(Side.LEFT, left.withRead(result.left()));
             sides.put(Side.RIGHT, right.withRead(result.right()));
+            remember(Side.LEFT, left);
+            remember(Side.RIGHT, right);
             show(result);
             comparedListener.accept(result);
         }, "status.notCompared", "dialog.cannotCompare");
@@ -378,6 +533,7 @@ public final class ComparatorPanel extends JPanel {
             return document;
         }, document -> {
             sides.put(side, state.withRead(document));
+            remember(side, state);
             heads.get(side).show(state.source(), document);
             Lines.Shown shown = controls.shown();
             Palette palette = Palette.of(shown.documentView());

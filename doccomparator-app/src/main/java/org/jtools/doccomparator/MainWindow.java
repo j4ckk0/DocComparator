@@ -21,6 +21,7 @@ package org.jtools.doccomparator;
  */
 
 import java.awt.BorderLayout;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -42,6 +43,7 @@ import org.jtools.doccomparator.ui.I18nLabels;
 import org.jtools.doccomparator.i18n.I18nLanguage;
 import org.jtools.doccomparator.ui.I18nLanguageBox;
 import org.jtools.doccomparator.ui.ComparatorPanel;
+import org.jtools.doccomparator.ui.Side;
 
 /** The program's only window: the comparison and its menus. Closing it, or File ▸ Exit, ends the program. */
 final class MainWindow extends JFrame {
@@ -72,6 +74,12 @@ final class MainWindow extends JFrame {
         panel.showDarkMode(Looks.isDark());
         panel.showRibbon(Boolean.parseBoolean(settings.get(Settings.RIBBON, "true")));
         panel.onRibbon(open -> settings.set(Settings.RIBBON, String.valueOf(open)));
+        for (Side side : Side.values()) {
+            panel.showRecentFiles(side, paths(settings.getList(recentKey(side))));
+        }
+        // told only once they are given: the start writes nothing
+        panel.onRecentFiles((side, files) -> settings.setList(recentKey(side),
+                files.stream().map(Path::toString).toList()));
         pack();
         setLocationRelativeTo(null);
     }
@@ -92,6 +100,23 @@ final class MainWindow extends JFrame {
         I18n.use(chosen);
         settings.set(Settings.LANGUAGE, chosen.code());
         languageChanged();
+    }
+
+    private static String recentKey(Side side) {
+        return side == Side.LEFT ? Settings.RECENT_LEFT : Settings.RECENT_RIGHT;
+    }
+
+    /** The paths kept, those this system can read as paths (a list kept on another one may hold others). */
+    private static List<Path> paths(List<String> kept) {
+        List<Path> paths = new ArrayList<>();
+        for (String path : kept) {
+            try {
+                paths.add(Path.of(path));
+            } catch (InvalidPathException _) {
+                // not a path here: left out
+            }
+        }
+        return paths;
     }
 
     /** Swing's own dialogs (the file chooser's buttons, a message's OK) in the language in use. */
@@ -168,11 +193,18 @@ final class MainWindow extends JFrame {
             file.add(new JMenuItem(action));
         }
         file.addSeparator();
+        file.add(panel.recentMenu(Side.LEFT));
+        file.add(panel.recentMenu(Side.RIGHT));
+        file.addSeparator();
         JMenuItem exit = labels.menu(new JMenuItem(), "menu.file.exit");
         exit.addActionListener(_ -> dispose());
         file.add(exit);
         JMenu go = labels.menu(new JMenu(), "menu.go");
         for (Action action : panel.goActions()) {
+            go.add(new JMenuItem(action));
+        }
+        go.addSeparator();
+        for (Action action : panel.findActions()) {
             go.add(new JMenuItem(action));
         }
         JMenuBar bar = new JMenuBar();

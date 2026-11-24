@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -64,5 +65,26 @@ class SettingsTest {
         } finally {
             Files.setPosixFilePermissions(locked, PosixFilePermissions.fromString("rwxr-xr-x"));
         }
+    }
+
+    /** A list — a side's recent documents — kept and read back in its order, whatever its paths hold. */
+    @Test
+    void aListIsKeptInItsOrder() {
+        List<String> recent = List.of("C:\\Users\\Zoé\\Documents\\procédure révisée.docx", "/home/zoé/notes = v2.md",
+                "\\\\server\\share\\a#b!c.xlsx");
+        Settings.in(folder).setList(Settings.RECENT_LEFT, recent);
+        assertEquals(recent, Settings.in(folder).getList(Settings.RECENT_LEFT));
+        assertEquals(List.of(), Settings.in(folder).getList(Settings.RECENT_RIGHT), "the other side's, apart");
+    }
+
+    /** A shorter list in place of a longer one: nothing of the longer left after it. */
+    @Test
+    void aShorterListLeavesNothingOfTheLongerOne() {
+        Settings.in(folder).setList(Settings.RECENT_RIGHT, List.of("a.docx", "b.docx", "c.docx"));
+        Settings settings = Settings.in(folder);
+        settings.setList(Settings.RECENT_RIGHT, List.of("d.docx"));
+        assertEquals(List.of("d.docx"), Settings.in(folder).getList(Settings.RECENT_RIGHT));
+        settings.setList(Settings.RECENT_RIGHT, List.of());
+        assertEquals(List.of(), Settings.in(folder).getList(Settings.RECENT_RIGHT));
     }
 }

@@ -69,6 +69,10 @@ final class Palette {
     final Color absentMark;
     final Color formattingMark;
 
+    /** Behind the words the search finds: each place, and the one gone to. */
+    final Color found;
+    final Color foundCurrent;
+
     private Palette(boolean dark) {
         this.dark = dark;
         background = dark ? new Color(0x1E1F22) : Color.WHITE;
@@ -92,6 +96,8 @@ final class Palette {
         changedText = dark ? new Color(0x8C3A40) : new Color(0xFFADAD);
         absentMark = dark ? new Color(0xFF5A5A) : new Color(0xD01010);
         formattingMark = dark ? new Color(0xC77DFF) : new Color(0x9B30D9);
+        found = dark ? new Color(0x6B5A12) : new Color(0xFFE45C);
+        foundCurrent = dark ? new Color(0xB8601A) : new Color(0xFF9A3C);
     }
 
     /** The palette of a view: dark in a dark look, unless it is the document view, a white page. */

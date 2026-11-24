@@ -120,8 +120,8 @@ What stays outside these checks:
     fonts (a document in a script they lack would show empty boxes): not done;
   - the C library asking the local name service cache (`/var/run/nscd/socket`) for the user's name.
 
-  The program's own settings — its look, its language, its ribbon — are kept beside it, in its folder (`doccomparator.properties`), when they are
-  changed, and nowhere else.
+  The program's own settings — its look, its language, its ribbon, the paths of the documents last opened on each
+  side — are kept beside it, in its folder (`doccomparator.properties`), when they are changed, and nowhere else.
 
   The JVM's performance counters are kept in memory (`-XX:-UsePerfData` in every launcher), not in a file of `/tmp` or
   `%TEMP%`.
@@ -234,7 +234,8 @@ doccomparator.sh old.docx new.docx               # the same, from a distribution
 
 Until both are open, the window shows the two sides, each a place framed with dashes saying which document goes there
 and how to open it; one document opened, it is shown on its side as it is, nothing compared, the other side waiting. Each side has its head, as in Beyond Compare: the path of its document — type one and press Enter — and *Open…* to
-choose it (Ctrl+O on the left, Ctrl+Shift+O on the right, or the File menu); under them, its template and whether it
+choose it (Ctrl+O on the left, Ctrl+Shift+O on the right, or the File menu), and ▾ beside it to open again one of the
+documents last opened on that side; under them, its template and whether it
 had tracked changes. Documents dropped on the window open too: two at once, left and right; one, on the side it is
 dropped on, its head included. Dropping works from Windows' Explorer and from Linux desktops (which drop files as
 `file://` URIs, decoded by `FileUris` without the JDK's networking classes). The two sides scroll as one, each
@@ -286,7 +287,8 @@ Windows program wrote). Markdown is compared as the text it is: its marks (`#`, 
   diff view is dark too; the document view keeps its white page, as a document printed. The one chosen is kept for the
   next time in
   `doccomparator.properties`, beside the program: in its folder, never in the registry or the user's folder; written
-  only when the look, the language or the ribbon is changed, and not at all where the folder cannot be written in.
+  only when the look, the language or the ribbon is changed, or a document is opened on a side, and not at all where
+  the folder cannot be written in.
 - **The language**, in the drop list on the right of the menus: *Français*, the default, or *English*. The whole window
   takes it at once — menus, ribbon, tooltips, messages — and so does what the comparison says: the parts' names, the
   properties' ("trame", "shading"), where a paragraph is: the comparison holds no words of its own, the view says it
@@ -302,6 +304,17 @@ Windows program wrote). Markdown is compared as the text it is: its marks (`#`, 
   runtime's terms, GPLv2 with the Classpath Exception, its licence read from the runtime itself, where its sources
   are), *About DocComparator…* (the version, the home page as an address to copy — the program opens no browser —,
   the Java it runs on).
+- **Recent documents**: each side keeps the ten documents last opened on it, the latest first — under ▾ in its head,
+  and in *File ▸ Recent documents on the left* (*on the right*). A document goes in its side's list once it is read,
+  whichever way it was opened: chosen, typed, dropped, given at the start, or from the list itself; text pasted does
+  not. The list holds only the paths, kept with the settings: a document moved or deleted since is said so when it is
+  chosen, and taken out of the list.
+- **Find**: the field under the documents (Ctrl+F) finds words in the text of both — paragraphs and table cells,
+  not the view's own words —, as they are typed: every place in yellow, the one gone to in orange, its line made the
+  current one, so that F7 goes on from there. Enter or ▼ (F3) goes to the next, Shift+Enter or ▲ (Shift+F3) to the
+  previous, round from the last to the first; *Match case* keeps the capitals as typed; Escape gives the keys back to
+  the documents. The places stay shown when the comparison is shown again — another option, view, look or language;
+  lines hidden by *Only differences* are not searched. Also in the *Go* menu.
 - **Previous and next difference**: F7 and Shift+F7, or *Go*. *Only differences* hides the lines that are the
   same; *Only what is comparable* hides what has nothing in common with the other side — paragraphs, tables, rows and
   columns of tables on one side only — and shows the rest: the same paragraphs as they are, the close ones with their
@@ -522,7 +535,7 @@ module's texts.
 | `doccomparator-core/…/compare/` | `DocumentComparer` (two documents into a `Comparison` of `Pairing`s, each of two `ComparedBlock`s, which `ComparedBlocks` takes from the stories), `Pairer` (step one), `ParagraphComparer` (step two, a `ParagraphDifference`), `TableComparer` and `TableGrid` (tables), `Slot` (two sequences side by side), `EditScript` (Myers' algorithm), `CompareOptions` (the switches), `Aspects` (which switch a property is on), `Differences`, `Phrase` (what a difference says, kept as data: `report` puts it into words) |
 | `doccomparator-core/…/report/` | what a comparison says, in the language in use: `ComparisonWords` (a story's name, where a paragraph is, a difference, any `Phrase`), `PropertyNames` (Word's property names as a reader says them) |
 | `doccomparator-core/…/i18n/` | the languages (see "Languages"): `I18nLanguage`, `I18n`, `I18nTexts` (a jar's texts, as a service); `texts/`, core's own |
-| `doccomparator-ui/…/ui/` | `ComparatorPanel` (the documents, read and compared in the background by `BackgroundWork`; each `Side`'s `SideState`; the sides' heads laid out by `HeadsLayout`), `OptionControls` (the ribbon and the Compare and View menus, kept in step), `DocumentSource` (what a side compares: a file, read by the reader of its extension, text pasted, or a source of a host's own), `DocumentHeader` and `DropHandler` (a side's head, documents and text dropped or pasted), `StatusLine`, `ClipboardMenu` (the right-click menu: copy a line, paste on its side), `ComparisonView` (the two sides, line by line; `LinePainter` draws the lines, `EmptySide` a side waiting for its document), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `ListNumbers` (list items numbered as Word does), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux), `I18nLabels` and `I18nLanguageBox` (labels set again when the language changes; the languages' drop list); the small ones: `Line` and `LineSide` (a line of the view, and each side of it), `Palette` (the colours), `Fonts`, `DocumentOpener`, `RibbonEdge`, `FaintLabel`, `LookLine` |
+| `doccomparator-ui/…/ui/` | `ComparatorPanel` (the documents, read and compared in the background by `BackgroundWork`; each `Side`'s `SideState`; the sides' heads laid out by `HeadsLayout`), `OptionControls` (the ribbon and the Compare and View menus, kept in step), `DocumentSource` (what a side compares: a file, read by the reader of its extension, text pasted, or a source of a host's own), `DocumentHeader` and `DropHandler` (a side's head, documents and text dropped or pasted), `RecentFiles` (each side's documents last opened), `SearchBar` and `Search` (the words found in both documents), `StatusLine`, `ClipboardMenu` (the right-click menu: copy a line, paste on its side), `ComparisonView` (the two sides, line by line; `LinePainter` draws the lines, `EmptySide` a side waiting for its document), `Lines` (a comparison into lines), `DifferenceMap`, `TextBlock` (a text wrapped, its differences marked; laid out as Word does in the document view), `DocumentLook` (a paragraph's formatting as it applies), `PageMarks` (where pages begin), `ListNumbers` (list items numbered as Word does), `PictureImages` (pictures decoded, bounded), `PictureGraphic`, `FontFamilies`, `FileUris` (files dropped from Linux), `I18nLabels` and `I18nLanguageBox` (labels set again when the language changes; the languages' drop list); the small ones: `Line` and `LineSide` (a line of the view, and each side of it), `Palette` (the colours), `Fonts`, `DocumentOpener`, `RibbonEdge`, `FaintLabel`, `LookLine` |
 | `doccomparator-ui/…/ui/texts/` | the view's texts |
 | `doccomparator-app/…/` | `Launcher` (the entry point, given two documents or none), `MainWindow` (the window, its menus, its look), `HelpMenu` (the licences and About, read offline), `Settings` (kept beside the program), `Looks` (FlatLaf's looks, light and dark, its native libraries off), `NoNetworkResolver` (see "No network"); `texts/`, the window's texts |
 | `doccomparator-app/src/dist/`, `…/src/assembly/` | the launchers of the distributions, FlatLaf's licence, and what goes in them |

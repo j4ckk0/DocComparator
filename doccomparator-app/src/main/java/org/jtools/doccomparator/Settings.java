@@ -26,13 +26,15 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 /**
- * The program's settings — its look, its language, the ribbon open or collapsed —, kept in doccomparator.properties,
- * beside the program (doccomparator.jar): in its folder, as a portable program keeps them, never in the registry or
- * the user's folder. Written only when a setting changes; a folder that cannot be written in keeps nothing, and the
- * program goes on.
+ * The program's settings — its look, its language, the ribbon open or collapsed, each side's recent documents —, kept
+ * in doccomparator.properties, beside the program (doccomparator.jar): in its folder, as a portable program keeps
+ * them, never in the registry or the user's folder. Written only when a setting changes; a folder that cannot be
+ * written in keeps nothing, and the program goes on.
  */
 final class Settings {
 
@@ -40,6 +42,12 @@ final class Settings {
     static final String LANGUAGE = "language";
     /** Whether the ribbon is open: "true", or "false" when it is collapsed. */
     static final String RIBBON = "ribbon";
+    /**
+     * The documents last opened on the left, and on the right: lists ("recentLeft.1", "recentLeft.2"…), the latest
+     * first.
+     */
+    static final String RECENT_LEFT = "recentLeft";
+    static final String RECENT_RIGHT = "recentRight";
     private static final String FILE = "doccomparator.properties";
 
     private final Path file;
@@ -78,6 +86,30 @@ final class Settings {
     /** Sets a value, and keeps it if the program's folder can be written in. */
     void set(String key, String value) {
         values.setProperty(key, value);
+        store();
+    }
+
+    /** A list kept under this key, in its order: its values under key.1, key.2… up to the first missing. */
+    List<String> getList(String key) {
+        List<String> list = new ArrayList<>();
+        for (int i = 1; values.getProperty(key + "." + i) != null; i++) {
+            list.add(values.getProperty(key + "." + i));
+        }
+        return list;
+    }
+
+    /** Sets a list under this key in place of the one there, all of it kept at once. */
+    void setList(String key, List<String> list) {
+        values.stringPropertyNames().stream().filter(name -> name.startsWith(key + "."))
+                .forEach(values::remove);
+        for (int i = 0; i < list.size(); i++) {
+            values.setProperty(key + "." + (i + 1), list.get(i));
+        }
+        store();
+    }
+
+    /** Writes the settings, if the program's folder can be written in. */
+    private void store() {
         if (file == null) {
             return;
         }

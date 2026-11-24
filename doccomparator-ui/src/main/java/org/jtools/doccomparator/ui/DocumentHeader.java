@@ -21,6 +21,7 @@ package org.jtools.doccomparator.ui;
  */
 
 import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -30,6 +31,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -41,10 +43,10 @@ import org.jtools.doccomparator.document.Document;
 import org.jtools.doccomparator.i18n.I18n;
 
 /**
- * The head of a side, as Beyond Compare has it: the path of its document, which can be typed (Enter opens it), a
- * button to choose one, what can be said of the document under them; documents dropped on it open on its side, text
- * dropped on it, but not on the path, is compared there. The head of the side text pasted goes to is tinted and
- * underlined, as a tab chosen.
+ * The head of a side, as Beyond Compare has it: the path of its document, which can be typed (Enter opens it), the
+ * side's recent documents (▾), a button to choose one, what can be said of the document under them; documents dropped
+ * on it open on its side, text dropped on it, but not on the path, is compared there. The head of the side text
+ * pasted goes to is tinted and underlined, as a tab chosen.
  */
 final class DocumentHeader extends JPanel {
 
@@ -52,15 +54,17 @@ final class DocumentHeader extends JPanel {
     private final DocumentOpener opener;
     private final JTextField path = new JTextField();
     private final JLabel about = new FaintLabel(" ", JLabel.LEADING, true);
+    private final JButton recent = new JButton();
     private boolean chosen;
     /** The underline's height, under the head chosen. */
     private static final int UNDERLINE = 3;
 
     /**
-     * The head of the left side or the right; open chooses its document; area is what documents are dropped on; its
-     * labels bound with these.
+     * The head of the left side or the right; open chooses its document; showRecent shows the side's recent documents
+     * under the button it is given; area is what documents are dropped on; its labels bound with these.
      */
-    DocumentHeader(Side side, Action open, DocumentOpener opener, JComponent area, I18nLabels labels) {
+    DocumentHeader(Side side, Action open, Consumer<JComponent> showRecent, DocumentOpener opener, JComponent area,
+                   I18nLabels labels) {
         super(new BorderLayout(4, 2));
         setBorder(BorderFactory.createEmptyBorder(4, 4, 4 + UNDERLINE, 4));
         this.side = side;
@@ -70,8 +74,17 @@ final class DocumentHeader extends JPanel {
         JButton choose = new JButton(open);
         labels.text(choose, "header.open");
         choose.setFocusable(false);
+        labels.text(recent, "header.recent");
+        labels.tip(recent, side.of("header.recent.left.tip", "header.recent.right.tip"));
+        recent.setFocusable(false);
+        recent.setEnabled(false);
+        recent.addActionListener(_ -> showRecent.accept(recent));
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 0));
+        buttons.setOpaque(false);
+        buttons.add(recent);
+        buttons.add(choose);
         add(path, BorderLayout.CENTER);
-        add(choose, BorderLayout.EAST);
+        add(buttons, BorderLayout.EAST);
         add(about, BorderLayout.SOUTH);
         // documents dropped on the head, or its path, open on its side; text dropped on the path is typed in it
         setTransferHandler(new DropHandler(opener, area, side));
@@ -86,6 +99,11 @@ final class DocumentHeader extends JPanel {
 
     boolean chosen() {
         return chosen;
+    }
+
+    /** Whether the side has recent documents to offer: the ▾ button enabled. */
+    void setRecentAvailable(boolean available) {
+        recent.setEnabled(available);
     }
 
     @Override

@@ -190,6 +190,22 @@ final class ComparisonView extends JComponent implements Scrollable {
         firePropertyChange(CURRENT_LINE, old, line);
     }
 
+    /**
+     * Makes a line the current one, scrolled to the middle of the view; a line taller than the view, at the place this
+     * far below its top (what the search found there), which its middle could leave out of sight.
+     */
+    void setCurrentAt(int line, int within) {
+        layoutLines(width());
+        Line l = lines.get(line);
+        Rectangle visible = getVisibleRect();
+        if (l.height <= visible.height) {
+            setCurrent(line, true);
+            return;
+        }
+        scrollRectToVisible(new Rectangle(0, Math.max(0, l.top + within - visible.height / 3), 1, visible.height));
+        setCurrent(line, false);
+    }
+
     /** The next line that differs after the current one, or the previous one before it; -1 if none. */
     int difference(boolean next) {
         int from = current < 0 ? (next ? -1 : lines.size()) : current;

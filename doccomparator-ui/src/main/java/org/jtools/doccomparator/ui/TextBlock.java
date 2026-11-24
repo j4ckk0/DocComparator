@@ -90,6 +90,10 @@ final class TextBlock {
     /** A list item's number, laid out, and where it starts across; null for none. */
     private TextLayout number;
     private float numberX;
+    /** What the search found in the text: each place's first character and the one after its last. */
+    private List<int[]> found = List.of();
+    /** The place found the search is at, its index in found; -1 when it is in another text. */
+    private int foundCurrent = -1;
 
     /** A text and its differences; placeholder: what is shown, faint, for an empty text. */
     TextBlock(String text, Font font, Color color, Palette palette, List<TextSpan> spans, List<FormatSpan> formatting,
@@ -274,6 +278,27 @@ final class TextBlock {
         return height;
     }
 
+    /** Shows these places of its text as found by the search, the one at that index as the one gone to (-1: none). */
+    void showFound(List<int[]> places, int current) {
+        found = List.copyOf(places);
+        foundCurrent = current;
+    }
+
+    /** The places of its text shown as found: for the tests. */
+    List<int[]> found() {
+        return found;
+    }
+
+    /** Where the line holding this character starts, from the block's top, once laid out: to scroll to it. */
+    float lineTop(int offset) {
+        for (int i = layouts.size() - 1; i >= 0; i--) {
+            if (starts.get(i) <= offset) {
+                return tops.get(i);
+            }
+        }
+        return 0;
+    }
+
     String text() {
         return text;
     }
@@ -314,6 +339,7 @@ final class TextBlock {
             if (!text.isEmpty()) {
                 paintHighlights(g, layout, start, end, lineX, baseline);
                 paintBehind(g, layout, start, end, lineX, baseline);
+                paintFound(g, layout, start, end, lineX, baseline);
             }
             g.setColor(text.isEmpty() ? palette.faint : color);
             layout.draw(g, lineX, baseline);
@@ -350,6 +376,20 @@ final class TextBlock {
                         Math.min(span.end(), end) - start);
                 g.setColor(look == null ? behind : Palette.translucent(behind));
                 g.fill(at.createTransformedShape(shape));
+            }
+        }
+    }
+
+    /** What the search found, over the differences' colour so that it shows on a changed text too. */
+    private void paintFound(Graphics2D g, TextLayout layout, int start, int end, float x, float baseline) {
+        AffineTransform at = AffineTransform.getTranslateInstance(x, baseline);
+        for (int i = 0; i < found.size(); i++) {
+            int[] place = found.get(i);
+            if (place[0] < end && place[1] > start) {
+                Color behind = i == foundCurrent ? palette.foundCurrent : palette.found;
+                g.setColor(look == null ? behind : Palette.translucent(behind));
+                g.fill(at.createTransformedShape(layout.getLogicalHighlightShape(Math.max(place[0], start) - start,
+                        Math.min(place[1], end) - start)));
             }
         }
     }
